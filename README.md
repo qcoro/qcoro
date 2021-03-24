@@ -8,12 +8,13 @@ in C++.
 
 It requires compiler with support for the couroutines TS.
 
- * [Qt Signals/Slots vs co_await](#qt-signals-slots-vs-co_await)
+ * [Qt Signals/Slots vs co_await](#qt-signalslots-vs-co_await)
  * [Features](#features)
    * [QNetworkReply](#qnetworkreply)
    * [QDBus](#qdbus)
    * [QFuture](#qfuture)
- * [QCoro::Task<T>](#qcorotaskt)
+ * [QCoro::Task](#qcorotask)
+ * [Compiler Support](#compiler-support)
  * [Thank You](#thank-you)
 
 ## Qt Signal/Slots vs. co_await
@@ -143,7 +144,7 @@ QCoro::Task<> runTask() {
 }
 ```
 
-## QCoro::Task<>
+## QCoro::Task
 
 You may have noticed in the examples above that our coroutines don't return `void` like they
 would if they were normal functions, but instead they return `QCoro::Task<>` and you may be
@@ -160,6 +161,17 @@ your function.
 
 If you are calling a coroutine, to obtain the actual result value you must once again `co_await`
 it.
+
+## Compiler Support
+
+I have tested everything with GCC 10.2.1 and Clang 11 on Fedora 33, but this library should be usable
+on any decent Linux distribution, as long as it has a compiler that supports coroutines.
+
+When using Clang, you must also use libc++ - using Clang with libstdc++ won't work as of now. Mostly
+because in GCC, coroutines are fully supported while in Clang they are still considered experimental.
+
+If you are willing to help with supporting/testing on MSVC, help is more than welcomed - this includes
+adding support for some CI/CD.
 
 ## Thank You
 
