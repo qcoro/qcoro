@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2021 Daniel Vrátil <dvratil@kde.org>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 #if defined(__clang__)
     #include <experimental/coroutine>
