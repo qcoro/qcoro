@@ -25,6 +25,8 @@ endif()
 find_package(Threads REQUIRED)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5DBus REQUIRED)
+find_package(Qt5Network REQUIRED)
+find_package(Qt5Widgets REQUIRED)
 
 #-----------------------------------------------------------#
 # Sources
