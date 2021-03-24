@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
-project(qcoro)
+set(qcoro_VERSION 0.1)
+project(qcoro LANGUAGES CXX VERSION ${qcoro_VERSION})
 
 include(GNUInstallDirs)
 
@@ -50,7 +51,13 @@ configure_package_config_file(
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QCoro
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
 
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfigVersion.cmake"
+        VERSION ${qcoro_VERSION}
+        COMPATIBILITY SameMajorVersion)
+
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfig.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfigVersion.cmake"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QCoro
         COMPONENT Devel)
 
@@ -58,3 +65,4 @@ install(EXPORT QCoroTargets
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QCoro"
         FILE QCoroTargets.cmake
         NAMESPACE QCoro::)
+
