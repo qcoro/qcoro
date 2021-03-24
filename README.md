@@ -8,70 +8,160 @@ in C++.
 
 It requires compiler with support for the couroutines TS.
 
-# Qt Signal/Slots vs. co_await
+ * [Qt Signals/Slots vs co_await](#qt-signals-slots-vs-co_await)
+ * [Features](#features)
+   * [QNetworkReply](#qnetworkreply)
+   * [QDBus](#qdbus)
+   * [QFuture](#qfuture)
+ * [QCoro::Task<T>](#qcorotaskt)
+ * [Thank You](#thank-you)
+
+## Qt Signal/Slots vs. co_await
 
 One of the simplest examples where coroutines simplify your code is when
-dealing with asynchronous operations, like DBus calls.
+dealing with asynchronous operations, like network operations.
 
-Let's see how a simple pair of dependent DBus calls would be implemented in Qt using
-the signals/slots mechanism:
-```
-void goToNextSong() {
-    QDBusInterface spotifyPlayer("org.mpris.MediaPlayer2.spotify", "/org/mpris/MediaPlayer2",
-                                 "org.mpris.MediaPlayer2.Player");
-    auto *watcher = new QDBusPendingCallWatcher{spotifyPlayer.callAsync("CanGoNext")};
-    connect(watcher, &QDBusPendingCallWatcher::finished,
-            [spotifyPlayer](auto *watcher) {
-                watcher->deleteLater();
-                QDBusReply<bool> reply{*watcher};
-                if (static_cast<bool>(reply)) {
-                    auto *watcher2 = new QDBusPendingCallWatcher{spotifyPlayer.asyncCall("Next")};
-                    connect(watcher, &QDBusPendingCallWatcher::finished,
-                            [](auto *watcher) {
-                                watcher->deleteLater();
-                                QDBusReply<void> reply{*watcher};
-                                if (reply.error().isValid()) {
-                                    qWarning() << "DBus call failed:" << reply.error().message();
-                                }
-                            });
-                } else {
-                    qDebug() << "Last song, can't go to next song.";
-                }
-            });
-}
-```
+Let's see how a simple HTTP request would be implemented in Qt using the signals/slots
+mechanism:
 
-All that the code above does is that it calls "CanGoNext" and if result is `true`,
-it calls "Next".
+```cpp
+void MyClass::fetchData() {
+    auto *nam = new QNetworkAccessManager(this);
+    auto *reply = nam->get(QUrl{QStringLiteral("https://.../api/fetch")});
+    QObject::connect(reply, &QNetworkReply::finished,
+                     [reply, nam]() {
+                         const auto data = reply->readAll();
+                         doSomethingWithData(data);
+                         reply->deleteLater();
+                         nam->deleteLater();
+                     });
+```
 
 Now let's see how the code looks like if we use coroutines:
 
-```
-QCoro::Task<> goToNextSong() {
-    QDBusInterface spotifyPlayer("org.mpris.MediaPlayer2.spotify", "/org/mpris/MediaPlayer2",
-                                 "org.mpris.MediaPlayer2.Player");
-    auto reply = co_await spotifyPlayer.asyncCall("CanGoNext");
-    if (!static_cast<bool>(reply)) {
-        qDebug() << "Last song, can't go to next song.";
-        return;
-    }
-
-    auto reply = co_await spotifyPlayer.asyncCall("Next");
-    if (reply.error().isValid()) {
-        qWarning() << "DBus call failed:" << reply.error().message();
-    }
+```cpp
+QCoro::Task<> MyClass::fetchData() {
+    QNetworkReply nam;
+    auto *reply = co_await nam.get(QUrl{QStringLiteral("https://.../api/fetch")});
+    const auto data = reply->readAll();
+    reply->deleteLater();
+    doSomethingWithData(data);
 }
 ```
 
-The magic here is the `co_await` keyword which has turned our function `goToNextSong()`
-into a coroutine and suspended its execution while it waits for the QDBusPendingCall
-returned from `asyncCall()` to finish. When it finishes, the coroutine is resumed from
-where it was suspended and continues. 
+The magic here is the `co_await` keyword which has turned our method `fetchData()`
+into a coroutine and suspended its execution while the network request was running.
+When the request finishes, the coroutine is resumed from where it was suspended and
+continues.
 
 And the best part? While the coroutine is suspended, the Qt event loop runs as usual!
 
+## Features
 
-# Thank You
+With a single exception that we will discuss below, this library does not have any
+classes, functions or types that should be used by library users - all this library
+doesa is providing behind-the-scenes tools for the C++ coroutine machinery. The
+machinery is automatically invoked when you use `co_await` with one of the supported
+Qt types.
+
+The major benefit of using coroutines with Qt types is that it allows writing asynchronous
+code as if if were synchronous and, most importantly, while the coroutine is `co_await`ing,
+the Qt event loop runs as usual, meaning that your application remains responsive.
+
+### QNetworkReply
+
+The `coro/network.h` header allows `co_await`ing on `QNetworkReply`.
+
+```cpp
+#include <qcoro/network.h>
+
+QCoro::Task<> MyClass::fetchData() {
+    // Creates QNetworkAccessManager on stack
+    QNetworkAccessManager nam;
+    // Calls QNetworkAccessManager::get() and co_awaits on the returned QNetworkReply*
+    // until it finishes. The current coroutine is suspended until that.
+    auto *reply = co_await nam.get(QUrl{QStringLiteral("https://.../api/fetch")});
+    // When the reply finishes, the coroutine is resumed and we can access the reply content.
+    const auto data = reply->readAll();
+    // Raise your hand if you never forgot to delete a QNetworkReply...
+    delete reply;
+    doSomethingWithData(data);
+    // Extra bonus: the QNetworkAccessManager is destroyed automatically, since it's on stack.
+}
+```
+
+### QDBus
+
+The `coro/dbus.h` header allows `co_await`ing on `QDBusPendingCall`s.
+
+```cpp
+#include <qcoro/dbus.h>
+
+QCoro::Task<QString> PlayerControl::nextSong() {
+    // Create a regular QDBusInterface representing the Spotify MPRIS interface
+    QDBusInterface spotifyPlayer{QStringLiteral("org.mpris.MediaPlayer2.spotify"),
+                                 QStringLiteral("/org/mpris/MediaPlayer2"),
+                                 QStringLiteral("org.mpris.MediaPlayer2.Player")};
+    // Call CanGoNext DBus method and co_await reply. During that the current coroutine is suspended.
+    const QDBusReply<bool> canGoNext = co_await spotifyPlayer.asyncCall(QStringLiteral("CanGoNext"));
+    // Response has arrived and coroutine is resumed. If the player can go to the next song,
+    // do another async call to do so.
+    if (static_cast<bool>(canGoNext)) {
+        // co_await the call to finish, but throw away the result
+        co_await spotifyPlayer.asyncCall(QStringLiteral("Next"));
+    }
+
+    // Finally, another async call to retrieve new track metadata. Once again, the coroutine
+    // is suspended while we wait for the result.
+    const QDBusReply<QVariantMap> metadata = co_await spotifyPlayer.asyncCall(QStringLiteral("Metadata"));
+    // Since this function uses co_await, it is in fact a coroutine, so it must use co_return in order
+    // to return our result. By definition, the result of this function can be co_awaited by the caller.
+    co_return static_cast<const QVariantMap &>(metadata)[QStringLiteral("xesam:title")].toString();
+}
+```
+
+### QFuture
+
+The `coro/future.h` header allows `co_await`in on `QFuture`.
+
+```cpp
+#include <qcoro/future.h>
+
+QCoro::Task<> runTask() {
+    // Starts a concurrent task and co_awaits on the returned QFuture. While the task is
+    // running, the coroutine is suspended.
+    const QString value = co_await QtConcurrent::run([]() {
+        QString result;
+        ...
+        ...
+        return result;
+    });
+    // When the future has finished, the coroutine is resumed and the result value of the
+    // QFuture is returned.
+
+    // ... now do something with the value
+}
+```
+
+## QCoro::Task<>
+
+You may have noticed in the examples above that our coroutines don't return `void` like they
+would if they were normal functions, but instead they return `QCoro::Task<>` and you may be
+asking why.
+
+We have already established that whenever we use `co_await` in our function, we turn that function
+into a coroutine. And coroutines must return something called a promise type - it's an object
+that is returned to the caller of the function as it is what allows the caller to control the
+coroutine.
+
+Now all you need to know is, that in order for the magic contained in this repository to work,
+your coroutine must return the type `QCoro::Task<T>` - where `T` is the true return type of
+your function.
+
+If you are calling a coroutine, to obtain the actual result value you must once again `co_await`
+it.
+
+## Thank You
 
 This library is inspired by Lewis Bakers' cppcoro library, which also served as a guide to implementing
 the coroutine machinery, alongside his great series on C++ coroutines:
