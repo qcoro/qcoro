@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(qcoro)
 
+include(GNUInstallDirs)
+
 #-----------------------------------------------------------#
 # Compiler Settings
 #-----------------------------------------------------------#
@@ -35,3 +37,24 @@ find_package(Qt5Concurrent REQUIRED)
 
 add_subdirectory(qcoro)
 add_subdirectory(examples)
+
+#-----------------------------------------------------------#
+# Installation
+#-----------------------------------------------------------#
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/QCoroConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QCoro
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfig.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QCoro
+        COMPONENT Devel)
+
+install(EXPORT QCoroTargets
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QCoro"
+        FILE QCoroTargets.cmake
+        NAMESPACE QCoro::)
