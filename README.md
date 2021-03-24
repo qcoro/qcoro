@@ -14,6 +14,7 @@ It requires compiler with support for the couroutines TS.
    * [QDBus](#qdbus)
    * [QFuture](#qfuture)
  * [QCoro::Task](#qcorotask)
+ * [Using QCoro](#using-qcoro)
  * [Compiler Support](#compiler-support)
  * [Thank You](#thank-you)
 
@@ -161,6 +162,48 @@ your function.
 
 If you are calling a coroutine, to obtain the actual result value you must once again `co_await`
 it.
+
+## Using QCoro
+
+Using QCoro is easy and only requires a few steps:
+
+1) Get QCoro, build and install it
+
+```shell
+git clone https://github.com/danvratil/qcoro.git
+cd qcoro
+mkdir build
+cd build
+cmake ..
+make
+# This will install QCoro into /usr/local/ prefix, change it by passing -DCMAKE_INSTALL_PREFIX=/usr
+# to the cmake command above.
+sudo make install
+```
+
+Alternatively, if you don't want to install QCoro into your system, you can just clone the repository
+(or add it as a git submodule) to your project, and since QCoro is a header-only library, you just need
+to update your project's include path to pick up the `qcoro` header directory.
+
+2) Add it to your CMake:
+
+```cmake
+find_package(QCoro REQUIRED)
+```
+
+3) Use it in your code
+
+```cpp
+// If you want to use co_await with QDBusPendingCall...
+#include <qcoro/dbus.h>
+// If you want to use co_await with QNetworkReply...
+#include <qcoro/network.h>
+// If you want to use co_await with QFuture...
+#include <qcoro/future.h>
+// ... you get the idea.
+```
+
+And that's it!
 
 ## Compiler Support
 
