@@ -2,8 +2,9 @@ set(dbustest_SRCS
     main.cpp
 )
 
-add_executable(dbustest ${dbustest_SRCS})
-target_link_libraries(dbustest
+add_executable(dbustest-coro ${dbustest_SRCS})
+target_link_libraries(dbustest-coro
+    qcoro
     examples-dbus-common
     Threads::Threads
     Qt5::Core

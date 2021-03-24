@@ -1,3 +1,7 @@
+#include "qcoro/coroutine.h"
+#include "qcoro/task.h"
+#include "qcoro/dbus.h"
+
 #include "common/dbusserver.h"
 
 #include <QCoreApplication>
@@ -5,21 +9,23 @@
 #include <QDateTime>
 #include <QDBusConnection>
 #include <QDBusInterface>
+#include <QDBusPendingCall>
 #include <QDBusReply>
 #include <QDebug>
 
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <variant>
 
 using namespace std::chrono_literals;
 
-void dbusWorker()
+QCoro::Task<> dbusWorker()
 {
     auto bus = QDBusConnection::sessionBus();
     auto iface = QDBusInterface{DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName, bus};
     qInfo() << "Sending PING";
-    QDBusReply<QString> response = iface.call(QStringLiteral("blockingPing"), 1);
+    QDBusReply<QString> response = co_await iface.asyncCall(QStringLiteral("blockingPing"), 1);
     if (const auto &err = response.error(); err.isValid()) {
         qWarning() << "DBus call failed:" << err.message();
     }
@@ -35,7 +41,7 @@ int main(int argc, char **argv)
     QObject::connect(&tickTimer, &QTimer::timeout, &app, []() {
         std::cout << QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString() << " Tick!" << std::endl;
     });
-    tickTimer.start(200ms);
+    tickTimer.start(400ms);
 
     QTimer dbusTimer;
     QObject::connect(&dbusTimer, &QTimer::timeout, &app, dbusWorker);

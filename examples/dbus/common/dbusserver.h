@@ -1,6 +1,9 @@
 #pragma once
 
 #include <QObject>
+#include <QProcess>
+
+#include <memory>
 
 class DBusServer: public QObject
 {
@@ -10,12 +13,9 @@ public:
     static const QString objectPath;
     static const QString interfaceName;
 
-    explicit DBusServer(QObject *parent = nullptr);
+    explicit DBusServer();
 
-    //! Starts an event loop and runs the DBus server.
-    /*! Blocks until the main QApplication quits. */
-    void run();
-
+    static std::unique_ptr<QProcess> runStadaloneServer();
 public Q_SLOTS:
     QString blockingPing(int seconds) const;
 };
