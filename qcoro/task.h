@@ -16,7 +16,7 @@ class Task;
 
 namespace detail {
 
-template<typename T>
+template<typename T, typename = void>
 struct awaiter_type;
 
 template<typename T>
@@ -29,7 +29,7 @@ public:
     constexpr QCORO_STD::suspend_never final_suspend() const noexcept { return {}; }
 
     template<typename T,
-             typename Awaiter = QCoro::detail::awaiter_type_t<T>>
+             typename Awaiter = QCoro::detail::awaiter_type_t<std::remove_cvref_t<T>>>
     auto await_transform(T &&value) {
         return Awaiter{value};
     }
