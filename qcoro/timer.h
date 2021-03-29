@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include "task.h"
+
 #include <QPointer>
 #include <QTimer>
+#include <QDebug>
 
 namespace QCoro::detail
 {
@@ -24,7 +27,7 @@ public:
     }
 
     void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-        if (mTimer) {
+        if (mTimer && mTimer->isActive()) {
             mConn = QObject::connect(mTimer, &QTimer::timeout,
                     [this, awaitingCoroutine]() mutable {
                         QObject::disconnect(mConn);

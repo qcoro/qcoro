@@ -16,8 +16,9 @@ using namespace std::chrono_literals;
 
 QCoro::Task<> runMainTimer()
 {
+    std::cout << "runMainTimer started" << std::endl;
     QTimer timer;
-    timer.setInterval(1s);
+    timer.setInterval(2s);
     timer.start();
 
     std::cout << "Waiting for main timer..." << std::endl;

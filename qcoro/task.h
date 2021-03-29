@@ -25,48 +25,57 @@ struct awaiter_type;
 template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
 
-//! An awaiter that resumes a co_awaiting coroutine when the co_awaited coroutine finishes.
+//! Continuation that resumes a coroutine co_awaiting on currently finished coroutine.
 class TaskFinalSuspend {
 public:
     //! Constructs the awaitable, passing it a handle to the co_awaiting coroutine
     /*!
      * \param[in] awaitingCoroutine handle of the coroutine that is co_awaiting the current
-     * coroutine.
+     * coroutine (continuation).
      */
     explicit TaskFinalSuspend(QCORO_STD::coroutine_handle<> awaitingCoroutine)
         : mAwaitingCoroutine(awaitingCoroutine) {}
 
-    //! Forces the compiler to suspend the just-finished coroutine.
-    constexpr bool await_ready() const noexcept {
-        return false;
+    //! Returns whether the just finishing coroutine should do final suspend or not
+    /*!
+     * If the coroutine is not being co_awaited by another coroutine, then don't
+     * suspend and let the code reach the end of the coroutine, which will take
+     * care of cleaning everything up. Otherwise we suspend and let the awaiting
+     * coroutine to clean up for us.
+     */
+    bool await_ready() const noexcept {
+        return mAwaitingCoroutine == nullptr;
     }
 
-    //! Called by the compiler when the just-finished coroutine is suspended.
+    //! Called by the compiler when the just-finished coroutine is suspended. for the very last time.
     /*!
      * It is given handle of the coroutine that is being co_awaited (that is the current
      * coroutine). If there is a co_awaiting coroutine and it has not been resumed yet,
      * it resumes it.
      *
-     * \param[in] awaitedCoroutine handle of the coroutine being co_awaited by this Awaitable.
+     * Finally, it destroys the just finished coroutine and frees all allocated resources.
+     *
+     * \param[in] finishedCoroutine handle of the just finished coroutine
      */
     template<typename _Promise>
-    void await_suspend(QCORO_STD::coroutine_handle<_Promise> awaitedCoroutine) noexcept {
-        auto &promise = awaitedCoroutine.promise();
+    void await_suspend(QCORO_STD::coroutine_handle<_Promise> finishedCoroutine) noexcept {
+        auto &promise = finishedCoroutine.promise();
 
         if (promise.mResumeAwaiter.exchange(true, std::memory_order_acq_rel)) {
             promise.mAwaitingCoroutine.resume();
         }
+        finishedCoroutine.destroy();
     }
 
     //! Called by the compiler when the just-finished coroutine should be resumed.
     /*!
-     * In reality this should never be called, as our coroutine is finished so it won't be resumed.
+     * In reality this should never be called, as our coroutine is done, so it won't be resumed.
      * In any case, this method does nothing.
      * */
-    void await_resume() const noexcept {}
+    constexpr void await_resume() const noexcept {}
 
 private:
-    //! Handle of the coroutine co_awaiting the current coroutine
+    //! Handle of the coroutine co_awaiting the current coroutine.
     QCORO_STD::coroutine_handle<> mAwaitingCoroutine;
 };
 
@@ -115,14 +124,19 @@ public:
     /*!
      * We want coroutines that return QCoro::Task<T> to start automatically, because it will
      * likely be executed from Qt's event loop, which will not co_await it, but rather call
-     * it as a regular function.
+     * it as a regular function, therefore it returns `std::suspend_never` awaitable, which
+     * indicates that the coroutine should not be suspended.
      * */
-    constexpr QCORO_STD::suspend_never initial_suspend() const noexcept { return {}; }
+    QCORO_STD::suspend_never initial_suspend() const noexcept {
+        return {}; }
+
     //! Called when the coroutine co_returns or reaches the end of user code.
     /*!
      * This decides what should happen when the coroutine is finished.
      */
-    auto final_suspend() const noexcept { return TaskFinalSuspend{mAwaitingCoroutine}; }
+    auto final_suspend() const noexcept {
+        return TaskFinalSuspend{mAwaitingCoroutine};
+    }
 
     //! Called by co_await to obtain an Awaitable for type \c T.
     /*!
@@ -186,8 +200,13 @@ public:
         return !mResumeAwaiter.exchange(true, std::memory_order_acq_rel);
     }
 
+    bool hasAwaitingCoroutine() const {
+        return mAwaitingCoroutine != nullptr;
+    }
+
 private:
     friend class TaskFinalSuspend;
+
     //! Handle of the coroutine that is currently co_awaiting this Awaitable
     QCORO_STD::coroutine_handle<> mAwaitingCoroutine;
     //! Indicates whether the awaiter should be resumed when it tries to co_await on us.
@@ -201,17 +220,37 @@ private:
 template<typename T>
 class TaskPromise final: public TaskPromiseBase {
 public:
+    explicit TaskPromise() = default;
+    ~TaskPromise() = default;
+
     //! Constructs a Task<T> for this promise.
     Task<T> get_return_object() noexcept;
 
+    //! Called by the compiler when user code throws an unhandled exception.
+    /*!
+     * When user code throws but doesn't catch, it is ultimately caught by the code generated by
+     * the compiler (effectively the entire user code is wrapped in try...catch ) and this method
+     * is called. This method stores the exception. The exception is re-thrown when the calling
+     * coroutine is resumed and tries to retrieve result of the finished coroutine that has thrown.
+     */
     void unhandled_exception() {
         mValue = std::current_exception();
     }
 
+    //! Called form co_return statement to store result of the coroutine.
+    /*!
+     * \param[in] value the value returned by the coroutine. It is stored in the
+     *            promise, later can be retrieved by the calling coroutine.
+     */
     void return_value(T &&value) noexcept {
         mValue = std::forward<T>(value);
     }
 
+    //! Retrieves the result of the coroutine.
+    /*!
+     *  \return the value co_returned by the finished coroutine. If the coroutine has
+     *  thrown an exception, this method will instead rethrow the exception.
+     */
     T &result() & {
         if (std::holds_alternative<std::exception_ptr>(mValue)) {
             std::rethrow_exception(std::get<std::exception_ptr>(mValue));
@@ -220,6 +259,7 @@ public:
         return std::get<T>(mValue);
     }
 
+    //! \copydoc T &QCoro::TaskPromise<T>::result() &
     T &&result() && {
         if (std::holds_alternative<std::exception_ptr>(mValue)) {
             std::rethrow_exception(std::get<std::exception_ptr>(mValue));
@@ -237,6 +277,12 @@ private:
 template<>
 class TaskPromise<void> final: public TaskPromiseBase {
 public:
+    // Constructor.
+    explicit TaskPromise() = default;
+
+    //! Destructor.
+    ~TaskPromise() = default;
+
     //! \copydoc TaskPromise<T>::get_return_object()
     Task<void> get_return_object() noexcept;
 
@@ -308,7 +354,6 @@ public:
      * have to suspend.
      */
      bool await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
-        mAwaitedCoroutine.resume();
         return mAwaitedCoroutine.promise().setAwaitingCoroutine(awaitingCoroutine);
     }
 
@@ -346,7 +391,9 @@ protected:
 template<typename T>
 class Task {
 public:
+    //! Promise type of the coroutine. This is required by the C++ standard.
     using promise_type = detail::TaskPromise<T>;
+    //! The type of the coroutine return value.
     using value_type = T;
 
     //! Constructs a new empty task.
@@ -383,17 +430,7 @@ public:
     }
 
     //! Destructor.
-    /*!
-     * If the task is bound to a coroutine, it ensures that the coroutine
-     * frame pointer is destroyed as well. We can do this, because if the
-     * task is being destroyed it implies that the coroutine has finished
-     * as well.
-     */
-    ~Task() {
-        if (mCoroutine) {
-            mCoroutine.destroy();
-        }
-    }
+    ~Task() = default;
 
     //! Returns whether the task has finished.
     /*!
