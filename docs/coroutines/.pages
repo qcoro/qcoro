@@ -1,0 +1,4 @@
+nav:
+  - Qt Signals/Slots vs co_await: qt-vs-coawait.md
+  - co_await Explained: coawait.md
+  - reading.md

@@ -1,4 +1,10 @@
-MIT License
+# License
+
+---
+
+QCoro is published under the MIT License
+
+## MIT License
 
 Copyright (c) 2021 Daniel Vrátil <dvratil@kde.org>
 

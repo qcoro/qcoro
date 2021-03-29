@@ -1,0 +1,5 @@
+nav:
+    - Home: index.md
+    - coroutines
+    - reference
+    - about
