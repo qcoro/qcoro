@@ -24,6 +24,7 @@ jobs:
           mkdocs build -d /tmp/site
       - name: Commit files
         run: |
+          git fetch origin gh-pages
           git checkout gh-pages
           cp -r /tmp/site/* ./
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
