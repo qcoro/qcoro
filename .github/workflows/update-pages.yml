@@ -21,9 +21,11 @@ jobs:
           python -m pip install mkdocs mkdocs-awesome-pages-plugin
       - name: Build
         run: |
-          mkdocs build
+          mkdocs build -d /tmp/site
       - name: Commit files
         run: |
+          git checkout gh-pages
+          cp /tmp/site* ./
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git commit -m "Update docs from main branch ${{ github.sha }}" -a          
