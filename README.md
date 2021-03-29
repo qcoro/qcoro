@@ -32,7 +32,7 @@ QDBusInterface remoteServiceInterface{serviceName, objectPath, interface};
 const QDBusReply<bool> isReady = co_await remoteServiceInterface.asyncCall(QStringLiteral("isReady"));
 ```
 
-[Full documentation here](https://dvratil.github.io/qcoro/reference/qdbuspendingcall).
+[Full documentation here](https://danvratil.github.io/qcoro/reference/qdbuspendingcall).
 
 ### `QFuture`
 
@@ -49,7 +49,7 @@ const int b = co_await task2;
 co_return a + b;
 ```
 
-[Full documentation here](https://dvratil.github.io/qcoro/reference/qfuture).
+[Full documentation here](https://danvratil.github.io/qcoro/reference/qfuture).
 
 ### `QNetworkReply`
 
@@ -60,7 +60,7 @@ broken into numerous functions. But not with QCoro, where you can simply `co_awa
 
 ```cpp
 QNetworkReply qnam;
-QNetworkReply *reply = qnam.get(QStringLiteral("https://github.com/dvratil/qcoro"));
+QNetworkReply *reply = qnam.get(QStringLiteral("https://github.com/danvratil/qcoro"));
 const auto contents = co_await reply;
 reply->deleteLater();
 if (reply->error() != QNetworkReply::NoError) {
@@ -77,7 +77,7 @@ if (reply->error() != QNetworkReply::NoError) {
  ...
  ```
 
-[Full documentation here](https://dvratil.github.io/qcoro/reference/qnetworkreply).
+[Full documentation here](https://danvratil.github.io/qcoro/reference/qnetworkreply).
 
 ### `QTimer`
 
@@ -97,7 +97,7 @@ for (int i = 1; i <= 100; ++i) {
 qDebug() << "Done!";
 ```
 
-[Full documentation here](https://dvratil.github.io/qcoro/reference/qtimer).
+[Full documentation here](https://danvratil.github.io/qcoro/reference/qtimer).
 
 ### `QIODevice`
 
@@ -112,5 +112,5 @@ const auto data = co_await socket;
 co_return calculateLatency(data);
 ```
 
-[Full documentation here](https://dvratil.github.io/qcoro/reference/qiodevice).
+[Full documentation here](https://danvratil.github.io/qcoro/reference/qiodevice).
 
