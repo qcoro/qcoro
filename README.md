@@ -20,6 +20,10 @@ in C++.
 
 It requires compiler with support for the couroutines TS.
 
+## Documentation
+
+👉 📘 [Documentation](https://danvratil.github.io/qcoro)
+
 ## Supported Qt Types
 
 QCoro supports using the `co_await` keyword with several Qt types:
