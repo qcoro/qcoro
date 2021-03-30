@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include "task.h"
+
 #include <QDBusPendingCallWatcher>
-#include <QDebug>
+#include <QDBusPendingCall>
+#include <QDBusMessage>
 
 namespace QCoro::detail {
 

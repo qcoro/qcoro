@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include "task.h"
+
 #include <QPointer>
-#include <QIODevice>
 #include <QMetaMethod>
+#include <QIODevice>
 
 namespace QCoro::detail
 {

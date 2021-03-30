@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "task.h"
+
 #include <QPointer>
 #include <QNetworkReply>
 

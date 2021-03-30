@@ -8,7 +8,7 @@
 
 #include <QPointer>
 #include <QTimer>
-#include <QDebug>
+#include <QMetaObject>
 
 namespace QCoro::detail
 {
