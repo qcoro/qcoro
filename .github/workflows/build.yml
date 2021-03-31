@@ -53,5 +53,5 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v2
       with:
-        name: build-${{ matrix.os }}-${{ matrix-name }}
+        name: build-${{ matrix.os }}-${{ matrix.name }}
         path: build/**
