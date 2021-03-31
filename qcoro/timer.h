@@ -10,6 +10,8 @@
 #include <QTimer>
 #include <QMetaObject>
 
+#include <QDebug>
+
 namespace QCoro::detail
 {
 
@@ -23,7 +25,7 @@ public:
     {}
 
     bool await_ready() const noexcept {
-        return mTimer && !mTimer->isActive();
+        return !mTimer || !mTimer->isActive();
     }
 
     void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {

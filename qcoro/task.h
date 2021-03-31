@@ -10,6 +10,7 @@
 #include <atomic>
 
 #include <QtGlobal>
+#include <QDebug>
 
 namespace QCoro
 {
@@ -44,7 +45,7 @@ public:
      * coroutine to clean up for us.
      */
     bool await_ready() const noexcept {
-        return mAwaitingCoroutine == nullptr;
+        return false;
     }
 
     //! Called by the compiler when the just-finished coroutine is suspended. for the very last time.
@@ -500,11 +501,11 @@ private:
 namespace detail {
 
 template<typename T>
-Task<T> TaskPromise<T>::get_return_object() noexcept{
+inline Task<T> TaskPromise<T>::get_return_object() noexcept{
     return Task<T>{QCORO_STD::coroutine_handle<TaskPromise>::from_promise(*this)};
 }
 
-Task<void> TaskPromise<void>::get_return_object() noexcept {
+Task<void> inline TaskPromise<void>::get_return_object() noexcept {
     return Task<void>{QCORO_STD::coroutine_handle<TaskPromise>::from_promise(*this)};
 }
 

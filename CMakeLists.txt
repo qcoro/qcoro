@@ -3,6 +3,13 @@ set(qcoro_VERSION 0.1)
 project(qcoro LANGUAGES CXX VERSION ${qcoro_VERSION})
 
 include(GNUInstallDirs)
+include(CTest)
+
+#-----------------------------------------------------------#
+# Options
+#-----------------------------------------------------------#
+
+option(QCORO_BUILD_EXAMPLES "Build examples" ON)
 
 #-----------------------------------------------------------#
 # Compiler Settings
@@ -25,20 +32,27 @@ endif()
 # Dependencies
 #-----------------------------------------------------------#
 
-set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(Qt5Core REQUIRED)
 find_package(Qt5DBus REQUIRED)
 find_package(Qt5Network REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Concurrent REQUIRED)
+if (BUILD_TESTING)
+    find_package(Qt5Test REQUIRED)
+endif()
 
 #-----------------------------------------------------------#
 # Sources
 #-----------------------------------------------------------#
 
 add_subdirectory(qcoro)
-add_subdirectory(examples)
+if (QCORO_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 #-----------------------------------------------------------#
 # Installation

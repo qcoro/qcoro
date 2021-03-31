@@ -1,0 +1,18 @@
+include(CMakeParseArguments)
+
+add_library(qcoro_test STATIC testobject.cpp)
+target_link_libraries(qcoro_test PUBLIC qcoro Qt5::Core Qt5::Test)
+
+function(qcoro_add_test _name)
+    set(options)
+    set(oneValueArgs)
+    set(multiValueAgs LINK_LIBRARIES)
+    cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
+
+    add_executable(test-${_name} ${_name}.cpp)
+    target_link_libraries(test-${_name} qcoro qcoro_test ${TEST_LINK_LIBRARIES})
+    add_test(NAME test-${_name} COMMAND test-${_name})
+endfunction()
+
+qcoro_add_test(qtimer)
+qcoro_add_test(qnetworkreply LINK_LIBRARIES Qt5::Network)
