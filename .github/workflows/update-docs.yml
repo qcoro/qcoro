@@ -3,6 +3,9 @@ name: Generate documentation
 on:
   push:
     branches: [ main ]
+  paths:
+    - 'mkdocs.yml'
+    - 'docs/**'
 
   workflow_dispatch:
 
