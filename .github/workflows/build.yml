@@ -4,6 +4,7 @@ on: [push]
 
 env:
   BUILD_TYPE: RelWithDebInfo
+  QTEST_FUNCTION_TIMEOUT: 60000
 
 jobs:
   build:
@@ -19,7 +20,7 @@ jobs:
             name: clang-11
           #- os: windows-latest
           #  compiler: msvc
-          
+
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }}-${{ matrix.name }}
 
@@ -47,3 +48,10 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: ctest -C $BUILD_TYPE
+
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-${{ matrix.os }}-${{ matrix-name }}
+        path: build/**
