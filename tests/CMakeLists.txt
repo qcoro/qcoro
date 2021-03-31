@@ -16,3 +16,4 @@ endfunction()
 
 qcoro_add_test(qtimer)
 qcoro_add_test(qnetworkreply LINK_LIBRARIES Qt5::Network)
+qcoro_add_test(qdbuspendingcall LINK_LIBRARIES Qt5::DBus)

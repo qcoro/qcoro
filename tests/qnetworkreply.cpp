@@ -88,11 +88,14 @@ private:
     }
 
     QCoro::Task<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
+        QCoro::EventLoopChecker eventLoopResponsive;
         QNetworkAccessManager nam;
+
         auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1/block").arg(mServer.port())});
 
         co_await reply;
 
+        QCORO_VERIFY(eventLoopResponsive);
         QCORO_VERIFY(reply->isFinished());
         QCORO_COMPARE(reply->error(), QNetworkReply::NoError);
         QCORO_COMPARE(reply->readAll(), "abcdef");
