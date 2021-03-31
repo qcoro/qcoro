@@ -29,7 +29,7 @@ jobs:
 
     - name: Install dependencies
       shell: bash
-      run: sudo apt-get install -y --no-install-recommends qtbase5-dev build-essential libc++abi-11-dev
+      run: sudo apt-get install -y --no-install-recommends qtbase5-dev build-essential libc++1-11 libc++-11-dev libc++abi1-11 libc++abi-11-dev dbus dbus-x11
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
