@@ -66,7 +66,8 @@ private:
         QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
         QCORO_VERIFY(iface.isValid());
 
-        co_await iface.asyncCall(QStringLiteral("foo"));
+        const auto reply = co_await iface.asyncCall(QStringLiteral("foo"));
+        QCORO_VERIFY(reply.isValid());
     }
 
     QCoro::Task<> testReturnsResult_coro(QCoro::TestContext) {
@@ -84,8 +85,9 @@ private:
         QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
         QCORO_VERIFY(iface.isValid());
 
-        co_await iface.asyncCall(QStringLiteral("blockFor"), 1);
+        const auto reply = co_await iface.asyncCall(QStringLiteral("blockFor"), 1);
 
+        QCORO_VERIFY(reply.isValid());
         QCORO_VERIFY(eventLoopResponsive);
     }
 
@@ -94,12 +96,13 @@ private:
         QCORO_VERIFY(iface.isValid());
 
         auto call = iface.asyncCall(QStringLiteral("foo"));
-        co_await call;
         QCORO_VERIFY(call.isFinished());
 
         test.setShouldNotSuspend();
 
-        co_await call;
+        const auto reply = co_await call;
+
+        QCORO_VERIFY(reply.isValid());
     }
 
 private Q_SLOTS:
