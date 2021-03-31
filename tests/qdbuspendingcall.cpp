@@ -121,7 +121,10 @@ int runDBusServer(int argc, char **argv) {
 }
 
 int runTest(int argc, char **argv) {
-    QTEST_MAIN_IMPL(QCoroDBusPendingCallTest)
+    QCoreApplication app(argc, argv);
+    QCoroDBusPendingCallTest tc;
+    QTEST_SET_MAIN_SOURCE_PATH
+    return QTest::qExec(&tc, argc, argv);
 }
 
 // We must fork the DBus server into its own process due to QTBUG-92107 (asyncCall blocks if the
