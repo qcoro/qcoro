@@ -13,9 +13,9 @@ namespace QCoro::detail
 {
 
 template<typename T>
-class FutureAwaiter {
+class FutureAwaiterBase {
 public:
-    explicit FutureAwaiter(QFuture<T> future)
+    explicit FutureAwaiterBase(QFuture<T> future)
     {
         QObject::connect(&mFutureWatcher, &QFutureWatcher<T>::finished,
                 [this]() { futureReady(); });
@@ -23,7 +23,7 @@ public:
     }
 
     bool await_ready() const noexcept {
-        return mFutureWatcher.isFinished();
+        return mFutureWatcher.isFinished() || mFutureWatcher.isCanceled();
     }
 
     void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
@@ -34,17 +34,31 @@ public:
         mAwaitingCoroutine = awaitingCoroutine;
     }
 
-    T await_resume() const {
-        return mFutureWatcher.result();
-    }
-
-private:
+protected:
     void futureReady() {
         mAwaitingCoroutine.resume();
     }
 
     QCORO_STD::coroutine_handle<> mAwaitingCoroutine;
     QFutureWatcher<T> mFutureWatcher;
+};
+
+template<typename T>
+class FutureAwaiter : public FutureAwaiterBase<T> {
+public:
+    using FutureAwaiterBase<T>::FutureAwaiterBase;
+
+    T await_resume() const {
+        return this->mFutureWatcher.result();
+    }
+};
+
+template<>
+class FutureAwaiter<void> : public FutureAwaiterBase<void> {
+public:
+    using FutureAwaiterBase<void>::FutureAwaiterBase;
+
+    void await_resume() const {}
 };
 
 template<typename T>
