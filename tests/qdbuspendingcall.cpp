@@ -96,11 +96,12 @@ private:
         QCORO_VERIFY(iface.isValid());
 
         auto call = iface.asyncCall(QStringLiteral("foo"));
-        QCORO_VERIFY(call.isFinished());
+        QDBusReply<void> reply = co_await call;
+        QCORO_VERIFY(reply.isValid());
 
         test.setShouldNotSuspend();
 
-        const QDBusReply<void> reply = co_await call;
+        reply = co_await call;
 
         QCORO_VERIFY(reply.isValid());
     }
