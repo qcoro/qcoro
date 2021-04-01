@@ -107,6 +107,18 @@ private:
     }
 
 private Q_SLOTS:
+    void initTestCase() {
+        for (int i = 0; i < 10; ++i) {
+            QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
+            if (iface.isValid()) {
+                return;
+            }
+            QTest::qWait(100);
+        }
+
+        QFAIL("Failed to obtain a valid dbus interface");
+    }
+
     void cleanupTestCase() {
         QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
         iface.call(QStringLiteral("quit"));
