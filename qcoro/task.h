@@ -27,13 +27,6 @@ struct awaiter_type;
 template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
 
-template<typename T>
-concept Awaitable = requires(T t) {
-    { t.await_ready() } -> std::same_as<bool>;
-    { t.await_suspend(std::declval<QCORO_STD::coroutine_handle<>>()) };
-    { t.await_resume() };
-};
-
 //! Continuation that resumes a coroutine co_awaiting on currently finished coroutine.
 class TaskFinalSuspend {
 public:

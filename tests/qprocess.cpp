@@ -63,7 +63,7 @@ private:
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
-        const auto ok = co_await QCoro::coro(process).finished();
+        const auto ok = co_await QCoro::coro(process).waitForFinished();
 
         QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::NotRunning);
@@ -76,7 +76,7 @@ private:
 
         ctx.setShouldNotSuspend();
 
-        const auto ok = co_await QCoro::coro(process).finished();
+        const auto ok = co_await QCoro::coro(process).waitForFinished();
         QCORO_VERIFY(ok);
     }
 
@@ -87,7 +87,7 @@ private:
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
-        const auto ok = co_await QCoro::coro(process).finished(1s);
+        const auto ok = co_await QCoro::coro(process).waitForFinished(1s);
 
         QCORO_VERIFY(!ok);
         QCORO_COMPARE(process.state(), QProcess::Running);

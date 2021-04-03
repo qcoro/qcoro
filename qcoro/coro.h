@@ -5,12 +5,18 @@
 #pragma once
 
 #include "task.h"
-#include "wrappers/qprocess.h"
+#include "qcoroprocess.h"
 
 namespace QCoro {
 
-inline auto coro(QProcess &p) noexcept { return detail::QProcessWrapper{&p}; }
-inline auto coro(QProcess *p) noexcept { return detail::QProcessWrapper{p}; }
+//! Returns a coroutine-friendly wrapper for QProcess object.
+/*!
+ * Returns a wrapper for the QProcess \c p that provides coroutine-friendly
+ * versions of certain async APIs.
+ */
+inline auto coro(QProcess &p) noexcept { return detail::QCoroProcess{&p}; }
+//! \copydoc QCoro::coro(QProcess &p) noexcept
+inline auto coro(QProcess *p) noexcept { return detail::QCoroProcess{p}; }
 
 } // namespace QCoro
 
