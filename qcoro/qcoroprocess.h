@@ -20,8 +20,8 @@ class QCoroProcess : public QCoroIODevice {
     //! Base class for co_awaitable waitFor* operations.
     class WaitOperationBase {
     public:
-        Q_DISABLE_COPY(WaitOperationBase);
-        QCORO_DEFAULT_MOVE(WaitOperationBase);
+        Q_DISABLE_COPY(WaitOperationBase)
+        QCORO_DEFAULT_MOVE(WaitOperationBase)
 
         ~WaitOperationBase() = default;
 

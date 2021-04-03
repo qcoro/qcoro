@@ -22,8 +22,8 @@ class QCoroIODevice {
         ReadOperation(QIODevice *device, ResultCb &&resultCb)
             : mDevice(device), mResultCb(resultCb) {}
 
-        Q_DISABLE_COPY(ReadOperation);
-        QCORO_DEFAULT_MOVE(ReadOperation);
+        Q_DISABLE_COPY(ReadOperation)
+        QCORO_DEFAULT_MOVE(ReadOperation)
 
         ~ReadOperation() = default;
 
@@ -55,8 +55,8 @@ class QCoroIODevice {
         WriteOperation(QIODevice *device, const QByteArray &data)
             : mDevice(device), mBytesToBeWritten(device->write(data)) {}
 
-        Q_DISABLE_COPY(WriteOperation);
-        QCORO_DEFAULT_MOVE(WriteOperation);
+        Q_DISABLE_COPY(WriteOperation)
+        QCORO_DEFAULT_MOVE(WriteOperation)
 
         ~WriteOperation() = default;
 
