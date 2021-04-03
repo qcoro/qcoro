@@ -19,18 +19,22 @@ const QNetworkReply *reply = co_await networkAccessManager.get(url);
 const auto data = reply->readAll();
 ```
 
-This is a rather experimental library that I started working on to better understand coroutines
-in C++.
-
-With a single exception of [QCoro::Task](reference/task.md), this library does not have any
-classes, functions or types that users of this library need to use directly. All this library does is
-providing behind-the-scenes machinery for the C++ coroutine system. The machinery is automatically
-invoked when you use `co_await` with one of the supported Qt types.
+This library has only one class and one function that the user must be aware of: the class is
+[`QCoro::Task`](reference/task.md) and must be used as a return type for any coroutine that `co_await`s
+a Qt type. The function is [`QCoro::coro()`](reference/coro.md) and it provides coroutine-friendly
+wrappers for Qt types that have multiple asynchronous operations that the user may want to `co_await`
+(for example [`QProcess`](reference/qprocess.md)). All the other code (basically everything in the
+`QCoro::detail` namespace) is here to provide the cogs and gears for the C++ coroutine machinery,
+making it possible to use Qt types with coroutines.
 
 The major benefit of using coroutines with Qt types is that it allows writing asynchronous code as if it
 were synchronous and, most importantly, while the coroutine is `co_await`ing, the __Qt event loop runs
 as usual__, meaning that your application remains responsive.
 
+This is a rather experimental library that I started working on to better understand coroutines
+in C++. After reading numerous articles and blog posts about coroutines, it still wasn't exactly
+clear to me how the whole thing works, so I started working on this library to get a better idea
+about coroutines.
 
 ## Coroutines
 
@@ -45,11 +49,6 @@ and understand.
 
 That's not all that coroutines can do, you can read more about it in the 'Coroutines' section
 of this documentation.
-
-## Reference
-
-Check the Reference section for list of Qt types that you can now use with C++ coroutines
-and for more detailed documentation on how to use them.
 
 ## Supported Compilers
 
@@ -115,19 +114,13 @@ project's include paths to pick up the `qcoro` header directory.
 
 ```cmake
 find_package(QCoro REQUIRED)
+...
+target_link_libraries(your-target QCoro::qcoro)
 ```
 
 3) Use it in your code
 
-```cpp
-// If you want to use co_await with QDBusPendingCall...
-#include <qcoro/dbus.h>
-// If you want to use co_await with QNetworkReply...
-#include <qcoro/network.h>
-// If you want to use co_await with QFuture...
-#include <qcoro/future.h>
-// ... you get the idea.
-```
+See the Reference section for detail.
 
 And that's it!
 

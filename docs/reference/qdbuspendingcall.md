@@ -1,5 +1,10 @@
 # QDBusPendingCall
 
+```
+QDBusPendingCall callReturningQString = ...
+const QDBusReply<QString> reply = co_await callReturningQString;
+```
+
 The QCoro frameworks allows `co_await`ing on [QDBusPendingCall][qdoc-qdbuspendingcall] objects,
 which represent an asynchronous D-Bus call. The co-awaiting coroutine is suspended until the
 D-Bus call finishes. If the call has already finished, to coroutine will not be suspended.

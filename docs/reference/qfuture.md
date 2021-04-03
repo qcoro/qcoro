@@ -1,11 +1,15 @@
 # QFuture
 
+```cpp
+const QString result = co_await QtConcurrent::run(taskReturningQString);
+```
+
 The QCoro frameworks allows `co_await`ing on [QFuture][qdoc-qfuture] objects,
 which represent an asynchronously executed call. The co-awaiting coroutine is suspended until
 the `QFuture` is finished. If the `QFuture` object is already finished, the coroutine
 will not be suspended.
 
-To be able to use `co_await` wit `QFuture`, include `coro/future.h` in your implementation.
+To be able to use `co_await` with `QFuture`, include `qcoro/future.h` in your implementation.
 
 ```cpp
 #include <qcoro/future.h>
@@ -27,3 +31,4 @@ QCoro::Task<> runTask() {
 }
 ```
 
+[qdoc-qfuture]: https://doc.qt.io/qt-5/qfuture.html

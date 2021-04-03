@@ -9,6 +9,8 @@
 #include <QPointer>
 #include <QNetworkReply>
 
+/*! \cond internal */
+
 namespace QCoro::detail
 {
 
@@ -47,3 +49,5 @@ struct awaiter_type<QNetworkReply *> {
 };
 
 } // namespace QCoro::detail
+
+/*! \endcond */

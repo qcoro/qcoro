@@ -7,12 +7,42 @@ repo_name: 'QCoro on GitHub'
 edit_uri: ''
 
 theme:
-  name: mkdocs
-  highlightjs: true
-  hljs_languages:
-      - cpp
-  nav_style: dark
+  name: material
+  features:
+    - navigation.expand
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - admonition
 
 plugins:
-  - awesome-pages
+  - search
 
+extra:
+  social:
+    - icon: fontawesome/brands/twitter
+      links: https://twitter.com/danvratil
+    - icon: fontawesome/brands/github
+      links: https://github.com/danvratil
+
+nav:
+    - Home: index.md
+    - Installation: install.md
+    - Coroutines:
+        - Qt vs. co_await: coroutines/qt-vs-coawait.md
+        - co_await Explained: coroutines/coawait.md
+        - Further Reading: coroutines/reading.md
+    - Reference:
+        - QCoro::Task<T>: reference/task.md
+        - QCoro::coro(): reference/coro.md
+        - Supported Types:
+          - QDBusPendingCall: reference/qdbuspendingcall.md
+          - QFuture: reference/qfuture.md
+          - QIODevice: reference/qiodevice.md
+          - QNetworkReply: reference/qnetworkreply.md
+          - QProcess: reference/qprocess.md
+          - QTimer: reference/qtimer.md
+    - About:
+        - License: about/license.md

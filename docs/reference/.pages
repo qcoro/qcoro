@@ -1,8 +1,0 @@
-nav:
-    - using.md
-    - task.md
-    - qdbuspendingcall.md
-    - qfuture.md
-    - qiodevice.md
-    - qnetworkreply.md
-    - qtimer.md

@@ -10,6 +10,8 @@
 #include <QDBusPendingCall>
 #include <QDBusMessage>
 
+/*! \cond internal */
+
 namespace QCoro::detail {
 
 class DBusPendingCallAwaiter {
@@ -46,3 +48,5 @@ struct awaiter_type<QDBusPendingCall> {
 };
 
 } // namespace QCoro::detail
+
+/*! \endcond */

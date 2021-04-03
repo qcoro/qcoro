@@ -1,5 +1,10 @@
 # QNetworkReply
 
+```cpp
+QNetworkAccessManager nam;
+auto *reply = co_await nam.get(request);
+```
+
 The QCoro frameworks allows `co_await`ing on [QNetworkReply][qdoc-qnetworkreply] objects. The
 co-awaiting coroutine is suspended, until [`QNetworkReply::finished()`][qdoc-qnetworkreply-finished]
 signal is emitted.

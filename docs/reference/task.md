@@ -1,16 +1,49 @@
 # QCoro::Task
 
-You may have noticed in the various examples in the documentation that our coroutines don't return
-`void` like they would if they were normal functions. Instead they return `QCoro::Task<>` and you
-may be asking what it is and why it's there.
+```cpp
+template<typename T> class QCoro::Task
+```
 
-We have already established that whenever we use `co_await` in a function, we turn that function
-into a coroutine. And coroutines must return something called a promise type - it's an object that is
-returned to the caller of the function. Not to be confused with `std::promise`, it has nothing to do
-with this. The coroutine promise type allows the caller to control the coroutine.
+Any coroutine that wants to `co_await` one of the types supported by the QCoro library must have
+return type `QCoro::Task<T>`, where `T` is the type of the "regular" coroutine return value.
 
-Now all you need to know is, that in order for the magic contained in this repository to work your coroutine
-must return the type `QCoro::Task<T>` - where `T` is the true return type of your function.
+There's no need by the user to interact with or construct `QCoro::Task` manually, the object is
+constructed automatically by the compiler before the user code is executed. To return a value
+from a coroutine, use `co_return`, which will store the result in the `Task` object and leave
+the coroutine. 
 
-If you are calling a coroutine, to obtain the actual result value you must once again `co_await` it.
+```cpp
+QCoro::Task<QString> getUserName(UserID userId) {
+    ...
+
+    // Obtain a QString by co_awaiting another coroutine
+    const QString result = co_await fetchUserNameFromDb(userId);
+
+    ...
+
+    // Return the QString from the coroutine as you would from a regular function,
+    // just use `co_return` instead of `return` keyword.
+    co_return result;
+}
+```
+
+To obtain the result of a coroutine that returns `QCoro::Task<T>`, the result must be `co_await`ed.
+When the coroutine `co_return`s a result, the result is stored in the `Task` object and the `co_await`ing
+coroutine is resumed. The result is obtained from the returned `Task` object and returned as a result
+of the `co_await` call.
+
+```cpp
+QCoro::Task<void> getUserDetails(UserID userId) {
+    ...
+
+    const QString name = co_await getUserName(userId);
+    
+    ...
+}
+```
+
+!!! info "Exception Propagation"
+    When coroutines throws an unhandled exception, the exception is stored in the `Task` object and
+    is re-thrown from the `co_await` call in the awaiting coroutine.
+
 

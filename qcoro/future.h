@@ -9,6 +9,8 @@
 #include <QFuture>
 #include <QFutureWatcher>
 
+/*! \cond internal */
+
 namespace QCoro::detail
 {
 
@@ -67,3 +69,5 @@ struct awaiter_type<QFuture<T>> {
 };
 
 } // namespace QCoro::detail
+
+/*! \endcond */

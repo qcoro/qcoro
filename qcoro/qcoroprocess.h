@@ -74,48 +74,70 @@ public:
         : QCoroIODevice(process)
     {}
 
-    //! Co_awaitable equivalent  to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
+    /*!
+     * \brief Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
+     *
+     * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
+     */
     Awaitable auto waitForStarted(int timeout_msecs = 30'000) {
         return WaitForStartedOperation{static_cast<QProcess *>(mDevice.data()), timeout_msecs};
     }
-    //
-    //! Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
+
     /*!
+     * \brief Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
+     *
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
      * timeout rather than plain `int`.
+     *
+     * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      */
     Awaitable auto waitForStarted(std::chrono::milliseconds timeout) {
         return waitForStarted(static_cast<int>(timeout.count()));
     }
 
-    //! Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
+    /*!
+     * \brief Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
+     *
+     * [qtdoc-qprocess-waitForFinished]: https://doc.qt.io/qt-5/qprocess.html#waitForFinished
+     */
     Awaitable auto waitForFinished(int timeout_msecs = 30'000) {
         return WaitForFinishedOperation{static_cast<QProcess *>(mDevice.data()), timeout_msecs};
     }
 
-    //! Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
     /*!
+     * \brief Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
+     *
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
      * timeout rather than plain `int`.
+     *
+     * [qtdoc-qprocess-waitForFinished]: https://doc.qt.io/qt-4/qprocess.html#waitForFinished
      */
     Awaitable auto waitForFinished(std::chrono::milliseconds timeout) {
         return waitForFinished(static_cast<int>(timeout.count()));
     }
 
-    //! Executes a new process and waits for it to start
     /*!
+     * \brief Executes a new process and waits for it to start
+     *
      * Co_awaitable equivalent to calling [`QProcess::start()`][qtdoc-qprocess-start-2]
      * followed by [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
+     *
+     * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
+     * [qtdoc-qprocess-start-2]: https://doc.qt.io/qt-5/qprocess.html#start-2
      */
     Awaitable auto start(QIODevice::OpenMode mode = QIODevice::ReadWrite) {
         static_cast<QProcess *>(mDevice.data())->start(mode);
         return waitForStarted();
     }
 
-    //! Executes a new process and waits for it to start
     /*!
+     * \brief Executes a new process and waits for it to start
+     *
      * Co_awaitable equivalent to calling [`QProcess::start()`][qtdoc-qprocess-start]
      * followed by [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
+     *
+     * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
+     * [qtdoc-qprocess-start]: https://doc.qt.io/qt-5/qprocess.html#start-2
      */
     Awaitable auto start(const QString &program, const QStringList &arguments,
                QIODevice::OpenMode mode = QIODevice::ReadWrite) {
@@ -126,11 +148,4 @@ public:
 };
 
 } // namespace QCoro::detail
-
-/*!
- * [qtdoc-qprocess-start]: https://doc.qt.io/qt-5/qprocess.html#start
- * [qtdoc-qprocess-start-2]: https://doc.qt.io/qt-5/qprocess.html#start-2
- * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
- * [qtdoc-qprocess-waitForFinished]: https://doc.qt.io/qt-5/qprocess.html#waitForFinished
- */
 

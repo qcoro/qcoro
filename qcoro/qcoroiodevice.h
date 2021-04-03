@@ -15,7 +15,7 @@ namespace QCoro::detail {
 
 
 class QCoroIODevice {
-
+private:
     class OperationBase {
     public:
         Q_DISABLE_COPY(OperationBase)
@@ -119,18 +119,65 @@ protected:
     };
 
 public:
+    //! Constructor.
     explicit QCoroIODevice(QIODevice *device)
         : mDevice{device}
     {}
 
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::readAll()`][qdoc-qiodevice-readall].
+     *
+     * Waits until the `QIODevice` emits [`readyRead()`][qdoc-qiodevice-readyRead] and
+     * then calls `readAll()`.
+     *
+     * Identical to asynchronously calling
+     * ```cpp
+     * device.waitForReadyRead();
+     * device.readAll();
+     * ```
+     *
+     * [qdoc-qiodevice-readall]: https://doc.qt.io/qt-5/qiodevice.html#readAll
+     * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
+     */
     ReadOperation readAll() {
         return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
     }
 
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::read()`][qdoc-qiodevice-read].
+     *
+     * Waits until the `QIODevice` emits [`readyRead()`][qdoc-qiodevice-readyRead] and
+     * then calls [`read()`][qdoc-qiodevice-read] to read up to \c maxSize bytes.
+     *
+     * Identical to asynchronously calling
+     * ```cpp
+     * device.waitForReadyRead();
+     * device.read();
+     * ```
+     *
+     * [qdoc-qiodevice-read]: https://doc.qt.io/qt-5/qiodevice.html#read-1
+     * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
+     */
     ReadOperation read(qint64 maxSize) {
         return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->read(maxSize); });
     }
 
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::readLine()`][qdoc-qiodevice-readLine].
+     *
+     * Waits until the `QIODevice` emits [`readyRead()`][qdoc-qiodevice-readyRead] and
+     * then calls [`readLine()`][qdoc-qiodevice-readLIne] to read until the end-of-line
+     * characte is reached or up to \c maxSize characters are read.
+     *
+     * Identical to asynchronously calling
+     * ```cpp
+     * device.waitForReadyRead();
+     * device.readLine();
+     * ```
+     *
+     * [qdoc-qiodevice-readLine]: https://doc.qt.io/qt-5/qiodevice.html#readLine
+     * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
+     */
     ReadOperation readLine(qint64 maxSize = 0) {
         return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
     }
@@ -138,6 +185,22 @@ public:
     // TODO
     //auto bytesAvailable(qint64 minBytes) {
 
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::write`][qdoc-qiodevice-write].
+     *
+     * Returns immediately if the `QIODevice` is unbuffered, blocks until the `QIODevice`
+     * emits [`bytesWritten()`][qdoc-qiodevice-bytesWritten] signal with total bytes equal
+     * to the size of the input \c buffer.
+     *
+     * Identical to asynchronously calling
+     * ```cpp
+     * device.write(data);
+     * device.waitForBytesWritten();
+     * ```
+     *
+     * [qdoc-qiodevice-write]: https://doc.qt.io/qt-5/qiodevice.html#write-2
+     * [qdoc-qiodevice-bytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#bytesWritten
+     */
     auto write(const QByteArray &buffer) {
         return WriteOperation(mDevice, buffer);
     }

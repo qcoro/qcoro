@@ -12,6 +12,8 @@
 
 #include <QDebug>
 
+/*! \cond internal */
+
 namespace QCoro::detail
 {
 
@@ -57,3 +59,5 @@ struct awaiter_type<QTimer> {
 };
 
 } // namespace QCoro::detail
+
+/*! \endcond */

@@ -19,6 +19,8 @@ namespace QCoro
 template<typename T = void>
 class Task;
 
+/*! \cond internal */
+
 namespace detail {
 
 template<typename T, typename = void>
@@ -379,6 +381,8 @@ protected:
 
 } // namespace detail
 
+/*! \endcond */
+
 //! An asynchronously executed task.
 /*!
  * When a coroutine is called which has  return type Task<T>, the coroutine will
@@ -475,7 +479,7 @@ public:
         return TaskAwaiter{mCoroutine};
     }
 
-    //! \copydoc operator co_await() const & noexcept
+    //! \copydoc QCoro::Task::operator co_await() const & noexcept
     auto operator co_await() const && noexcept {
         //! Specialization of the TaskAwaiterBase that returns the promise result as an r-value reference.
         class TaskAwaiter : public detail::TaskAwaiterBase<promise_type> {

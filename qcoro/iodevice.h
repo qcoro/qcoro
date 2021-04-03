@@ -10,6 +10,8 @@
 #include <QMetaMethod>
 #include <QIODevice>
 
+/*! \cond internal */
+
 namespace QCoro::detail
 {
 
@@ -51,3 +53,5 @@ struct awaiter_type<T*, std::enable_if_t<std::is_base_of_v<QIODevice, T>>> {
 };
 
 } // namespace QCoro::detail
+
+/*! \endcond */
