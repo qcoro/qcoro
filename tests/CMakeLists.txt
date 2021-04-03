@@ -10,7 +10,7 @@ function(qcoro_add_test _name)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
 
     add_executable(test-${_name} ${_name}.cpp)
-    target_link_libraries(test-${_name} qcoro qcoro_test ${TEST_LINK_LIBRARIES})
+    target_link_libraries(test-${_name} qcoro qcoro_test ${TEST_LINK_LIBRARIES} Threads::Threads)
     add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
 
