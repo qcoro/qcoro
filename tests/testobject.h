@@ -38,14 +38,15 @@ private:
 class EventLoopChecker : public QTimer {
     Q_OBJECT
 public:
-    explicit EventLoopChecker() {
+    explicit EventLoopChecker(int minTicks = 10, std::chrono::milliseconds interval = 10ms)
+        : mMinTicks{minTicks} {
         connect(this, &EventLoopChecker::timeout, this, &EventLoopChecker::timeoutCheck);
-        setInterval(10ms);
+        setInterval(interval);
         start();
     }
 
     operator bool() const {
-        return mTick > 10;
+        return mTick > mMinTicks;
     }
 
 private Q_SLOTS:
@@ -55,6 +56,7 @@ private Q_SLOTS:
 
 private:
     int mTick = 0;
+    int mMinTicks = 10;
 };
 
 template<typename TestClass>

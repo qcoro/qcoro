@@ -8,6 +8,7 @@
 
 #include <variant>
 #include <atomic>
+#include <concepts>
 
 #include <QtGlobal>
 #include <QDebug>
@@ -25,6 +26,13 @@ struct awaiter_type;
 
 template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
+
+template<typename T>
+concept Awaitable = requires(T t) {
+    { t.await_ready() } -> std::same_as<bool>;
+    { t.await_suspend(std::declval<QCORO_STD::coroutine_handle<>>()) };
+    { t.await_resume() };
+};
 
 //! Continuation that resumes a coroutine co_awaiting on currently finished coroutine.
 class TaskFinalSuspend {
@@ -184,6 +192,12 @@ public:
     template<typename T>
     auto await_transform(Task<T> &&task) {
         return std::forward<Task<T>>(task);
+    }
+
+    //! If the type T is already an awaitable, then just forward it as it is.
+    template<Awaitable T>
+    auto await_transform(T &&awaitable) {
+        return std::forward<T>(awaitable);
     }
 
     //! Called by \c TaskAwaiter when co_awaited.
