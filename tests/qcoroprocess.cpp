@@ -107,4 +107,4 @@ private Q_SLOTS:
 
 QTEST_GUILESS_MAIN(QCoroProcessTest)
 
-#include "qprocess.moc"
+#include "qcoroprocess.moc"

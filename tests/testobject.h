@@ -65,7 +65,7 @@ class TestObject : public QObject
 protected:
     void coroWrapper(QCoro::Task<>(TestClass::*testFunction)(TestContext)) {
         QEventLoop el;
-        QTimer::singleShot(2s, &el, [&el]() mutable { el.exit(1); });
+        QTimer::singleShot(5s, &el, [&el]() mutable { el.exit(1); });
 
         [[maybe_unused]] const auto result = (static_cast<TestClass *>(this)->*testFunction)(el);
 

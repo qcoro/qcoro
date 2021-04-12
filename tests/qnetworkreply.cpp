@@ -3,73 +3,13 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
+#include "testhttpserver.h"
 #include "qcoro/network.h"
 
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QTcpServer>
 #include <QHostAddress>
-#include <QDebug>
-
-#include <thread>
-#include <memory>
-#include <condition_variable>
-#include <mutex>
-
-class HttpServer {
-public:
-    void start() {
-        assert(!mThread.joinable());
-
-        mThread = std::thread([this]() { run(); });
-        std::unique_lock lock(mReadyMutex);
-        mServerReady.wait(lock);
-    }
-
-    void stop() {
-        mThread.join();
-    }
-
-    uint16_t port() const {
-        return mPort;
-    }
-
-private:
-    void run() {
-        QTcpServer server{};
-        server.listen(QHostAddress::LocalHost);
-        {
-            std::unique_lock lock(mReadyMutex);
-            mPort = server.serverPort();
-            mServerReady.notify_all();
-        }
-
-        if (!server.waitForNewConnection(2000)) {
-            return;
-        }
-        auto *conn = server.nextPendingConnection();
-        if (conn->waitForReadyRead(1000)) {
-            const auto request = conn->readLine();
-            if (request == "GET /block HTTP/1.1\r\n") {
-                std::this_thread::sleep_for(500ms);
-            }
-            conn->write("HTTP/1.1 200 OK\r\n"
-                        "Content-Type: text/plain\r\n"
-                        "\r\n"
-                        "abcdef");
-            conn->flush();
-            conn->close();
-        }
-
-        delete conn;
-    }
-
-
-    std::thread mThread;
-    std::mutex mReadyMutex;
-    std::condition_variable mServerReady;
-    uint16_t mPort;
-};
 
 
 class QCoroNetworkReplyTest : public QCoro::TestObject<QCoroNetworkReplyTest> {
@@ -131,7 +71,7 @@ private:
 
 private Q_SLOTS:
     void init() {
-        mServer.start();
+        mServer.start(QHostAddress::LocalHost);
     }
 
     void cleanup() {
@@ -144,7 +84,7 @@ private Q_SLOTS:
     addTest(DoesntCoAwaitFinishedReply)
 
 private:
-    HttpServer mServer;
+    TestHttpServer<QTcpServer> mServer;
 };
 
 QTEST_GUILESS_MAIN(QCoroNetworkReplyTest)

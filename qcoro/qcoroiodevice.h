@@ -36,6 +36,13 @@ class QCoroIODevice {
             mConn = QObject::connect(mDevice, &QIODevice::readyRead,
                                     [this, awaitingCoroutine]() mutable {
                                         QObject::disconnect(mConn);
+                                        QObject::disconnect(mCloseConn);
+                                        awaitingCoroutine.resume();
+                                    });
+            mCloseConn = QObject::connect(mDevice, &QIODevice::aboutToClose,
+                                    [this, awaitingCoroutine]() mutable {
+                                        QObject::disconnect(mConn);
+                                        QObject::disconnect(mCloseConn);
                                         awaitingCoroutine.resume();
                                     });
         }
@@ -48,6 +55,7 @@ class QCoroIODevice {
         QPointer<QIODevice> mDevice;
         ResultCb mResultCb;
         QMetaObject::Connection mConn;
+        QMetaObject::Connection mCloseConn;
     };
 
     class WriteOperation {
@@ -83,8 +91,15 @@ class QCoroIODevice {
                                         mBytesWritten += written;
                                         if (mBytesWritten >= mBytesToBeWritten) {
                                             QObject::disconnect(mConn);
+                                        QObject::disconnect(mCloseConn);
                                             awaitingCoroutine.resume();
                                         }
+                                    });
+            mCloseConn = QObject::connect(mDevice, &QIODevice::aboutToClose,
+                                    [this, awaitingCoroutine]() mutable {
+                                        QObject::disconnect(mConn);
+                                        QObject::disconnect(mCloseConn);
+                                        awaitingCoroutine.resume();
                                     });
         }
 
@@ -96,6 +111,7 @@ class QCoroIODevice {
     private:
         QPointer<QIODevice> mDevice;
         QMetaObject::Connection mConn;
+        QMetaObject::Connection mCloseConn;
         qint64 mBytesToBeWritten = 0;
         qint64 mBytesWritten = 0;
     };
