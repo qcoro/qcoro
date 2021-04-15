@@ -34,4 +34,8 @@ qcoro_add_dbus_test(qdbuspendingcall LINK_LIBRARIES Qt5::DBus)
 qcoro_add_test(qfuture LINK_LIBRARIES Qt5::Concurrent)
 qcoro_add_test(qcoroprocess)
 qcoro_add_test(qcorolocalsocket LINK_LIBRARIES Qt5::Network)
-qcoro_add_test(qcoroiodevice LINK_LIBRARIES Qt5::Network)
+qcoro_add_test(qcoroabstractsocket LINK_LIBRARIES Qt5::Network)
+qcoro_add_test(qcoronetworkreply LINK_LIBRARIES Qt5::Network)
+
+# Tests for test utilities
+qcoro_add_test(testhttpserver LINK_LIBRARIES Qt5::Network)

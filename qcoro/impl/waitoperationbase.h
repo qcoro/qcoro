@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <QTimer>
+
 namespace QCoro::detail
 {
 
@@ -51,7 +53,7 @@ protected:
 
         QObject::disconnect(mConn);
 
-        awaitingCoroutine.resume();
+        QTimer::singleShot(0, [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
     }
 
     QPointer<T> mObj;

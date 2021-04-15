@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QThread>
+#include <QDebug>
 
 #include <mutex>
 #include <condition_variable>
@@ -59,6 +60,8 @@ public:
 private:
     template<typename T>
     void run(const T &name) {
+        using namespace std::chrono_literals;
+
         ServerType server{};
         if (!server.listen(name)) {
             qDebug() << "Error listening:" << server.serverError();
@@ -102,9 +105,11 @@ private:
                     conn->flush();
                     std::this_thread::sleep_for(100ms);
                 }
-            } else if (request == "GET /block HTTP/1.1\r\n") {
-                std::this_thread::sleep_for(500ms);
             } else {
+                if (request == "GET /block HTTP/1.1\r\n") {
+                    std::this_thread::sleep_for(500ms);
+                }
+
                 conn->write("HTTP/1.1 200 OK\r\n"
                             "Content-Type: text/plain\r\n"
                             "\r\n"

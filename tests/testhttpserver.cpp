@@ -1,0 +1,79 @@
+// SPDX-FileCopyrightText: 2021 Daniel Vrátil <dvratil@kde.org>
+//
+// SPDX-License-Identifier: MIT
+
+#include "testhttpserver.h"
+
+#include <QTest>
+#include <QTcpServer>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QEventLoop>
+#include <QTimer>
+#include <QDebug>
+
+
+Q_DECLARE_METATYPE(std::chrono::seconds)
+
+using namespace std::chrono_literals;
+
+class TestHttpServerTest : public QObject {
+    Q_OBJECT
+
+private Q_SLOTS:
+    void init() {
+        mServer.start(QHostAddress::LocalHost);
+    }
+
+    void cleanup() {
+        mServer.stop();
+    }
+
+    void testGet_data() {
+        QTest::addColumn<QString>("url");
+        QTest::addColumn<QByteArray>("expectedData");
+        QTest::addColumn<std::chrono::seconds>("timeout");
+
+        QTest::newRow("/")
+            << QStringLiteral("http://localhost:%1/")
+            << QByteArray{"abcdef"}
+            << 1s;
+
+        QTest::newRow("/block")
+            << QStringLiteral("http://localhost:%1/block")
+            << QByteArray{"abcdef"}
+            << 5s;
+
+        QTest::newRow("/stream")
+            << QStringLiteral("http://localhost:%1/stream")
+            << QByteArray{"Hola 0\nHola 1\nHola 2\nHola 3\nHola 4\nHola 5\nHola 6\nHola 7\nHola 8\nHola 9\n"}
+            << 15s;
+    }
+
+    void testGet() {
+        QFETCH(QString, url);
+        QFETCH(QByteArray, expectedData);
+        QFETCH(std::chrono::seconds, timeout);
+
+        QNetworkAccessManager nam;
+        QEventLoop el;
+
+        auto *reply = nam.get(QNetworkRequest{url.arg(mServer.port())});
+        connect(reply, &QNetworkReply::finished, &el, &QEventLoop::quit);
+
+        QTimer::singleShot(timeout, &el, [&el]() mutable { el.exit(1); });
+
+        QCOMPARE(el.exec(), 0);
+
+        QCOMPARE(reply->readAll(), expectedData);
+    }
+
+private:
+    TestHttpServer<QTcpServer> mServer;
+
+};
+
+QTEST_GUILESS_MAIN(TestHttpServerTest)
+
+#include "testhttpserver.moc"

@@ -16,35 +16,52 @@ namespace QCoro::detail {
 
 class QCoroIODevice {
 
-    template<typename ResultCb>
-    class ReadOperation {
+    class OperationBase {
     public:
-        ReadOperation(QIODevice *device, ResultCb &&resultCb)
-            : mDevice(device), mResultCb(resultCb) {}
+        Q_DISABLE_COPY(OperationBase)
+        QCORO_DEFAULT_MOVE(OperationBase)
+
+        virtual ~OperationBase() = default;
+
+    protected:
+        explicit OperationBase(QIODevice *device)
+            : mDevice(device) {}
+
+        virtual void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+            QObject::disconnect(mConn);
+            QObject::disconnect(mCloseConn);
+            // Delayed trigger
+            QTimer::singleShot(0, [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
+        }
+
+        QPointer<QIODevice> mDevice;
+        QMetaObject::Connection mConn;
+        QMetaObject::Connection mCloseConn;
+        QMetaObject::Connection mFinishedConn;
+    };
+
+protected:
+    class ReadOperation : public OperationBase {
+    public:
+        ReadOperation(QIODevice *device, std::function<QByteArray(QIODevice *)> &&resultCb)
+            : OperationBase(device), mResultCb(std::move(resultCb)) {}
 
         Q_DISABLE_COPY(ReadOperation)
         QCORO_DEFAULT_MOVE(ReadOperation)
 
-        ~ReadOperation() = default;
-
-        bool await_ready() const noexcept {
-            return !mDevice || !mDevice->isOpen() || !mDevice->isReadable() || mDevice->bytesAvailable() > 0;
+        virtual bool await_ready() const noexcept {
+            return !mDevice
+                    || !mDevice->isOpen()
+                    || !mDevice->isReadable()
+                    || mDevice->bytesAvailable() > 0;
         }
 
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+        virtual void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
             Q_ASSERT(mDevice);
             mConn = QObject::connect(mDevice, &QIODevice::readyRead,
-                                    [this, awaitingCoroutine]() mutable {
-                                        QObject::disconnect(mConn);
-                                        QObject::disconnect(mCloseConn);
-                                        awaitingCoroutine.resume();
-                                    });
+                                     std::bind(&ReadOperation::finish, this, awaitingCoroutine));
             mCloseConn = QObject::connect(mDevice, &QIODevice::aboutToClose,
-                                    [this, awaitingCoroutine]() mutable {
-                                        QObject::disconnect(mConn);
-                                        QObject::disconnect(mCloseConn);
-                                        awaitingCoroutine.resume();
-                                    });
+                                     std::bind(&ReadOperation::finish, this, awaitingCoroutine));
         }
 
         auto await_resume() {
@@ -52,21 +69,16 @@ class QCoroIODevice {
         }
 
     private:
-        QPointer<QIODevice> mDevice;
-        ResultCb mResultCb;
-        QMetaObject::Connection mConn;
-        QMetaObject::Connection mCloseConn;
+        std::function<QByteArray(QIODevice *)> mResultCb;
     };
 
-    class WriteOperation {
+    class WriteOperation : public OperationBase {
     public:
         WriteOperation(QIODevice *device, const QByteArray &data)
-            : mDevice(device), mBytesToBeWritten(device->write(data)) {}
+            : OperationBase(device), mBytesToBeWritten(device->write(data)) {}
 
         Q_DISABLE_COPY(WriteOperation)
         QCORO_DEFAULT_MOVE(WriteOperation)
-
-        ~WriteOperation() = default;
 
         bool await_ready() const noexcept {
             if (!mDevice || !mDevice->isOpen() || !mDevice->isWritable()) {
@@ -87,31 +99,21 @@ class QCoroIODevice {
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
             Q_ASSERT(mDevice);
             mConn = QObject::connect(mDevice, &QIODevice::bytesWritten,
-                                     [this, awaitingCoroutine](qint64 written) mutable {
+                                     [this, awaitingCoroutine](qint64 written) {
                                         mBytesWritten += written;
                                         if (mBytesWritten >= mBytesToBeWritten) {
-                                            QObject::disconnect(mConn);
-                                        QObject::disconnect(mCloseConn);
-                                            awaitingCoroutine.resume();
+                                            finish(awaitingCoroutine);
                                         }
                                     });
             mCloseConn = QObject::connect(mDevice, &QIODevice::aboutToClose,
-                                    [this, awaitingCoroutine]() mutable {
-                                        QObject::disconnect(mConn);
-                                        QObject::disconnect(mCloseConn);
-                                        awaitingCoroutine.resume();
-                                    });
+                                    std::bind(&WriteOperation::finish, this, awaitingCoroutine));
         }
 
         qint64 await_resume() noexcept {
             return mBytesWritten;
         }
 
-
     private:
-        QPointer<QIODevice> mDevice;
-        QMetaObject::Connection mConn;
-        QMetaObject::Connection mCloseConn;
         qint64 mBytesToBeWritten = 0;
         qint64 mBytesWritten = 0;
     };
@@ -121,15 +123,15 @@ public:
         : mDevice{device}
     {}
 
-    auto readAll() {
+    ReadOperation readAll() {
         return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
     }
 
-    auto read(qint64 maxSize) {
+    ReadOperation read(qint64 maxSize) {
         return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->read(maxSize); });
     }
 
-    auto readLine(qint64 maxSize = 0) {
+    ReadOperation readLine(qint64 maxSize = 0) {
         return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
     }
 

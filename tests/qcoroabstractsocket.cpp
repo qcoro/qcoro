@@ -6,107 +6,93 @@
 #include "testhttpserver.h"
 #include "qcoro/coro.h"
 
-#include <QLocalServer>
+#include <QTcpSocket>
+#include <QTcpServer>
 
 #include <thread>
 
-class QCoroLocalSocketTest: public QCoro::TestObject<QCoroLocalSocketTest>
+class QCoroAbstractSocketTest: public QCoro::TestObject<QCoroAbstractSocketTest>
 {
     Q_OBJECT
 
 private:
     QCoro::Task<> testWaitForConnectedTriggers_coro(QCoro::TestContext context) {
-        QLocalSocket socket;
-        QTimer::singleShot(10ms, [&socket]() mutable {
-            socket.connectToServer(QCoroLocalSocketTest::getSocketName());
+        QTcpSocket socket;
+        QTimer::singleShot(10ms, [this, &socket]() mutable {
+            socket.connectToHost(QHostAddress::LocalHost, mServer.port());
         });
 
         co_await QCoro::coro(socket).waitForConnected();
 
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
     }
 
     QCoro::Task<> testWaitForDisconnectedTriggers_coro(QCoro::TestContext context) {
-        QLocalSocket socket;
-        socket.connectToServer(QCoroLocalSocketTest::getSocketName());
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QTcpSocket socket;
+        co_await QCoro::coro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
         QTimer::singleShot(10ms, [&socket]() mutable {
-            socket.disconnectFromServer();
+            socket.disconnectFromHost();
         });
 
         co_await QCoro::coro(socket).waitForDisconnected();
 
-        QCORO_COMPARE(socket.state(), QLocalSocket::UnconnectedState);
+        QCORO_COMPARE(socket.state(), QAbstractSocket::UnconnectedState);
     }
 
-    // On Linux at least, QLocalSocket connects immediately and synchronously
     QCoro::Task<> testDoesntCoAwaitConnectedSocket_coro(QCoro::TestContext context) {
+        QTcpSocket socket;
+        co_await QCoro::coro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
+
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
+
         context.setShouldNotSuspend();
-
-        QLocalSocket socket;
-        socket.connectToServer(QCoroLocalSocketTest::getSocketName());
-
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
-
         co_await QCoro::coro(socket).waitForConnected();
     }
 
     QCoro::Task<> testDoesntCoAwaitDisconnectedSocket_coro(QCoro::TestContext context) {
         context.setShouldNotSuspend();
 
-        QLocalSocket socket;
-        QCORO_COMPARE(socket.state(), QLocalSocket::UnconnectedState);
+        QTcpSocket socket;
+        QCORO_COMPARE(socket.state(), QAbstractSocket::UnconnectedState);
 
         co_await QCoro::coro(socket).waitForDisconnected();
     }
 
     QCoro::Task<> testConnectToServerWithArgs_coro(QCoro::TestContext context) {
-        context.setShouldNotSuspend();
+        QTcpSocket socket;
 
-        QLocalSocket socket;
+        co_await QCoro::coro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
 
-        co_await QCoro::coro(socket).connectToServer(QCoroLocalSocketTest::getSocketName());
-
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
-    }
-
-    QCoro::Task<> testConnectToServer_coro(QCoro::TestContext context) {
-        context.setShouldNotSuspend();
-
-        QLocalSocket socket;
-        socket.setServerName(QCoroLocalSocketTest::getSocketName());
-
-        co_await QCoro::coro(socket).connectToServer();
-
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
     }
 
     QCoro::Task<> testWaitForConnectedTimeout_coro(QCoro::TestContext context) {
-        QLocalSocket socket;
+        QTcpSocket socket;
 
         const bool ok = co_await QCoro::coro(socket).waitForConnected(10ms);
         QCORO_VERIFY(!ok);
     }
 
     QCoro::Task<> testWaitForDisconnectedTimeout_coro(QCoro::TestContext context) {
-        QLocalSocket socket;
-        socket.connectToServer(QCoroLocalSocketTest::getSocketName());
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QTcpSocket socket;
+        co_await QCoro::coro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
         const bool ok = co_await QCoro::coro(socket).waitForDisconnected(10ms);
         QCORO_VERIFY(!ok);
     }
 
     QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext context) {
-        QLocalSocket socket;
-        socket.connectToServer(QCoroLocalSocketTest::getSocketName());
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QTcpSocket socket;
+        co_await QCoro::coro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
         socket.write("GET /stream HTTP/1.1\r\n");
 
         QByteArray data;
-        while (socket.state() == QLocalSocket::ConnectedState) {
+        while (socket.state() == QAbstractSocket::ConnectedState) {
             data += co_await QCoro::coro(socket).readAll();
         }
         QCORO_VERIFY(!data.isEmpty());
@@ -116,14 +102,14 @@ private:
     }
 
     QCoro::Task<> testReadTriggers_coro(QCoro::TestContext context) {
-        QLocalSocket socket;
-        socket.connectToServer(QCoroLocalSocketTest::getSocketName());
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QTcpSocket socket;
+        co_await QCoro::coro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
         socket.write("GET /stream HTTP/1.1\r\n");
 
         QByteArray data;
-        while (socket.state() == QLocalSocket::ConnectedState) {
+        while (socket.state() == QAbstractSocket::ConnectedState) {
             data += co_await QCoro::coro(socket).read(1);
         }
         QCORO_VERIFY(!data.isEmpty());
@@ -133,14 +119,14 @@ private:
     }
 
     QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext context) {
-        QLocalSocket socket;
-        socket.connectToServer(QCoroLocalSocketTest::getSocketName());
-        QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QTcpSocket socket;
+        co_await QCoro::coro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
+        QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
         socket.write("GET /stream HTTP/1.1\r\n");
 
         QByteArrayList lines;
-        while (socket.state() == QLocalSocket::ConnectedState) {
+        while (socket.state() == QAbstractSocket::ConnectedState) {
             const auto line = co_await QCoro::coro(socket).readLine();
             if (!line.isNull()) {
                 lines.push_back(line);
@@ -153,7 +139,7 @@ private:
 
 private Q_SLOTS:
     void init() {
-        mServer.start(QCoroLocalSocketTest::getSocketName());
+        mServer.start(QHostAddress::LocalHost);
     }
 
     void cleanup() {
@@ -168,22 +154,14 @@ private Q_SLOTS:
     addTest(DoesntCoAwaitConnectedSocket)
     addTest(DoesntCoAwaitDisconnectedSocket)
     addTest(ConnectToServerWithArgs)
-    addTest(ConnectToServer)
     addTest(ReadAllTriggers)
     addTest(ReadTriggers)
     addTest(ReadLineTriggers)
 
 private:
-    static QString getSocketName() {
-
-        return QStringLiteral("%1-%2").arg(QCoreApplication::applicationName())
-                                      .arg(QCoreApplication::applicationPid());
-    }
-
-
-    TestHttpServer<QLocalServer> mServer;
+    TestHttpServer<QTcpServer> mServer;
 };
 
-QTEST_GUILESS_MAIN(QCoroLocalSocketTest)
+QTEST_GUILESS_MAIN(QCoroAbstractSocketTest)
 
-#include "qcorolocalsocket.moc"
+#include "qcoroabstractsocket.moc"

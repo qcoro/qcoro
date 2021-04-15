@@ -10,7 +10,7 @@
 #include <QNetworkRequest>
 #include <QNetworkAccessManager>
 
-class QCoroIODeviceTest: public QCoro::TestObject<QCoroIODeviceTest>
+class QCoroNetworkReplyTest: public QCoro::TestObject<QCoroNetworkReplyTest>
 {
     Q_OBJECT
 
@@ -20,16 +20,13 @@ private:
 
         auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
-        int trigger = 0;
-        QByteArray line, data;
-        do {
-            line = co_await QCoro::coro(reply).readAll();
-            data += line;
-            ++trigger;
-        } while (data.size() < 70);
+        QByteArray data;
+        while (!reply->isFinished()) {
+            data += co_await QCoro::coro(reply).readAll();
+        }
+        data += reply->readAll(); // read what's left in the buffer
 
         QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
-        QCORO_VERIFY(trigger > 9);
     }
 
     QCoro::Task<> testReadTriggers_coro(QCoro::TestContext context) {
@@ -38,13 +35,12 @@ private:
         auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
         QByteArray data;
-        int triggers = 0;
         while (!reply->isFinished()) {
             data += co_await QCoro::coro(reply).read(1);
-            ++triggers;
         }
+        data += reply->readAll(); // read what's left in the buffer
 
-        QCORO_COMPARE(triggers, data.size());
+        QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
     }
 
     QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext context) {
@@ -54,7 +50,10 @@ private:
 
         QByteArrayList lines;
         while (!reply->isFinished()) {
-            lines.push_back(co_await QCoro::coro(reply).readLine());
+            const auto line = co_await QCoro::coro(reply).readLine();
+            if (!line.isNull()) {
+                lines.push_back(line);
+            }
         }
 
         QCORO_COMPARE(lines.size(), 10);
@@ -69,7 +68,6 @@ private Q_SLOTS:
         mServer.stop();
     }
 
-
     addTest(ReadAllTriggers)
     addTest(ReadTriggers)
     addTest(ReadLineTriggers)
@@ -78,6 +76,7 @@ private:
     TestHttpServer<QTcpServer> mServer;
 };
 
-QTEST_GUILESS_MAIN(QCoroIODeviceTest)
+QTEST_GUILESS_MAIN(QCoroNetworkReplyTest)
 
-#include "qcoroiodevice.moc"
+#include "qcoronetworkreply.moc"
+
