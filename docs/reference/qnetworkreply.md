@@ -1,6 +1,18 @@
 # QNetworkReply
 
 ```cpp
+class QCoroNetworkReply : public QCoroIODevice
+```
+
+[`QNetworkReply`][qdoc-qnetworkreply] has two asynchronous aspects: one is waiting for the
+reply to finish, and one for reading the response data as they arrive. QCoro supports both.
+`QNetworkReply` is a subclass of [`QIODevice`][qdoc-qiodevice], so you can leverage all the
+features of [`QCoroIODevice`][qcoro-iodevice] to asynchronously read data from the underlying
+`QIODevice` using coroutines.
+
+To wait for the reply to finish, one can simply `co_await` the reply object:
+
+```cpp
 QNetworkAccessManager nam;
 auto *reply = co_await nam.get(request);
 ```
@@ -31,3 +43,6 @@ QCoro::Task<> MyClass::fetchData() {
 
 [qdoc-qnetworkreply]: https://doc.qt.io/qt-5/qnetworkreply.html
 [qdoc-qnetworkreply-finished]: https://doc.qt.io/qt-5/qnetworkreply.html#finished
+[qdoc-qiodevice]: https://doc.qt.io/qt-5/qiodevice.html
+[qcoro-iodevice]: qiodevice.md
+

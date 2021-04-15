@@ -1,33 +1,74 @@
 # QIODevice
 
-The QCoro frameworks allows `co_await`ing on [QIODevice][qdoc-qiodevice] object. The
-co-awaiting coroutine is suspended until the `QIODevice` emits the
-[`readyRead()`][qdoc-qiodevice-readyread] signal.
-
-If the `QIODevice` is not opened or there are already some data available to be
-read the coroutine is not suspended. To result of the `co_await` operation is the
-same as calling [`QIODevice::readAll()`][qdoc-qiodevice-readall]. 
-
-To make it work, include `qcoro/qiodevice.h` in your implementation.
-
 ```cpp
-#include <qcoro/qiodevice.h>
-
-QCoro::Task<int> MyClass::measureLatency(QTcpSocket *socket) {
-    socket->write("PING");
-    socket->flush();
-    QElapsedTimer timer;
-    timer.start();
-    const auto result = co_await socket;
-    if (result == "PONG") {
-        co_return timer.msecsElapsed();
-    }
-
-    co_return -1;
-}
+class QCoroIODevice
 ```
 
-[qdoc-qiodevice]: https://doc.qt.io/qt-5/qiodevice.html
-[qdoc-qiodevice-readyread]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
-[qdoc-qiodevice-readall]: https://doc.qt.io/qt-5/qiodevice.html#readAll
+[`QIODevice`][qtdoc-qiodevice] has several different IO operations that can be waited on
+asynchronously. Since `QIODevice` itself doesn't provide the abaility to `co_await` those
+operations, QCoro provides a wrapper class called `QCoroIODevice`. To wrap a `QIODevice`
+into a `QCoroIODevice`, use [`QCoro::coro()`][qcoro-coro]:
+
+```cpp
+QCoroIODevice QCoro::coro(QIODevice &);
+QCoroIODevice QCoro::coro(QIODevice *);
+```
+
+Note that Qt provides several subclasses of `QIODevice`. QCoro provides coroutine-friendly
+wrappers for some of those types as well (e.g. for [`QLocalSocket`][qlocalsocket]). This
+subclass can be passed to `QCoro::coro()` function as well. Oftentimes the wrapper class
+will provide some additional features (like co_awaiting establishing connection etc.).
+You can check whether QCoro supports the QIODevice subclass by checking the list of supported
+Qt types.
+
+## `readAll()`
+
+Waits until there are any data to be read from the device (similar to waiting until the device
+emits [`QIODevice::readyRead()`][qtdoc-qiodevice-readyread] signal) and then returns all data
+available in the buffer as a `QByteArray`. Doesn't suspend the coroutine if there are already
+data available in the `QIODevice` or if the `QIODevice` is not opened for reading.
+
+See documentation for [`QIODevice::readAll()`][qtdoc-qiodevice-readall] for details.
+
+```cpp
+Awaitable auto QCoroIODevice::readAll();
+```
+
+## `read()`
+
+Waits until there are any data to be read from the device (similar to waiting until the device
+emits [`QIODevice::readyRead()`][qtdoc-qiodevice-readyread] signal) and then returns up to
+`maxSize` bytes as a `QByteArray`. Doesn't suspend the coroutine if there are already data
+available in the `QIODevice` or if the device is not opened for reading.
+
+See documentation for [`QIODevice::read()`][qtdoc-qiodevice-read] for details.
+
+```cpp
+Awaitable auto QCoroIODevice::read(qint64 maxSize = 0);
+```
+
+## `readLine()`
+
+Repeatedly waits for data to arrive until it encounters a newline character, end-of-data or
+until it reads `maxSize` bytes. Returns the resulting data as `QByteArray`.
+
+See documentation for [`QIODevice::readLine()`][qtdoc-qiodevice-readline] for details.
+
+```cpp
+Awaitable auto QCoroIODevice::readLine(qint64 maxSize = 0)
+```
+
+## Examples
+
+```cpp
+const QByteArray data = co_await QCoro::coro(device).readAll();
+```
+
+[qlocalsocket]: qlocalsocket.md
+[qcoro-coro]: coro.md
+[qtdoc-qiodevice]: https://doc.qt.io/qt-5/qiodevice.html
+[qtdoc-qiodevice-read]: https://doc.qt.io/qt-5/qiodevice.html#read
+[qtdoc-qiodevice-readyread]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
+[qtdoc-qiodevice-readall]: https://doc.qt.io/qt-5/qiodevice.html#readAll
+[qtdoc-qiodevice-readline]: https://doc.qt.io/qt-5/qiodevice.html#readLine
 

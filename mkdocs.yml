@@ -38,9 +38,11 @@ nav:
         - QCoro::Task<T>: reference/task.md
         - QCoro::coro(): reference/coro.md
         - Supported Types:
+          - QAbstractSocket: reference/qabstractsocket.md
           - QDBusPendingCall: reference/qdbuspendingcall.md
           - QFuture: reference/qfuture.md
           - QIODevice: reference/qiodevice.md
+          - QLocalSocket: reference/qlocalsocket.md
           - QNetworkReply: reference/qnetworkreply.md
           - QProcess: reference/qprocess.md
           - QTimer: reference/qtimer.md

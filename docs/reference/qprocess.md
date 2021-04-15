@@ -80,4 +80,4 @@ QCoro::Task<QStringList> listDir(const QString &dirPath) {
 [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
 [qtdoc-qprocess-waitForFiished]: https://doc.qt.io/qt-5/qprocess.html#waitForFinished
 [qcoro-coro]: coro.md
-[qcoro-qcoroiodevice]: qcoroiodevice.md
+[qcoro-qcoroiodevice]: qiodevice.md
