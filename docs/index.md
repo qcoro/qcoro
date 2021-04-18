@@ -21,7 +21,7 @@ const auto data = reply->readAll();
 
 This library has only one class and one function that the user must be aware of: the class is
 [`QCoro::Task`](reference/task.md) and must be used as a return type for any coroutine that `co_await`s
-a Qt type. The function is [`QCoro::coro()`](reference/coro.md) and it provides coroutine-friendly
+a Qt type. The function is [`qCoro()`](reference/coro.md) and it provides coroutine-friendly
 wrappers for Qt types that have multiple asynchronous operations that the user may want to `co_await`
 (for example [`QProcess`](reference/qprocess.md)). All the other code (basically everything in the
 `QCoro::detail` namespace) is here to provide the cogs and gears for the C++ coroutine machinery,

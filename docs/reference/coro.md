@@ -1,8 +1,8 @@
-# QCoro::coro()
+# qCoro()
 
 ```cpp
-QCoroType QCoro::coro(QtClass *);
-QCoroType QCoro::coro(QtClass &);
+QCoroType qCoro(QtClass *);
+QCoroType qCoro(QtClass &);
 ```
 
 This function is overloaded for all Qt types supported by this library. It accepts either
@@ -21,27 +21,27 @@ co_await timer;
 
 However, some Qt classes have multiple asynchronous operations that the user may want to `co_await`.
 For such types, simply `co_await`ing the class instance doesn't make sense since it's not clear
-what operation is being `co_await`ed. For those types, QCoro provides `QCoro::coro()` function
+what operation is being `co_await`ed. For those types, QCoro provides `qCoro()` function
 which returns a wrapper that provides coroutine-friendly versions of the asynchronous methods
 for the given type.
 
 Let's take QProcess as an example: one may want to `co_await` for the program to start or finish.
-Therefor, the type must be wrapped into `QCoro::coro()` like this:
+Therefor, the type must be wrapped into `qCoro()` like this:
 
 ```cpp
 QProcess process;
 // Wait for the process to be started
-co_await QCoro::coro(process).start(...);
+co_await qCoro(process).start(...);
 // The process is running now
 ...
 ...
 // Wait for it to finish
-co_await QCoro::coro(process).finished();
+co_await qCoro(process).finished();
 // The process is no longer running
 ...
 ```
 
-`QCoro::coro()` is simply overloaded for all the Qt types currently supported by the QCoro library.
+`qCoro()` is simply overloaded for all the Qt types currently supported by the QCoro library.
 The function returns a wrapper object (e.g. `QCoro::detail::QProcessWrapper`) which copies the
 QProcess API. It doesn't copy the entire API, only the bits that we want to make `co_await`able.
 When you call one of those metods (e.g. `QProcessWrapper::start()`), it returns an awaitable

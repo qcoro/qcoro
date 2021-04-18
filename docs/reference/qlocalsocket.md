@@ -11,11 +11,11 @@ Those operations are connecting to and disconnecting from the server.
 
 Since `QLocalSocket` doesn't provide the ability to `co_await` those operations, QCoro provides
  a wrapper calss `QCoroLocalSocket`. To wrap a `QLocalSocket` object into the `QCoroLocalSocket`
- wrapper, use [`QCoro::coro()`][qcoro-coro]:
+ wrapper, use [`qCoro()`][qcoro-coro]:
 
 ```cpp
-QCoroLocalSocket QCoro::coro(QLocalSocket &);
-QCoroLocalSocket QCoro::coro(QLocalSocket *);
+QCoroLocalSocket qCoro(QLocalSocket &);
+QCoroLocalSocket qCoro(QLocalSocket *);
 ```
 
 Same as `QLocalSocket` is a subclass of `QIODevice`, `QCoroLocalSocket` subclasses
@@ -68,7 +68,7 @@ Awaitable auto QCoroLocalSocket::connectToServer(const QString &name, QIODevice:
 ```cpp
 QCoro::Task<QByteArray> requestDataFromServer(const QString &serverName) {
     QLocalSocket socket;
-    if (!co_await QCoro::coro(socket).connectToServer(serverName)) {
+    if (!co_await qCoro(socket).connectToServer(serverName)) {
         qWarning() << "Failed to connect to the server";
         co_return QByteArray{};
     }
@@ -77,7 +77,7 @@ QCoro::Task<QByteArray> requestDataFromServer(const QString &serverName) {
 
     QByteArray data;
     while (!data.endsWith("\r\n.\r\n")) {
-        data += co_await QCoro::coro(socket).readAll();
+        data += co_await qCoro(socket).readAll();
     }
 
     co_return data;

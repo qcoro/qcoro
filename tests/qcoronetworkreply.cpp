@@ -22,7 +22,7 @@ private:
 
         QByteArray data;
         while (!reply->isFinished()) {
-            data += co_await QCoro::coro(reply).readAll();
+            data += co_await qCoro(reply).readAll();
         }
         data += reply->readAll(); // read what's left in the buffer
 
@@ -36,7 +36,7 @@ private:
 
         QByteArray data;
         while (!reply->isFinished()) {
-            data += co_await QCoro::coro(reply).read(1);
+            data += co_await qCoro(reply).read(1);
         }
         data += reply->readAll(); // read what's left in the buffer
 
@@ -50,7 +50,7 @@ private:
 
         QByteArrayList lines;
         while (!reply->isFinished()) {
-            const auto line = co_await QCoro::coro(reply).readLine();
+            const auto line = co_await qCoro(reply).readLine();
             if (!line.isNull()) {
                 lines.push_back(line);
             }

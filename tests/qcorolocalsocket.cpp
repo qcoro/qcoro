@@ -21,7 +21,7 @@ private:
             socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         });
 
-        co_await QCoro::coro(socket).waitForConnected();
+        co_await qCoro(socket).waitForConnected();
 
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
     }
@@ -35,7 +35,7 @@ private:
             socket.disconnectFromServer();
         });
 
-        co_await QCoro::coro(socket).waitForDisconnected();
+        co_await qCoro(socket).waitForDisconnected();
 
         QCORO_COMPARE(socket.state(), QLocalSocket::UnconnectedState);
     }
@@ -49,7 +49,7 @@ private:
 
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        co_await QCoro::coro(socket).waitForConnected();
+        co_await qCoro(socket).waitForConnected();
     }
 
     QCoro::Task<> testDoesntCoAwaitDisconnectedSocket_coro(QCoro::TestContext context) {
@@ -58,7 +58,7 @@ private:
         QLocalSocket socket;
         QCORO_COMPARE(socket.state(), QLocalSocket::UnconnectedState);
 
-        co_await QCoro::coro(socket).waitForDisconnected();
+        co_await qCoro(socket).waitForDisconnected();
     }
 
     QCoro::Task<> testConnectToServerWithArgs_coro(QCoro::TestContext context) {
@@ -66,7 +66,7 @@ private:
 
         QLocalSocket socket;
 
-        co_await QCoro::coro(socket).connectToServer(QCoroLocalSocketTest::getSocketName());
+        co_await qCoro(socket).connectToServer(QCoroLocalSocketTest::getSocketName());
 
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
     }
@@ -77,7 +77,7 @@ private:
         QLocalSocket socket;
         socket.setServerName(QCoroLocalSocketTest::getSocketName());
 
-        co_await QCoro::coro(socket).connectToServer();
+        co_await qCoro(socket).connectToServer();
 
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
     }
@@ -85,7 +85,7 @@ private:
     QCoro::Task<> testWaitForConnectedTimeout_coro(QCoro::TestContext context) {
         QLocalSocket socket;
 
-        const bool ok = co_await QCoro::coro(socket).waitForConnected(10ms);
+        const bool ok = co_await qCoro(socket).waitForConnected(10ms);
         QCORO_VERIFY(!ok);
     }
 
@@ -94,7 +94,7 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        const bool ok = co_await QCoro::coro(socket).waitForDisconnected(10ms);
+        const bool ok = co_await qCoro(socket).waitForDisconnected(10ms);
         QCORO_VERIFY(!ok);
     }
 
@@ -107,7 +107,7 @@ private:
 
         QByteArray data;
         while (socket.state() == QLocalSocket::ConnectedState) {
-            data += co_await QCoro::coro(socket).readAll();
+            data += co_await qCoro(socket).readAll();
         }
         QCORO_VERIFY(!data.isEmpty());
         data += socket.readAll(); // read what's left in the buffer
@@ -124,7 +124,7 @@ private:
 
         QByteArray data;
         while (socket.state() == QLocalSocket::ConnectedState) {
-            data += co_await QCoro::coro(socket).read(1);
+            data += co_await qCoro(socket).read(1);
         }
         QCORO_VERIFY(!data.isEmpty());
         data += socket.readAll(); // read what's left in the buffer
@@ -141,7 +141,7 @@ private:
 
         QByteArrayList lines;
         while (socket.state() == QLocalSocket::ConnectedState) {
-            const auto line = co_await QCoro::coro(socket).readLine();
+            const auto line = co_await qCoro(socket).readLine();
             if (!line.isNull()) {
                 lines.push_back(line);
             }

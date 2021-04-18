@@ -7,11 +7,11 @@ class QCoroProcess : public QCoroIODevice;
 [`QProcess`][qtdoc-qprocess] normally has two features to wait for asynchronously: the process to start
 and to finish. Since `QProcess` itself doesn't provide the ability to `co_await` those operations,
 QCoro provides a wrapper class `QCoroProcess`. To wrap a `QProcess` object into the `QCoroProcess`
-wrapper, use [`QCoro::coro()`][qcoro-coro]:
+wrapper, use [`qCoro()`][qcoro-coro]:
 
 ```cpp
-QCoroProcess QCoro::coro(QProcess &);
-QCoroProcess QCoro::coro(QProcess *);
+QCoroProcess qCoro(QProcess &);
+QCoroProcess qCoro(QProcess *);
 ```
 
 Same as `QProcess` is a subclass of `QIODevice`, `QCoroProcess` subclasses [`QCoroIODevice`][qcoro-qcoroiodevice],

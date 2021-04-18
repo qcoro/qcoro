@@ -12,11 +12,11 @@ Those operations are connecting to and disconnecting from the server.
 
 Since `QAbstractSocket` doesn't provide the ability to `co_await` those operations, QCoro provides
  a wrapper calss `QCoroAbstractSocket`. To wrap a `QAbstractSocket` object into the `QCoroAbstractSocket`
- wrapper, use [`QCoro::coro()`][qcoro-coro]:
+ wrapper, use [`qCoro()`][qcoro-coro]:
 
 ```cpp
-QCoroAbstractSocket QCoro::coro(QAbstractSocket &);
-QCoroAbstractSocket QCoro::coro(QAbstractSocket *);
+QCoroAbstractSocket qCoro(QAbstractSocket &);
+QCoroAbstractSocket qCoro(QAbstractSocket *);
 ```
 
 Same as `QAbstractSocket` is a subclass of `QIODevice`, `QCoroAbstractSocket` subclasses
@@ -72,7 +72,7 @@ Awaitable auto QCoroAbstractSocket::connectToHost(const QString &hostName, quint
 ```cpp
 QCoro::Task<QByteArray> requestDataFromServer(const QString &hostName) {
     QTcpSocket socket;
-    if (!co_await QCoro::coro(socket).connectToHost(hostName)) {
+    if (!co_await qCoro(socket).connectToHost(hostName)) {
         qWarning() << "Failed to connect to the server";
         co_return QByteArray{};
     }
@@ -81,7 +81,7 @@ QCoro::Task<QByteArray> requestDataFromServer(const QString &hostName) {
 
     QByteArray data;
     while (!data.endsWith("\r\n.\r\n")) {
-        data += co_await QCoro::coro(socket).readAll();
+        data += co_await qCoro(socket).readAll();
     }
 
     co_return data;

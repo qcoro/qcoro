@@ -13,7 +13,7 @@ private:
     QCoro::Task<> testStartTriggers_coro(QCoro::TestContext context) {
         QProcess process;
 
-        co_await QCoro::coro(process).start(QStringLiteral("true"), {});
+        co_await qCoro(process).start(QStringLiteral("true"), {});
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
@@ -24,7 +24,7 @@ private:
         QProcess process;
         process.setProgram(QStringLiteral("true"));
 
-        co_await QCoro::coro(process).start();
+        co_await qCoro(process).start();
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
@@ -35,7 +35,7 @@ private:
         QCoro::EventLoopChecker eventLoopResponsive{1, 0ms};
 
         QProcess process;
-        co_await QCoro::coro(process).start(QStringLiteral("true"), {});
+        co_await qCoro(process).start(QStringLiteral("true"), {});
 
         QCORO_VERIFY(eventLoopResponsive);
 
@@ -44,14 +44,14 @@ private:
 
     QCoro::Task<> testStartDoesntCoAwaitRunningProcess_coro(QCoro::TestContext ctx) {
         QProcess process;
-        co_await QCoro::coro(process).start(QStringLiteral("sleep"), {QStringLiteral("1")});
+        co_await qCoro(process).start(QStringLiteral("sleep"), {QStringLiteral("1")});
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
         ctx.setShouldNotSuspend();
 
         QTest::ignoreMessage(QtWarningMsg, "QProcess::start: Process is already running");
-        co_await QCoro::coro(process).start();
+        co_await qCoro(process).start();
 
         process.waitForFinished();
     }
@@ -63,7 +63,7 @@ private:
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
-        const auto ok = co_await QCoro::coro(process).waitForFinished();
+        const auto ok = co_await qCoro(process).waitForFinished();
 
         QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::NotRunning);
@@ -76,7 +76,7 @@ private:
 
         ctx.setShouldNotSuspend();
 
-        const auto ok = co_await QCoro::coro(process).waitForFinished();
+        const auto ok = co_await qCoro(process).waitForFinished();
         QCORO_VERIFY(ok);
     }
 
@@ -87,7 +87,7 @@ private:
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
-        const auto ok = co_await QCoro::coro(process).waitForFinished(1s);
+        const auto ok = co_await qCoro(process).waitForFinished(1s);
 
         QCORO_VERIFY(!ok);
         QCORO_COMPARE(process.state(), QProcess::Running);

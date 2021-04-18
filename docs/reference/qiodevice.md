@@ -7,16 +7,16 @@ class QCoroIODevice
 [`QIODevice`][qtdoc-qiodevice] has several different IO operations that can be waited on
 asynchronously. Since `QIODevice` itself doesn't provide the abaility to `co_await` those
 operations, QCoro provides a wrapper class called `QCoroIODevice`. To wrap a `QIODevice`
-into a `QCoroIODevice`, use [`QCoro::coro()`][qcoro-coro]:
+into a `QCoroIODevice`, use [`qCoro()`][qcoro-coro]:
 
 ```cpp
-QCoroIODevice QCoro::coro(QIODevice &);
-QCoroIODevice QCoro::coro(QIODevice *);
+QCoroIODevice qCoro(QIODevice &);
+QCoroIODevice qCoro(QIODevice *);
 ```
 
 Note that Qt provides several subclasses of `QIODevice`. QCoro provides coroutine-friendly
 wrappers for some of those types as well (e.g. for [`QLocalSocket`][qlocalsocket]). This
-subclass can be passed to `QCoro::coro()` function as well. Oftentimes the wrapper class
+subclass can be passed to `qCoro()` function as well. Oftentimes the wrapper class
 will provide some additional features (like co_awaiting establishing connection etc.).
 You can check whether QCoro supports the QIODevice subclass by checking the list of supported
 Qt types.
@@ -61,7 +61,7 @@ Awaitable auto QCoroIODevice::readLine(qint64 maxSize = 0)
 ## Examples
 
 ```cpp
-const QByteArray data = co_await QCoro::coro(device).readAll();
+const QByteArray data = co_await qCoro(device).readAll();
 ```
 
 [qlocalsocket]: qlocalsocket.md

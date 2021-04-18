@@ -11,56 +11,49 @@
 #include "qcoroabstractsocket.h"
 #include "qcoronetworkreply.h"
 
-namespace QCoro {
-
 //! Returns a coroutine-friendly wrapper for QProcess object.
 /*!
  * Returns a wrapper for the QProcess \c p that provides coroutine-friendly
  * way to co_await the process to start or finish.
  */
-inline auto coro(QProcess &p) noexcept { return detail::QCoroProcess{&p}; }
-//! \copydoc QCoro::coro(QProcess &p) noexcept
-inline auto coro(QProcess *p) noexcept { return detail::QCoroProcess{p}; }
+inline auto qCoro(QProcess &p) noexcept { return QCoro::detail::QCoroProcess{&p}; }
+//! \copydoc qCoro(QProcess &p) noexcept
+inline auto qCoro(QProcess *p) noexcept { return QCoro::detail::QCoroProcess{p}; }
 
 //! Returns a coroutine-friendly wrapper for QLocalSocket object.
 /*!
  * Returns a wrapper for the QLocalSocket \c s that provides coroutine-friendly
  * way to co_await the socket to connect and disconnect.
  */
-inline auto coro(QLocalSocket &s) noexcept { return detail::QCoroLocalSocket{&s}; }
-//! \copydoc QCoro::coro(QLocalSocket &s) noexcept
-inline auto coro(QLocalSocket *s) noexcept { return detail::QCoroLocalSocket{s}; }
+inline auto qCoro(QLocalSocket &s) noexcept { return QCoro::detail::QCoroLocalSocket{&s}; }
+//! \copydoc qCoro(QLocalSocket &s) noexcept
+inline auto qCoro(QLocalSocket *s) noexcept { return QCoro::detail::QCoroLocalSocket{s}; }
 
 //! Returns a coroutine-friendly wrapper for QAbstractSocket object.
 /*!
  * Returns a wrapper for the QAbstractSocket \c s that provides coroutine-friendly
  * way to co_await the socket to connect and disconnect.
  */
-inline auto coro(QAbstractSocket &s) noexcept { return detail::QCoroAbstractSocket{&s}; }
-//! \copydoc QCoro::coro(QAbstractSocket &s) noexcept
-inline auto coro(QAbstractSocket *s) noexcept { return detail::QCoroAbstractSocket{s}; }
-
+inline auto qCoro(QAbstractSocket &s) noexcept { return QCoro::detail::QCoroAbstractSocket{&s}; }
+//! \copydoc qCoro(QAbstractSocket &s) noexcept
+inline auto qCoro(QAbstractSocket *s) noexcept { return QCoro::detail::QCoroAbstractSocket{s}; }
 
 //! Returns a coroutine-friendly wrapper for QNetworkReply object.
 /*!
  * Returns a wrapper for the QNetworkReply \c s that provides coroutine-friendly
  * way to co_await read and write operations.
  */
-inline auto coro(QNetworkReply &s) noexcept { return detail::QCoroNetworkReply{&s}; }
-//! \copydoc QCoro::coro(QAbstractSocket &s) noexcept
-inline auto coro(QNetworkReply *s) noexcept { return detail::QCoroNetworkReply{s}; }
-
-
+inline auto qCoro(QNetworkReply &s) noexcept { return QCoro::detail::QCoroNetworkReply{&s}; }
+//! \copydoc qCoro(QAbstractSocket &s) noexcept
+inline auto qCoro(QNetworkReply *s) noexcept { return QCoro::detail::QCoroNetworkReply{s}; }
 
 //! Returns a coroutine-friendly wrapper for a QIODevice-derived object.
 /*!
  * Returns a wrapper for QIODevice \c d that provides coroutine-friendly way
  * of co_awaiting reading and writing operation.
  */
-inline auto coro(QIODevice &d) noexcept { return detail::QCoroIODevice{&d}; }
-//! \copydoc QCoro::coro(QIODevice *d) noexcept
-inline auto coro(QIODevice *d) noexcept { return detail::QCoroIODevice{d}; }
-
-} // namespace QCoro
+inline auto qCoro(QIODevice &d) noexcept { return QCoro::detail::QCoroIODevice{&d}; }
+//! \copydoc qCoro(QIODevice *d) noexcept
+inline auto qCoro(QIODevice *d) noexcept { return QCoro::detail::QCoroIODevice{d}; }
 
 
