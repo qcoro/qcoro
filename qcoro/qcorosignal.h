@@ -12,6 +12,7 @@
 
 #include <concepts>
 #include <cassert>
+#include <optional>
 
 namespace QCoro::detail {
 
