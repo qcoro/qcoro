@@ -44,7 +44,15 @@ private:
 
     QCoro::Task<> testStartDoesntCoAwaitRunningProcess_coro(QCoro::TestContext ctx) {
         QProcess process;
+#ifdef __GNUC__
+        #pragma message "Workaround for GCC ICE!"
+        // Workaround GCC bug https://bugzilla.redhat.com/1952671
+        // GCC ICEs at the end of this function due to presence of two co_await statements.
+        process.start(QStringLiteral("sleep"), {QStringLiteral("1")});
+        process.waitForStarted();
+#else
         co_await qCoro(process).start(QStringLiteral("sleep"), {QStringLiteral("1")});
+#endif
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
