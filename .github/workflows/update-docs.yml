@@ -25,6 +25,7 @@ jobs:
           python -m pip install mkdocs mkdocs-material mkdocs-section-index
       - name: Build
         run: |
+          echo "{% extends \"base.html\" %}{% block analytics %}<img referrerpolicy=\"no-referrer-when-downgrade\" src=\"${{ secrets.ANALYTICS_URL }}\" style=\"border: 0\" alt=\"\">{% endblock %}" > docs/overrides/main.html
           mkdocs build -d /tmp/site
       - name: Commit files
         run: |
