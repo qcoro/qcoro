@@ -15,24 +15,24 @@ jobs:
           - os: ubuntu-latest
             compiler: /usr/bin/g++-10
             name: gcc-10
-            qt: 5
+            qt_version: 5
           - os: ubuntu-latest
             compiler: /usr/bin/clang++-11
             name: clang-11
-            qt: 5
+            qt_version: 5
           - os: ubuntu-latest
             compiler: /usr/bin/g++-10
             name: gcc-10
-            qt: 6
+            qt_version: 6
           - os: ubuntu-latest
             compiler: /usr/bin/clang++-11
             name: clang-11
-            qt: 6
+            qt_version: 6
           #- os: windows-latest
           #  compiler: msvc
 
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.name }}-qt${{ matrix.qt }}
+    name: ${{ matrix.os }}-${{ matrix.name }}-qt${{ matrix.qt_version }}
 
     steps:
     - uses: actions/checkout@v2
@@ -44,18 +44,33 @@ jobs:
         if [[ "${{ matrix.name }}" == "clang"* ]]; then
           sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
         fi
-        if [[ ${{ matrix.qt }} -eq 5 ]]; then
-          sudo apt-get install -y --no-install-recommends qtbase5-dev
-        else
-          sudo apt-get install -y --no-install-recommends qtbase6-dev
-        fi
+    - name: Install Qt5
+      if: ${{ matrix.qt_version == 5 }}
+      shell: bash
+      run: sudo apt-get install -y --no-install-recommends qtbase5-dev
+
+    - name: Install Qt6
+      if: ${{ matrix.qt_version == 6 }}
+      shell: bash
+      run: |
+          sudo apt-get install -y --no-install-recommends libgl-dev libegl-dev
+          pip3 install aqtinstall
+          aqt install -O /opt/qt6 -m qtbase icu --noarchives 6.0.4 linux desktop gcc_64
+          echo "/opt/qt6/6.0.4/gcc_64/bin/" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=/opt/qt6/6.0.4/gcc_64/lib/:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "XDG_DATA_DIRS=/opt/qt6/6.0.4/gcc_64/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
+
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
 
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DQCORO_ENABLE_ASAN=ON
+      run: |
+        echo $PATH
+        echo $LD_LIBRARY_PATH
+        echo $XDG_DATA_DIRS
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DQCORO_ENABLE_ASAN=ON -DUSE_QT_VERSION=${{ matrix.qt_version }}
 
     - name: Build
       working-directory: ${{github.workspace}}/build
