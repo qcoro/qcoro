@@ -7,6 +7,6 @@ target_link_libraries(dbustest-coro
     qcoro
     examples-dbus-common
     Threads::Threads
-    Qt5::Core
-    Qt5::DBus
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::DBus
 )

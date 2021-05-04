@@ -1,2 +1,2 @@
 add_executable(iodevice-example main.cpp)
-target_link_libraries(iodevice-example qcoro Qt5::Core Qt5::Network)
+target_link_libraries(iodevice-example qcoro Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Network)

@@ -1,2 +1,2 @@
 add_executable(future-example main.cpp)
-target_link_libraries(future-example qcoro Qt5::Core Qt5::Concurrent)
+target_link_libraries(future-example qcoro Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Concurrent)

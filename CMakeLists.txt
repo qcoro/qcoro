@@ -42,13 +42,24 @@ endif()
 #-----------------------------------------------------------#
 
 find_package(Threads REQUIRED)
-find_package(Qt5Core REQUIRED)
-find_package(Qt5DBus REQUIRED)
-find_package(Qt5Network REQUIRED)
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5Concurrent REQUIRED)
+
+set(REQUIRED_QT_COMPONENTS Core DBus Network Widgets Concurrent)
 if (BUILD_TESTING)
-    find_package(Qt5Test REQUIRED)
+    list(APPEND REQUIRED_QT_COMPONENTS Test)
+endif()
+
+if (NOT USE_QT_VERSION)
+    # FIXME: find_package(QT NAMES Qt6 Qt5 ...) seems to prefer Qt5 on my system
+    find_package(Qt6 COMPONENTS ${REQUIRED_QT_COMPONENTS})
+    if (NOT Qt6_FOUND)
+        find_package(Qt5 COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
+        set(QT_VERSION_MAJOR 5)
+    else()
+        set(QT_VERSION_MAJOR 6)
+    endif()
+else()
+    find_package(Qt${USE_QT_VERSION} COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
+    set(QT_VERSION_MAJOR ${USE_QT_VERSION})
 endif()
 
 #-----------------------------------------------------------#

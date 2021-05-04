@@ -2,7 +2,7 @@
 # Build the dbus-server as a stand-alone executable to workaround QTBUG-92107
 add_executable(dbusserver dbusserver.cpp)
 set_target_properties(dbusserver PROPERTIES COMPILE_DEFINITIONS STANDALONE)
-target_link_libraries(dbusserver Qt5::Core Qt5::DBus)
+target_link_libraries(dbusserver Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::DBus)
 
 #-----------------------------------------------------#
 
@@ -17,7 +17,7 @@ target_include_directories(examples-dbus-common
 )
 target_link_libraries(examples-dbus-common
     PUBLIC
-    Qt5::Core
+    Qt${QT_VERSION_MAJOR}::Core
     PRIVATE
-    Qt5::DBus
+    Qt${QT_VERSION_MAJOR}::DBus
 )

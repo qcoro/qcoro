@@ -15,22 +15,40 @@ jobs:
           - os: ubuntu-latest
             compiler: /usr/bin/g++-10
             name: gcc-10
+            qt: 5
           - os: ubuntu-latest
             compiler: /usr/bin/clang++-11
             name: clang-11
+            qt: 5
+          - os: ubuntu-latest
+            compiler: /usr/bin/g++-10
+            name: gcc-10
+            qt: 6
+          - os: ubuntu-latest
+            compiler: /usr/bin/clang++-11
+            name: clang-11
+            qt: 6
           #- os: windows-latest
           #  compiler: msvc
 
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.name }}
+    name: ${{ matrix.os }}-${{ matrix.name }}-qt${{ matrix.qt }}
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
       shell: bash
-      run: sudo apt-get install -y --no-install-recommends qtbase5-dev build-essential libc++1-11 libc++-11-dev libc++abi1-11 libc++abi-11-dev dbus dbus-x11
-
+      run: |
+        sudo apt-get install -y --no-install-recommends build-essential dbus dbus-x11
+        if [[ "${{ matrix.name }}" == "clang*" ]]; then
+          sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
+        fi
+        if [[ ${{ matrix.qt }} -eq 5 ]]; then
+          sudo apt-get install -y --no-install-recommends qtbase5-dev
+        else
+          sudo apt-get install -y --no-install-recommends qtbase6-dev
+        fi
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
 
