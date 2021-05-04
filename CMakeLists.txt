@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 3.14)
 set(qcoro_VERSION 0.1)
 project(qcoro LANGUAGES CXX VERSION ${qcoro_VERSION})
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 include(GNUInstallDirs)
 include(CTest)
 include(FeatureSummary)
+include(HasCompatibleStlAbi)
 
 #-----------------------------------------------------------#
 # Options
@@ -37,6 +40,7 @@ else()
     message(FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER_ID} is not currently supported.")
 endif()
 
+
 #-----------------------------------------------------------#
 # Dependencies
 #-----------------------------------------------------------#
@@ -60,6 +64,11 @@ if (NOT USE_QT_VERSION)
 else()
     find_package(Qt${USE_QT_VERSION} COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
     set(QT_VERSION_MAJOR ${USE_QT_VERSION})
+endif()
+
+has_compatible_stl_abi(QT_HAS_COMPAT_ABI)
+if (NOT QT_HAS_COMPAT_ABI)
+    message(WARNING "Qt is built with an incompatible STL, some features will be disabled!")
 endif()
 
 #-----------------------------------------------------------#

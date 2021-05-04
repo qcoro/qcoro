@@ -41,7 +41,7 @@ jobs:
       shell: bash
       run: |
         sudo apt-get install -y --no-install-recommends build-essential dbus dbus-x11
-        if [[ "${{ matrix.name }}" == "clang*" ]]; then
+        if [[ "${{ matrix.name }}" == "clang"* ]]; then
           sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
         fi
         if [[ ${{ matrix.qt }} -eq 5 ]]; then
