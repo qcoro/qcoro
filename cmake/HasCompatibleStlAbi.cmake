@@ -16,18 +16,20 @@ function(has_compatible_stl_abi result)
     message(CHECK_START "Checking stdlib compatibility with Qt")
     set(CMAKE_REQUIRED_LIBRARIES Qt${QT_VERSION_MAJOR}::Core)
     set(CMAKE_REQUIRED_QUIET TRUE)
-    check_source_compiles(CXX
-        "#include <QUnhandledException>
-         #include <exception>
-         int main() {
-             [[maybe_unused]] auto e = QUnhandledException(std::exception_ptr{});
-         }"
-         QUNHANDLEDEXCPTION_LINKS
-    )
-    if (NOT QUNHANDLEDEXCPTION_LINKS)
-        message(CHECK_FAIL "std::exception_ptr mismatch")
-        set(${result} FALSE PARENT_SCOPE)
-        return()
+    if (QT_VERSION_MAJOR GREATER_EQUAL 6)
+        check_source_compiles(CXX
+            "#include <QUnhandledException>
+             #include <exception>
+             int main() {
+                 [[maybe_unused]] auto e = QUnhandledException(std::exception_ptr{});
+             }"
+             QUNHANDLEDEXCPTION_LINKS
+        )
+        if (NOT QUNHANDLEDEXCPTION_LINKS)
+            message(CHECK_FAIL "std::exception_ptr mismatch")
+            set(${result} FALSE PARENT_SCOPE)
+            return()
+        endif()
     endif()
     message(CHECK_PASS "Success")
     set(${result} TRUE PARENT_SCOPE)
