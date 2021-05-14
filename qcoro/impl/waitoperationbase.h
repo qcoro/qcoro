@@ -6,8 +6,7 @@
 
 #include <QTimer>
 
-namespace QCoro::detail
-{
+namespace QCoro::detail {
 
 //! Base class for co_awaitable waitFor* operations.
 template<typename T>
@@ -23,9 +22,7 @@ public:
     }
 
 protected:
-    WaitOperationBase(T *obj, int timeout_msecs)
-        : mObj{obj}
-    {
+    WaitOperationBase(T *obj, int timeout_msecs) : mObj{obj} {
         if (timeout_msecs > -1) {
             mTimeoutTimer = std::make_unique<QTimer>();
             mTimeoutTimer->setInterval(timeout_msecs);
@@ -39,10 +36,10 @@ protected:
         }
 
         QObject::connect(mTimeoutTimer.get(), &QTimer::timeout,
-            [this, awaitingCoroutine]() mutable {
-                mTimedOut = true;
-                resume(awaitingCoroutine);
-            });
+                         [this, awaitingCoroutine]() mutable {
+                             mTimedOut = true;
+                             resume(awaitingCoroutine);
+                         });
         mTimeoutTimer->start();
     }
 

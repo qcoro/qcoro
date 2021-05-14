@@ -2,21 +2,21 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "testdbusserver.h"
 #include "testobject.h"
 #include "qcoro/dbus.h"
-#include "testdbusserver.h"
 
 #include <QDBusConnection>
+#include <QDBusError>
 #include <QDBusInterface>
 #include <QDBusReply>
-#include <QDBusError>
 
-class QCoroDBusPendingCallTest: public QCoro::TestObject<QCoroDBusPendingCallTest> {
+class QCoroDBusPendingCallTest : public QCoro::TestObject<QCoroDBusPendingCallTest> {
     Q_OBJECT
 private:
-
     QCoro::Task<> testTriggers_coro(QCoro::TestContext) {
-        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
+        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
+                             DBusServer::interfaceName);
         QCORO_VERIFY(iface.isValid());
 
         const QDBusReply<void> reply = co_await iface.asyncCall(QStringLiteral("foo"));
@@ -24,10 +24,12 @@ private:
     }
 
     QCoro::Task<> testReturnsResult_coro(QCoro::TestContext) {
-        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
+        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
+                             DBusServer::interfaceName);
         QCORO_VERIFY(iface.isValid());
 
-        const QDBusReply<QString> reply = co_await iface.asyncCall(QStringLiteral("ping"), QStringLiteral("Hello there!"));
+        const QDBusReply<QString> reply =
+            co_await iface.asyncCall(QStringLiteral("ping"), QStringLiteral("Hello there!"));
 
         QCORO_VERIFY(reply.isValid());
         QCORO_COMPARE(reply.value(), QStringLiteral("Hello there!"));
@@ -35,7 +37,8 @@ private:
 
     QCoro::Task<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker eventLoopResponsive;
-        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
+        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
+                             DBusServer::interfaceName);
         QCORO_VERIFY(iface.isValid());
 
         const QDBusReply<void> reply = co_await iface.asyncCall(QStringLiteral("blockFor"), 1);
@@ -45,7 +48,8 @@ private:
     }
 
     QCoro::Task<> testDoesntCoAwaitFinishedCall_coro(QCoro::TestContext test) {
-        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
+        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
+                             DBusServer::interfaceName);
         QCORO_VERIFY(iface.isValid());
 
         auto call = iface.asyncCall(QStringLiteral("foo"));
@@ -62,7 +66,8 @@ private:
 private Q_SLOTS:
     void initTestCase() {
         for (int i = 0; i < 10; ++i) {
-            QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
+            QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
+                                 DBusServer::interfaceName);
             if (iface.isValid()) {
                 return;
             }
@@ -73,7 +78,8 @@ private Q_SLOTS:
     }
 
     void cleanupTestCase() {
-        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName);
+        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
+                             DBusServer::interfaceName);
         iface.call(QStringLiteral("quit"));
     }
 
@@ -86,4 +92,3 @@ private Q_SLOTS:
 DBUS_TEST_MAIN(QCoroDBusPendingCallTest)
 
 #include "qdbuspendingcall.moc"
-

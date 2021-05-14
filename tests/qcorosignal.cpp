@@ -24,9 +24,7 @@ Q_SIGNALS:
     void multiArg(const QString &value, int number, QObject *ptr);
 };
 
-
-class QCoroSignalTest: public QCoro::TestObject<QCoroSignalTest>
-{
+class QCoroSignalTest : public QCoro::TestObject<QCoroSignalTest> {
     Q_OBJECT
 
 private:
@@ -34,7 +32,8 @@ private:
         SignalTest obj;
 
         co_await qCoro(&obj, &SignalTest::voidSignal);
-        static_assert(std::is_void_v<decltype(qCoro(&obj, &SignalTest::voidSignal).await_resume())>);
+        static_assert(
+            std::is_void_v<decltype(qCoro(&obj, &SignalTest::voidSignal).await_resume())>);
     }
 
     QCoro::Task<> testReturnsValue_coro(QCoro::TestContext) {
@@ -49,7 +48,8 @@ private:
         SignalTest obj;
 
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg);
-        static_assert(std::is_same_v<decltype(result), const std::tuple<const QString &, int, QObject *>>);
+        static_assert(
+            std::is_same_v<decltype(result), const std::tuple<const QString &, int, QObject *>>);
         const auto [value, number, ptr] = result;
         QCORO_COMPARE(value, QStringLiteral("YAY!"));
         QCORO_COMPARE(number, 42);
@@ -65,4 +65,3 @@ private Q_SLOTS:
 QTEST_GUILESS_MAIN(QCoroSignalTest)
 
 #include "qcorosignal.moc"
-

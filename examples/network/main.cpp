@@ -2,24 +2,25 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "qcoro/task.h"
 #include "qcoro/network.h"
+#include "qcoro/task.h"
 
 #include <QApplication>
-#include <QMainWindow>
 #include <QBoxLayout>
-#include <QProgressBar>
-#include <QPushButton>
+#include <QMainWindow>
+#include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
-#include <QMessageBox>
+#include <QProgressBar>
+#include <QPushButton>
 
 #include <memory>
 
 // Programming langauges
-static const QUrl wikiUrl = QUrl{QStringLiteral("https://www.wikidata.org/wiki/Special:EntityData/Q9143.json")};
+static const QUrl wikiUrl =
+    QUrl{QStringLiteral("https://www.wikidata.org/wiki/Special:EntityData/Q9143.json")};
 
-class MainWindow: public QMainWindow {
+class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     MainWindow() {
@@ -30,8 +31,7 @@ public:
         mPb->setMaximum(0);
 
         mBtn = new QPushButton(tr("Start Download"));
-        connect(mBtn, &QPushButton::clicked,
-                this, &MainWindow::start);
+        connect(mBtn, &QPushButton::clicked, this, &MainWindow::start);
 
         auto *vbox = new QVBoxLayout();
         vbox->addStretch(1);
@@ -57,8 +57,8 @@ private Q_SLOTS:
 
         auto *reply = co_await mNam.get(QNetworkRequest{wikiUrl});
         if (reply->error()) {
-            QMessageBox::warning(this,
-                tr("Network request error"),
+            QMessageBox::warning(
+                this, tr("Network request error"),
                 tr("Error occured during network request. Error code: %1").arg(reply->error()));
             co_return;
         }
@@ -75,9 +75,7 @@ private:
     QProgressBar *mPb = {};
 };
 
-
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     QApplication app(argc, argv);
     MainWindow window;
     window.showNormal();

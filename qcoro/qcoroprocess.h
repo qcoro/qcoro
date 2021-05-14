@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include "qcoroiodevice.h"
 #include "impl/waitoperationbase.h"
+#include "qcoroiodevice.h"
 
-#include <QProcess>
 #include <QPointer>
+#include <QProcess>
 
 #include <chrono>
 
@@ -30,21 +30,21 @@ class QCoroProcess : public QCoroIODevice {
 
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
             mConn = QObject::connect(mObj, &QProcess::stateChanged,
-                [this, awaitingCoroutine](auto newState) mutable {
-                    switch (newState) {
-                        case QProcess::NotRunning:
-                            // State changed from Starting or Running to NotRunning, which means
-                            // there was some error. Wake up the coroutine.
-                            resume(awaitingCoroutine);
-                            break;
-                        case QProcess::Starting:
-                            // Wait for it...
-                            break;
-                        case QProcess::Running:
-                            resume(awaitingCoroutine);
-                            break;
-                        }
-                });
+                                     [this, awaitingCoroutine](auto newState) mutable {
+                                         switch (newState) {
+                                         case QProcess::NotRunning:
+                                             // State changed from Starting or Running to NotRunning, which means
+                                             // there was some error. Wake up the coroutine.
+                                             resume(awaitingCoroutine);
+                                             break;
+                                         case QProcess::Starting:
+                                             // Wait for it...
+                                             break;
+                                         case QProcess::Running:
+                                             resume(awaitingCoroutine);
+                                             break;
+                                         }
+                                     });
 
             startTimeoutTimer(awaitingCoroutine);
         }
@@ -61,18 +61,15 @@ class QCoroProcess : public QCoroIODevice {
         }
 
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-            mConn = QObject::connect(mObj, qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
-                [this, awaitingCoroutine]() mutable {
-                    resume(awaitingCoroutine);
-                });
+            mConn = QObject::connect(
+                mObj, qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
+                [this, awaitingCoroutine]() mutable { resume(awaitingCoroutine); });
             startTimeoutTimer(awaitingCoroutine);
         }
     };
 
 public:
-    explicit QCoroProcess(QProcess *process)
-        : QCoroIODevice(process)
-    {}
+    explicit QCoroProcess(QProcess *process) : QCoroIODevice(process) {}
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
@@ -140,12 +137,10 @@ public:
      * [qtdoc-qprocess-start]: https://doc.qt.io/qt-5/qprocess.html#start-2
      */
     Awaitable auto start(const QString &program, const QStringList &arguments,
-               QIODevice::OpenMode mode = QIODevice::ReadWrite) {
+                         QIODevice::OpenMode mode = QIODevice::ReadWrite) {
         static_cast<QProcess *>(mDevice.data())->start(program, arguments, mode);
         return waitForStarted();
     }
-
 };
 
 } // namespace QCoro::detail
-

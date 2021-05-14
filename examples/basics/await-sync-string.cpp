@@ -4,8 +4,8 @@
 
 #include "qcoro/coroutine.h"
 
-#include <string>
 #include <iostream>
+#include <string>
 
 // Awaiter is a concept that provides the await_* methods below, which are used by the
 // co_await expression.
@@ -24,7 +24,7 @@
 //
 class StringAwaiter {
 public:
-    explicit StringAwaiter(const std::string &value) noexcept: mValue(value) {
+    explicit StringAwaiter(const std::string &value) noexcept : mValue(value) {
         std::cout << "StringAwaiter constructed with value '" << value << "'." << std::endl;
     }
     ~StringAwaiter() {
@@ -47,11 +47,10 @@ private:
     std::string mValue;
 };
 
-
 class StringAwaitable {
 public:
-    StringAwaitable(std::string str) noexcept: mStr(std::move(str)) {
-        std::cout << "StringAwaitable constructored with value '" << mStr<< "'." << std::endl;
+    StringAwaitable(std::string str) noexcept : mStr(std::move(str)) {
+        std::cout << "StringAwaitable constructored with value '" << mStr << "'." << std::endl;
     }
 
     ~StringAwaitable() {
@@ -86,14 +85,17 @@ public:
             std::cout << "VoidPromise::promise_type destroyed." << std::endl;
         }
 
-
         // Says whether the coroutine body should be executed immediately (`suspend_never`)
         // or whether it should be executed only once the coroutine is co_awaited.
-        QCORO_STD::suspend_never initial_suspend() const noexcept { return {}; }
+        QCORO_STD::suspend_never initial_suspend() const noexcept {
+            return {};
+        }
         // Says whether the coroutine should be suspended after returning a result
         // (`suspend_always`) or whether it should just end and the frame pointer and everything
         // should be destroyed.
-        QCORO_STD::suspend_never final_suspend() const noexcept { return {}; }
+        QCORO_STD::suspend_never final_suspend() const noexcept {
+            return {};
+        }
 
         // Called by the compiler during initial coroutine setup to obtain the object that
         // will be returned from the coroutine when it is suspended.
@@ -116,7 +118,8 @@ public:
         void return_void() const noexcept {};
 
         StringAwaitable await_transform(std::string str) {
-            std::cout << "VoidPromise::await_transform for string '" << str << "' called." << std::endl;
+            std::cout << "VoidPromise::await_transform for string '" << str << "' called."
+                      << std::endl;
             return StringAwaitable{std::move(str)};
         }
     };
@@ -150,4 +153,3 @@ int main() {
 
     return 0;
 }
-

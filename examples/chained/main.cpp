@@ -29,7 +29,9 @@ QCoro::Task<int> generateRandomNumber() {
     std::cout << "GenerateRandomNumber started" << std::endl;
     std::cout << "GenerateRandomNumber co_awaiting on generateRandomString()" << std::endl;
     const QString string = co_await generateRandomString();
-    std::cout << "GenerateRandomNumber successfully co_awaited on generateRandomString() and co_returns result" << std::endl;
+    std::cout << "GenerateRandomNumber successfully co_awaited on generateRandomString() and "
+                 "co_returns result"
+              << std::endl;
     co_return string.size();
 }
 
@@ -42,8 +44,7 @@ QCoro::Task<> logRandomNumber() {
     qApp->quit();
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     QCoreApplication app{argc, argv};
     QTimer::singleShot(0, qApp, logRandomNumber);
     return app.exec();

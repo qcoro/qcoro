@@ -11,8 +11,7 @@
 #include <iostream>
 #include <random>
 
-QCoro::Task<> startTask()
-{
+QCoro::Task<> startTask() {
     const auto data = co_await QtConcurrent::run([]() {
         QVector<std::uint64_t> data;
         std::random_device rd{};
@@ -26,8 +25,8 @@ QCoro::Task<> startTask()
 
     std::cout << "Generated " << data.size() << " random numbers" << std::endl;
 
-    const auto sum = co_await QtConcurrent::filteredReduced<std::uint64_t>(data,
-        [](const auto &) { return true; },
+    const auto sum = co_await QtConcurrent::filteredReduced<std::uint64_t>(
+        data, [](const auto &) { return true; },
         [](std::uint64_t &interm, std::uint64_t val) { interm += val; },
         QtConcurrent::UnorderedReduce);
 
@@ -35,11 +34,8 @@ QCoro::Task<> startTask()
     qApp->quit();
 }
 
-
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
     QTimer::singleShot(0, startTask);
     return app.exec();
-
 }

@@ -2,23 +2,23 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "testobject.h"
 #include "testhttpserver.h"
+#include "testobject.h"
 #include "qcoro/coro.h"
 
-#include <QTcpServer>
-#include <QNetworkRequest>
 #include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QTcpServer>
 
-class QCoroNetworkReplyTest: public QCoro::TestObject<QCoroNetworkReplyTest>
-{
+class QCoroNetworkReplyTest : public QCoro::TestObject<QCoroNetworkReplyTest> {
     Q_OBJECT
 
 private:
     QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
 
-        auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
+        auto *reply = nam.get(
+            QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
         QByteArray data;
         while (!reply->isFinished()) {
@@ -32,7 +32,8 @@ private:
     QCoro::Task<> testReadTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
 
-        auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
+        auto *reply = nam.get(
+            QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
         QByteArray data;
         while (!reply->isFinished()) {
@@ -46,7 +47,8 @@ private:
     QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
 
-        auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
+        auto *reply = nam.get(
+            QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
         QByteArrayList lines;
         while (!reply->isFinished()) {
@@ -79,4 +81,3 @@ private:
 QTEST_GUILESS_MAIN(QCoroNetworkReplyTest)
 
 #include "qcoronetworkreply.moc"
-

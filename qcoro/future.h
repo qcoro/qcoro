@@ -11,16 +11,14 @@
 
 /*! \cond internal */
 
-namespace QCoro::detail
-{
+namespace QCoro::detail {
 
 template<typename T>
 class FutureAwaiterBase {
 public:
-    explicit FutureAwaiterBase(QFuture<T> future)
-    {
+    explicit FutureAwaiterBase(QFuture<T> future) {
         QObject::connect(&mFutureWatcher, &QFutureWatcher<T>::finished,
-                [this]() { futureReady(); });
+                         [this]() { futureReady(); });
         mFutureWatcher.setFuture(future);
     }
 

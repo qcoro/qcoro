@@ -5,7 +5,7 @@
 #pragma once
 
 #ifndef QCORO_DEFAULT_MOVE
-    #define QCORO_DEFAULT_MOVE(Class) \
-        Class(Class &&) noexcept = default; \
-        Class &operator=(Class &&) noexcept = default;
+#define QCORO_DEFAULT_MOVE(Class)                                                                  \
+    Class(Class &&) noexcept = default;                                                            \
+    Class &operator=(Class &&) noexcept = default;
 #endif

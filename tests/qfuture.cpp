@@ -9,10 +9,9 @@
 
 #include <thread>
 
-class QCoroFutureTest: public QCoro::TestObject<QCoroFutureTest> {
+class QCoroFutureTest : public QCoro::TestObject<QCoroFutureTest> {
     Q_OBJECT
 private:
-
     QCoro::Task<> testTriggers_coro(QCoro::TestContext) {
         auto future = QtConcurrent::run([] { std::this_thread::sleep_for(100ms); });
         co_await future;
@@ -21,7 +20,10 @@ private:
     }
 
     QCoro::Task<> testReturnsResult_coro(QCoro::TestContext) {
-        const QString result = co_await QtConcurrent::run([] { std::this_thread::sleep_for(100ms); return QStringLiteral("42"); });
+        const QString result = co_await QtConcurrent::run([] {
+            std::this_thread::sleep_for(100ms);
+            return QStringLiteral("42");
+        });
 
         QCORO_COMPARE(result, QStringLiteral("42"));
     }
@@ -51,7 +53,6 @@ private:
         co_await future;
     }
 
-
 private Q_SLOTS:
     addTest(Triggers)
     addTest(ReturnsResult)
@@ -63,4 +64,3 @@ private Q_SLOTS:
 QTEST_GUILESS_MAIN(QCoroFutureTest)
 
 #include "qfuture.moc"
-

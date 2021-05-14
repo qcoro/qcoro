@@ -6,9 +6,7 @@
 
 using namespace QCoro;
 
-TestContext::TestContext(QEventLoop &el)
-    : mEventLoop(&el)
-{
+TestContext::TestContext(QEventLoop &el) : mEventLoop(&el) {
     mEventLoop->setProperty("testFinished", false);
     mEventLoop->setProperty("shouldNotSuspend", false);
 }
@@ -32,4 +30,3 @@ TestContext &TestContext::operator=(TestContext &&other) noexcept {
 void TestContext::setShouldNotSuspend() {
     mEventLoop->setProperty("shouldNotSuspend", true);
 }
-

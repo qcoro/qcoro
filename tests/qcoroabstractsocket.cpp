@@ -2,17 +2,16 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "testobject.h"
 #include "testhttpserver.h"
+#include "testobject.h"
 #include "qcoro/coro.h"
 
-#include <QTcpSocket>
 #include <QTcpServer>
+#include <QTcpSocket>
 
 #include <thread>
 
-class QCoroAbstractSocketTest: public QCoro::TestObject<QCoroAbstractSocketTest>
-{
+class QCoroAbstractSocketTest : public QCoro::TestObject<QCoroAbstractSocketTest> {
     Q_OBJECT
 
 private:
@@ -32,9 +31,7 @@ private:
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
-        QTimer::singleShot(10ms, [&socket]() mutable {
-            socket.disconnectFromHost();
-        });
+        QTimer::singleShot(10ms, [&socket]() mutable { socket.disconnectFromHost(); });
 
         co_await qCoro(socket).waitForDisconnected();
 
@@ -136,7 +133,6 @@ private:
         QCORO_COMPARE(lines.size(), 14);
     }
 
-
 private Q_SLOTS:
     void init() {
         mServer.start(QHostAddress::LocalHost);
@@ -145,7 +141,6 @@ private Q_SLOTS:
     void cleanup() {
         mServer.stop();
     }
-
 
     addTest(WaitForConnectedTriggers)
     addTest(WaitForConnectedTimeout)

@@ -4,13 +4,13 @@
 
 #pragma once
 
-#include "task.h"
-#include "qcoroprocess.h"
+#include "qcoroabstractsocket.h"
 #include "qcoroiodevice.h"
 #include "qcorolocalsocket.h"
-#include "qcoroabstractsocket.h"
 #include "qcoronetworkreply.h"
+#include "qcoroprocess.h"
 #include "qcorosignal.h"
+#include "task.h"
 
 //! Allows co_awaiting on signal emission.
 /*!
@@ -21,7 +21,9 @@
  * @see docs/reference/coro.md
  */
 template<QCoro::detail::concepts::QObject T, typename FuncPtr>
-inline auto qCoro(T *obj, FuncPtr &&ptr) { return QCoro::detail::QCoroSignal(obj, std::forward<FuncPtr>(ptr)); }
+inline auto qCoro(T *obj, FuncPtr &&ptr) {
+    return QCoro::detail::QCoroSignal(obj, std::forward<FuncPtr>(ptr));
+}
 
 //! Returns a coroutine-friendly wrapper for QProcess object.
 /*!
@@ -30,9 +32,13 @@ inline auto qCoro(T *obj, FuncPtr &&ptr) { return QCoro::detail::QCoroSignal(obj
  *
  * @see docs/reference/qprocess.md
  */
-inline auto qCoro(QProcess &p) noexcept { return QCoro::detail::QCoroProcess{&p}; }
+inline auto qCoro(QProcess &p) noexcept {
+    return QCoro::detail::QCoroProcess{&p};
+}
 //! \copydoc qCoro(QProcess &p) noexcept
-inline auto qCoro(QProcess *p) noexcept { return QCoro::detail::QCoroProcess{p}; }
+inline auto qCoro(QProcess *p) noexcept {
+    return QCoro::detail::QCoroProcess{p};
+}
 
 //! Returns a coroutine-friendly wrapper for QLocalSocket object.
 /*!
@@ -41,9 +47,13 @@ inline auto qCoro(QProcess *p) noexcept { return QCoro::detail::QCoroProcess{p};
  *
  * @see docs/reference/qlocalsocket.md
  */
-inline auto qCoro(QLocalSocket &s) noexcept { return QCoro::detail::QCoroLocalSocket{&s}; }
+inline auto qCoro(QLocalSocket &s) noexcept {
+    return QCoro::detail::QCoroLocalSocket{&s};
+}
 //! \copydoc qCoro(QLocalSocket &s) noexcept
-inline auto qCoro(QLocalSocket *s) noexcept { return QCoro::detail::QCoroLocalSocket{s}; }
+inline auto qCoro(QLocalSocket *s) noexcept {
+    return QCoro::detail::QCoroLocalSocket{s};
+}
 
 //! Returns a coroutine-friendly wrapper for QAbstractSocket object.
 /*!
@@ -52,9 +62,13 @@ inline auto qCoro(QLocalSocket *s) noexcept { return QCoro::detail::QCoroLocalSo
  *
  * @see docs/reference/qabstractsocket.md
  */
-inline auto qCoro(QAbstractSocket &s) noexcept { return QCoro::detail::QCoroAbstractSocket{&s}; }
+inline auto qCoro(QAbstractSocket &s) noexcept {
+    return QCoro::detail::QCoroAbstractSocket{&s};
+}
 //! \copydoc qCoro(QAbstractSocket &s) noexcept
-inline auto qCoro(QAbstractSocket *s) noexcept { return QCoro::detail::QCoroAbstractSocket{s}; }
+inline auto qCoro(QAbstractSocket *s) noexcept {
+    return QCoro::detail::QCoroAbstractSocket{s};
+}
 
 //! Returns a coroutine-friendly wrapper for QNetworkReply object.
 /*!
@@ -63,9 +77,13 @@ inline auto qCoro(QAbstractSocket *s) noexcept { return QCoro::detail::QCoroAbst
  *
  * @see docs/reference/qnetworkreply.md
  */
-inline auto qCoro(QNetworkReply &s) noexcept { return QCoro::detail::QCoroNetworkReply{&s}; }
+inline auto qCoro(QNetworkReply &s) noexcept {
+    return QCoro::detail::QCoroNetworkReply{&s};
+}
 //! \copydoc qCoro(QAbstractSocket &s) noexcept
-inline auto qCoro(QNetworkReply *s) noexcept { return QCoro::detail::QCoroNetworkReply{s}; }
+inline auto qCoro(QNetworkReply *s) noexcept {
+    return QCoro::detail::QCoroNetworkReply{s};
+}
 
 //! Returns a coroutine-friendly wrapper for a QIODevice-derived object.
 /*!
@@ -74,8 +92,10 @@ inline auto qCoro(QNetworkReply *s) noexcept { return QCoro::detail::QCoroNetwor
  *
  * @see docs/reference/qiodevice.md
  */
-inline auto qCoro(QIODevice &d) noexcept { return QCoro::detail::QCoroIODevice{&d}; }
+inline auto qCoro(QIODevice &d) noexcept {
+    return QCoro::detail::QCoroIODevice{&d};
+}
 //! \copydoc qCoro(QIODevice *d) noexcept
-inline auto qCoro(QIODevice *d) noexcept { return QCoro::detail::QCoroIODevice{d}; }
-
-
+inline auto qCoro(QIODevice *d) noexcept {
+    return QCoro::detail::QCoroIODevice{d};
+}

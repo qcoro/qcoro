@@ -3,19 +3,19 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcoro/coroutine.h"
-#include "qcoro/task.h"
 #include "qcoro/dbus.h"
+#include "qcoro/task.h"
 
 #include "common/dbusserver.h"
 
 #include <QCoreApplication>
-#include <QTimer>
-#include <QDateTime>
 #include <QDBusConnection>
 #include <QDBusInterface>
 #include <QDBusPendingCall>
 #include <QDBusReply>
+#include <QDateTime>
 #include <QDebug>
+#include <QTimer>
 
 #include <chrono>
 #include <iostream>
@@ -24,10 +24,10 @@
 
 using namespace std::chrono_literals;
 
-QCoro::Task<> dbusWorker()
-{
+QCoro::Task<> dbusWorker() {
     auto bus = QDBusConnection::sessionBus();
-    auto iface = QDBusInterface{DBusServer::serviceName, DBusServer::objectPath, DBusServer::interfaceName, bus};
+    auto iface = QDBusInterface{DBusServer::serviceName, DBusServer::objectPath,
+                                DBusServer::interfaceName, bus};
     qInfo() << "Sending PING";
     QDBusReply<QString> response = co_await iface.asyncCall(QStringLiteral("blockingPing"), 1);
     if (const auto &err = response.error(); err.isValid()) {
@@ -36,14 +36,14 @@ QCoro::Task<> dbusWorker()
     qInfo() << "Received response:" << response.value();
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     QCoreApplication app(argc, argv);
     auto process = DBusServer::runStadaloneServer();
 
     QTimer tickTimer;
     QObject::connect(&tickTimer, &QTimer::timeout, &app, []() {
-        std::cout << QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString() << " Tick!" << std::endl;
+        std::cout << QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString()
+                  << " Tick!" << std::endl;
     });
     tickTimer.start(400ms);
 
@@ -53,4 +53,3 @@ int main(int argc, char **argv)
 
     return app.exec();
 }
-

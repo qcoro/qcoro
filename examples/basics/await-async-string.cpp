@@ -8,27 +8,29 @@
 #include <QMetaObject>
 #include <QTimer>
 
-#include <string>
-#include <iostream>
 #include <chrono>
+#include <iostream>
 #include <memory>
+#include <string>
 
 using namespace std::chrono_literals;
 
-class FutureString: public QObject {
+class FutureString : public QObject {
     Q_OBJECT
 public:
-    explicit FutureString(const QString &str)
-        : mStr(str)
-    {
+    explicit FutureString(const QString &str) : mStr(str) {
         QTimer::singleShot(1s, this, [this]() {
             mReady = true;
             Q_EMIT ready();
         });
     }
 
-    bool isReady() const { return mReady; }
-    QString result() const  { return mStr; }
+    bool isReady() const {
+        return mReady;
+    }
+    QString result() const {
+        return mStr;
+    }
 Q_SIGNALS:
     void ready();
 
@@ -54,7 +56,8 @@ private:
 //
 class FutureStringAwaiter {
 public:
-    explicit FutureStringAwaiter(const std::shared_ptr<FutureString> value) noexcept: mFuture(value) {
+    explicit FutureStringAwaiter(const std::shared_ptr<FutureString> value) noexcept
+        : mFuture(value) {
         std::cout << "FutureStringAwaiter constructed." << std::endl;
     }
     ~FutureStringAwaiter() {
@@ -86,10 +89,9 @@ private:
     std::shared_ptr<FutureString> mFuture;
 };
 
-
 class FutureStringAwaitable {
 public:
-    FutureStringAwaitable(const std::shared_ptr<FutureString> value) noexcept: mFuture(value) {
+    FutureStringAwaitable(const std::shared_ptr<FutureString> value) noexcept : mFuture(value) {
         std::cout << "FutureStringAwaitable constructed." << std::endl;
     }
 
@@ -125,14 +127,17 @@ public:
             std::cout << "VoidPromise::promise_type destroyed." << std::endl;
         }
 
-
         // Says whether the coroutine body should be executed immediately (`suspend_never`)
         // or whether it should be executed only once the coroutine is co_awaited.
-        QCORO_STD::suspend_never initial_suspend() const noexcept { return {}; }
+        QCORO_STD::suspend_never initial_suspend() const noexcept {
+            return {};
+        }
         // Says whether the coroutine should be suspended after returning a result
         // (`suspend_always`) or whether it should just end and the frame pointer and everything
         // should be destroyed.
-        QCORO_STD::suspend_never final_suspend() const noexcept { return {}; }
+        QCORO_STD::suspend_never final_suspend() const noexcept {
+            return {};
+        }
 
         // Called by the compiler during initial coroutine setup to obtain the object that
         // will be returned from the coroutine when it is suspended.
@@ -197,4 +202,3 @@ int main(int argc, char **argv) {
 }
 
 #include "await-async-string.moc"
-

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "qcoroiodevice.h"
 #include "impl/waitoperationbase.h"
+#include "qcoroiodevice.h"
 
 #include <QLocalSocket>
 #include <QPointer>
@@ -17,7 +17,7 @@ namespace QCoro::detail {
 using namespace std::chrono_literals;
 
 //! QLocalSocket wrapper with co_awaitable-friendly API.
-class QCoroLocalSocket: private QCoroIODevice {
+class QCoroLocalSocket : private QCoroIODevice {
     //! An Awaitable that suspends the coroutine until the socket is connected
     class WaitForConnectedOperation : public WaitOperationBase<QLocalSocket> {
     public:
@@ -30,21 +30,21 @@ class QCoroLocalSocket: private QCoroIODevice {
 
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
             mConn = QObject::connect(mObj, &QLocalSocket::stateChanged,
-                [this, awaitingCoroutine](auto newState) mutable {
-                    switch (newState) {
-                        case QLocalSocket::UnconnectedState:
-                        case QLocalSocket::ConnectingState:
-                            // Almost there...
-                            break;
-                        case QLocalSocket::ClosingState:
-                            // We shouldn't be here when waiting for Connected state...
-                            resume(awaitingCoroutine);
-                            break;
-                        case QLocalSocket::ConnectedState:
-                            resume(awaitingCoroutine);
-                            break;
-                        }
-                });
+                                     [this, awaitingCoroutine](auto newState) mutable {
+                                         switch (newState) {
+                                         case QLocalSocket::UnconnectedState:
+                                         case QLocalSocket::ConnectingState:
+                                             // Almost there...
+                                             break;
+                                         case QLocalSocket::ClosingState:
+                                             // We shouldn't be here when waiting for Connected state...
+                                             resume(awaitingCoroutine);
+                                             break;
+                                         case QLocalSocket::ConnectedState:
+                                             resume(awaitingCoroutine);
+                                             break;
+                                         }
+                                     });
 
             startTimeoutTimer(awaitingCoroutine);
         }
@@ -61,10 +61,9 @@ class QCoroLocalSocket: private QCoroIODevice {
         }
 
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-            mConn = QObject::connect(mObj, &QLocalSocket::disconnected,
-                [this, awaitingCoroutine]() mutable {
-                    resume(awaitingCoroutine);
-                });
+            mConn = QObject::connect(
+                mObj, &QLocalSocket::disconnected,
+                [this, awaitingCoroutine]() mutable { resume(awaitingCoroutine); });
             startTimeoutTimer(awaitingCoroutine);
         }
     };
@@ -74,15 +73,18 @@ class QCoroLocalSocket: private QCoroIODevice {
         using QCoroIODevice::ReadOperation::ReadOperation;
 
         bool await_ready() const noexcept final {
-            return QCoroIODevice::ReadOperation::await_ready()
-                    || static_cast<const QLocalSocket *>(mDevice.data())->state() == QLocalSocket::UnconnectedState;
+            return QCoroIODevice::ReadOperation::await_ready() ||
+                   static_cast<const QLocalSocket *>(mDevice.data())->state() ==
+                       QLocalSocket::UnconnectedState;
         }
 
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
             QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
-            mStateConn = QObject::connect(static_cast<QLocalSocket *>(mDevice.data()), &QLocalSocket::stateChanged,
+            mStateConn = QObject::connect(
+                static_cast<QLocalSocket *>(mDevice.data()), &QLocalSocket::stateChanged,
                 [this, awaitingCoroutine]() {
-                    if (static_cast<const QLocalSocket *>(mDevice.data())->state() == QLocalSocket::UnconnectedState) {
+                    if (static_cast<const QLocalSocket *>(mDevice.data())->state() ==
+                        QLocalSocket::UnconnectedState) {
                         finish(awaitingCoroutine);
                     }
                 });
@@ -98,13 +100,12 @@ class QCoroLocalSocket: private QCoroIODevice {
     };
 
 public:
-    explicit QCoroLocalSocket(QLocalSocket *socket)
-        : QCoroIODevice(socket)
-    {}
+    explicit QCoroLocalSocket(QLocalSocket *socket) : QCoroIODevice(socket) {}
 
     //! Co_awaitable equivalent  to [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected].
     Awaitable auto waitForConnected(int timeout_msecs = 30'000) {
-        return WaitForConnectedOperation{static_cast<QLocalSocket *>(mDevice.data()), timeout_msecs};
+        return WaitForConnectedOperation{static_cast<QLocalSocket *>(mDevice.data()),
+                                         timeout_msecs};
     }
     //
     //! Co_awaitable equivalent to [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected].
@@ -118,7 +119,8 @@ public:
 
     //! Co_awaitable equivalent to [`QLocalSocket::waitForDisconnected()`][qtdoc-qlocalsocket-waitForDisconnected].
     Awaitable auto waitForDisconnected(int timeout_msecs = 30'000) {
-        return WaitForDisconnectedOperation{static_cast<QLocalSocket *>(mDevice.data()), timeout_msecs};
+        return WaitForDisconnectedOperation{static_cast<QLocalSocket *>(mDevice.data()),
+                                            timeout_msecs};
     }
 
     //! Co_awaitable equivalent to [`QLocalSocket::waitForDisconnected()`][qtdoc-qlocalsocket-waitForDisconnected].
@@ -145,7 +147,8 @@ public:
      * Equivalent to calling [`QLocalSocket::connecToServer`][qdoc-qlocalsocket-connecToServer]
      * followed by [`QLocalSocket::waitForConnected`][qdoc-qlocalsocket-waitForConnected].
      */
-    Awaitable auto connectToServer(const QString &name, QIODevice::OpenMode openMode = QIODevice::ReadWrite) {
+    Awaitable auto connectToServer(const QString &name,
+                                   QIODevice::OpenMode openMode = QIODevice::ReadWrite) {
         static_cast<QLocalSocket *>(mDevice.data())->connectToServer(name, openMode);
         return waitForConnected();
     }
@@ -174,4 +177,3 @@ public:
  * [qtdoc-qlocalsocket-connectToServer]: https://doc.qt.io/qt-5/qlocalsocket.html#connectToServer
  * [qtdoc-qlocalsocket-connectToServer-1]: https://doc.qt.io/qt-5/qlocalsocket.html#connectToServer-1
  */
-

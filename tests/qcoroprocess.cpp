@@ -5,8 +5,7 @@
 #include "testobject.h"
 #include "qcoro/coro.h"
 
-class QCoroProcessTest: public QCoro::TestObject<QCoroProcessTest>
-{
+class QCoroProcessTest : public QCoro::TestObject<QCoroProcessTest> {
     Q_OBJECT
 
 private:
@@ -45,7 +44,7 @@ private:
     QCoro::Task<> testStartDoesntCoAwaitRunningProcess_coro(QCoro::TestContext ctx) {
         QProcess process;
 #if defined(__GNUC__) && !defined(__clang__)
-        #pragma message "Workaround for GCC ICE!"
+#pragma message "Workaround for GCC ICE!"
         // Workaround GCC bug https://bugzilla.redhat.com/1952671
         // GCC ICEs at the end of this function due to presence of two co_await statements.
         process.start(QStringLiteral("sleep"), {QStringLiteral("1")});

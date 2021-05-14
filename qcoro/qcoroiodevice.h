@@ -7,12 +7,11 @@
 #include "coroutine.h"
 #include "macros.h"
 
-#include <QPointer>
-#include <QIODevice>
 #include <QByteArray>
+#include <QIODevice>
+#include <QPointer>
 
 namespace QCoro::detail {
-
 
 class QCoroIODevice {
 private:
@@ -24,8 +23,7 @@ private:
         virtual ~OperationBase() = default;
 
     protected:
-        explicit OperationBase(QIODevice *device)
-            : mDevice(device) {}
+        explicit OperationBase(QIODevice *device) : mDevice(device) {}
 
         virtual void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
             QObject::disconnect(mConn);
@@ -50,18 +48,17 @@ protected:
         QCORO_DEFAULT_MOVE(ReadOperation)
 
         virtual bool await_ready() const noexcept {
-            return !mDevice
-                    || !mDevice->isOpen()
-                    || !mDevice->isReadable()
-                    || mDevice->bytesAvailable() > 0;
+            return !mDevice || !mDevice->isOpen() || !mDevice->isReadable() ||
+                   mDevice->bytesAvailable() > 0;
         }
 
         virtual void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
             Q_ASSERT(mDevice);
             mConn = QObject::connect(mDevice, &QIODevice::readyRead,
                                      std::bind(&ReadOperation::finish, this, awaitingCoroutine));
-            mCloseConn = QObject::connect(mDevice, &QIODevice::aboutToClose,
-                                     std::bind(&ReadOperation::finish, this, awaitingCoroutine));
+            mCloseConn =
+                QObject::connect(mDevice, &QIODevice::aboutToClose,
+                                 std::bind(&ReadOperation::finish, this, awaitingCoroutine));
         }
 
         auto await_resume() {
@@ -100,13 +97,14 @@ protected:
             Q_ASSERT(mDevice);
             mConn = QObject::connect(mDevice, &QIODevice::bytesWritten,
                                      [this, awaitingCoroutine](qint64 written) {
-                                        mBytesWritten += written;
-                                        if (mBytesWritten >= mBytesToBeWritten) {
-                                            finish(awaitingCoroutine);
-                                        }
-                                    });
-            mCloseConn = QObject::connect(mDevice, &QIODevice::aboutToClose,
-                                    std::bind(&WriteOperation::finish, this, awaitingCoroutine));
+                                         mBytesWritten += written;
+                                         if (mBytesWritten >= mBytesToBeWritten) {
+                                             finish(awaitingCoroutine);
+                                         }
+                                     });
+            mCloseConn =
+                QObject::connect(mDevice, &QIODevice::aboutToClose,
+                                 std::bind(&WriteOperation::finish, this, awaitingCoroutine));
         }
 
         qint64 await_resume() noexcept {
@@ -120,9 +118,7 @@ protected:
 
 public:
     //! Constructor.
-    explicit QCoroIODevice(QIODevice *device)
-        : mDevice{device}
-    {}
+    explicit QCoroIODevice(QIODevice *device) : mDevice{device} {}
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::readAll()`][qdoc-qiodevice-readall].
@@ -209,6 +205,4 @@ protected:
     QPointer<QIODevice> mDevice = {};
 };
 
-
-
-} /// namespace QCoro::detail
+} // namespace QCoro::detail

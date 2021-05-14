@@ -4,11 +4,11 @@
 
 #include "testdbusserver.h"
 
+#include <QCoreApplication>
 #include <QDBusConnection>
 #include <QDBusError>
-#include <QTimer>
 #include <QDebug>
-#include <QCoreApplication>
+#include <QTimer>
 
 #include <thread>
 
@@ -44,5 +44,3 @@ QString DBusServer::ping(const QString &ping) {
 void DBusServer::quit() {
     qApp->quit();
 }
-
-

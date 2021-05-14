@@ -4,11 +4,11 @@
 
 #pragma once
 
-#include <QObject>
 #include <QEventLoop>
-#include <QVariant>
-#include <QTimer>
+#include <QObject>
 #include <QTest>
+#include <QTimer>
+#include <QVariant>
 
 #include "qcoro/task.h"
 
@@ -60,10 +60,9 @@ private:
 };
 
 template<typename TestClass>
-class TestObject : public QObject
-{
+class TestObject : public QObject {
 protected:
-    void coroWrapper(QCoro::Task<>(TestClass::*testFunction)(TestContext)) {
+    void coroWrapper(QCoro::Task<> (TestClass::*testFunction)(TestContext)) {
         QEventLoop el;
         QTimer::singleShot(5s, &el, [&el]() mutable { el.exit(1); });
 
@@ -85,22 +84,20 @@ protected:
     }
 };
 
-#define addTest(name) \
-    void test##name() { \
-        coroWrapper(&std::remove_cvref_t<decltype(*this)>::test##name##_coro); \
+#define addTest(name)                                                                              \
+    void test##name() {                                                                            \
+        coroWrapper(&std::remove_cvref_t<decltype(*this)>::test##name##_coro);                     \
     }
 } // namespace QCoro
 
-#define QCORO_VERIFY(statement) \
-    do { \
-        if (!QTest::qVerify(static_cast<bool>(statement), #statement, "", __FILE__, __LINE__)) \
-            co_return; \
+#define QCORO_VERIFY(statement)                                                                    \
+    do {                                                                                           \
+        if (!QTest::qVerify(static_cast<bool>(statement), #statement, "", __FILE__, __LINE__))     \
+            co_return;                                                                             \
     } while (false)
 
-
-#define QCORO_COMPARE(actual, expected) \
-    do { \
-        if (!QTest::qCompare(actual, expected, #actual, #expected, __FILE__, __LINE__)) \
-            co_return; \
+#define QCORO_COMPARE(actual, expected)                                                            \
+    do {                                                                                           \
+        if (!QTest::qCompare(actual, expected, #actual, #expected, __FILE__, __LINE__))            \
+            co_return;                                                                             \
     } while (false)
-

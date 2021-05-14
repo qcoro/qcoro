@@ -6,15 +6,14 @@
 
 #include "coroutine.h"
 
-#include <variant>
 #include <atomic>
 #include <concepts>
+#include <variant>
 
-#include <QtGlobal>
 #include <QDebug>
+#include <QtGlobal>
 
-namespace QCoro
-{
+namespace QCoro {
 
 template<typename T = void>
 class Task;
@@ -132,7 +131,8 @@ public:
      * indicates that the coroutine should not be suspended.
      * */
     QCORO_STD::suspend_never initial_suspend() const noexcept {
-        return {}; }
+        return {};
+    }
 
     //! Called when the coroutine co_returns or reaches the end of user code.
     /*!
@@ -157,8 +157,7 @@ public:
      * a specialiation of the \c QCoro::detail::awaiter_type template class exists. The
      * specialization returns type of the Awaiter for the given type \c T.
      */
-    template<typename T,
-             typename Awaiter = QCoro::detail::awaiter_type_t<std::remove_cvref_t<T>>>
+    template<typename T, typename Awaiter = QCoro::detail::awaiter_type_t<std::remove_cvref_t<T>>>
     auto await_transform(T &&value) {
         return Awaiter{value};
     }
@@ -228,7 +227,7 @@ private:
  * See \ref TaskPromiseBase documentation for explanation about promise_type.
  */
 template<typename T>
-class TaskPromise final: public TaskPromiseBase {
+class TaskPromise final : public TaskPromiseBase {
 public:
     explicit TaskPromise() = default;
     ~TaskPromise() = default;
@@ -285,7 +284,7 @@ private:
 
 //! Specialization of TaskPromise for coroutines returning \c void.
 template<>
-class TaskPromise<void> final: public TaskPromiseBase {
+class TaskPromise<void> final : public TaskPromiseBase {
 public:
     // Constructor.
     explicit TaskPromise() = default;
@@ -320,7 +319,6 @@ private:
     //! Exception thrown by the coroutine.
     std::exception_ptr mException;
 };
-
 
 //! Base-class for Awaiter objects returned by the \c Task<T> operator co_await().
 template<typename _Promise>
@@ -363,7 +361,7 @@ public:
      * co_awaited coroutine has finished synchronously and the co_awaiting coroutine doesn't
      * have to suspend.
      */
-     bool await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+    bool await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
         return mAwaitedCoroutine.promise().setAwaitingCoroutine(awaitingCoroutine);
     }
 
@@ -415,9 +413,7 @@ public:
     /*!
      * \param[in] coroutine handle of the coroutine that has constructed the task.
      */
-    explicit Task(QCORO_STD::coroutine_handle<promise_type> coroutine)
-        : mCoroutine(coroutine)
-    {}
+    explicit Task(QCORO_STD::coroutine_handle<promise_type> coroutine) : mCoroutine(coroutine) {}
 
     //! Task cannot be copy-constructed.
     Task(const Task &) = delete;
@@ -425,8 +421,7 @@ public:
     Task &operator=(const Task &) = delete;
 
     //! The task can be move-constructed.
-    Task(Task &&other) noexcept
-        : mCoroutine(other.mCoroutine) {
+    Task(Task &&other) noexcept : mCoroutine(other.mCoroutine) {
         other.mCoroutine = nullptr;
     }
 
@@ -460,9 +455,9 @@ public:
      * object, that is an object that the co_await keyword uses to suspend and
      * resume the coroutine.
      */
-    auto operator co_await() const & noexcept {
+    auto operator co_await() const &noexcept {
         //! Specialization of the TaskAwaiterBase that returns the promise result by value
-        class TaskAwaiter:  public detail::TaskAwaiterBase<promise_type> {
+        class TaskAwaiter : public detail::TaskAwaiterBase<promise_type> {
         public:
             TaskAwaiter(QCORO_STD::coroutine_handle<promise_type> awaitedCoroutine)
                 : detail::TaskAwaiterBase<promise_type>{awaitedCoroutine} {}
@@ -480,7 +475,7 @@ public:
     }
 
     //! \copydoc QCoro::Task::operator co_await() const & noexcept
-    auto operator co_await() const && noexcept {
+    auto operator co_await() const &&noexcept {
         //! Specialization of the TaskAwaiterBase that returns the promise result as an r-value reference.
         class TaskAwaiter : public detail::TaskAwaiterBase<promise_type> {
         public:
@@ -508,11 +503,10 @@ private:
     QCORO_STD::coroutine_handle<promise_type> mCoroutine = {};
 };
 
-
 namespace detail {
 
 template<typename T>
-inline Task<T> TaskPromise<T>::get_return_object() noexcept{
+inline Task<T> TaskPromise<T>::get_return_object() noexcept {
     return Task<T>{QCORO_STD::coroutine_handle<TaskPromise>::from_promise(*this)};
 }
 
@@ -523,4 +517,3 @@ Task<void> inline TaskPromise<void>::get_return_object() noexcept {
 } // namespace detail
 
 } // namespace QCoro
-

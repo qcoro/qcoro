@@ -6,25 +6,20 @@
 
 #include "task.h"
 
+#include <QMetaObject>
 #include <QPointer>
 #include <QTimer>
-#include <QMetaObject>
 
 #include <QDebug>
 
 /*! \cond internal */
 
-namespace QCoro::detail
-{
+namespace QCoro::detail {
 
 class TimerAwaiter {
 public:
-    explicit TimerAwaiter(QTimer &timer)
-        : mTimer(&timer)
-    {}
-    explicit TimerAwaiter(QTimer *timer)
-        : mTimer(timer)
-    {}
+    explicit TimerAwaiter(QTimer &timer) : mTimer(&timer) {}
+    explicit TimerAwaiter(QTimer *timer) : mTimer(timer) {}
 
     bool await_ready() const noexcept {
         return !mTimer || !mTimer->isActive();
@@ -32,11 +27,10 @@ public:
 
     void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
         if (mTimer && mTimer->isActive()) {
-            mConn = QObject::connect(mTimer, &QTimer::timeout,
-                    [this, awaitingCoroutine]() mutable {
-                        QObject::disconnect(mConn);
-                        awaitingCoroutine.resume();
-                    });
+            mConn = QObject::connect(mTimer, &QTimer::timeout, [this, awaitingCoroutine]() mutable {
+                QObject::disconnect(mConn);
+                awaitingCoroutine.resume();
+            });
         } else {
             awaitingCoroutine.resume();
         }

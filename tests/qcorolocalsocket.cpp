@@ -2,16 +2,15 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "testobject.h"
 #include "testhttpserver.h"
+#include "testobject.h"
 #include "qcoro/coro.h"
 
 #include <QLocalServer>
 
 #include <thread>
 
-class QCoroLocalSocketTest: public QCoro::TestObject<QCoroLocalSocketTest>
-{
+class QCoroLocalSocketTest : public QCoro::TestObject<QCoroLocalSocketTest> {
     Q_OBJECT
 
 private:
@@ -31,9 +30,7 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        QTimer::singleShot(10ms, [&socket]() mutable {
-            socket.disconnectFromServer();
-        });
+        QTimer::singleShot(10ms, [&socket]() mutable { socket.disconnectFromServer(); });
 
         co_await qCoro(socket).waitForDisconnected();
 
@@ -150,7 +147,6 @@ private:
         QCORO_COMPARE(lines.size(), 14);
     }
 
-
 private Q_SLOTS:
     void init() {
         mServer.start(QCoroLocalSocketTest::getSocketName());
@@ -159,7 +155,6 @@ private Q_SLOTS:
     void cleanup() {
         mServer.stop();
     }
-
 
     addTest(WaitForConnectedTriggers)
     addTest(WaitForConnectedTimeout)
@@ -176,10 +171,10 @@ private Q_SLOTS:
 private:
     static QString getSocketName() {
 
-        return QStringLiteral("%1-%2").arg(QCoreApplication::applicationName())
-                                      .arg(QCoreApplication::applicationPid());
+        return QStringLiteral("%1-%2")
+            .arg(QCoreApplication::applicationName())
+            .arg(QCoreApplication::applicationPid());
     }
-
 
     TestHttpServer<QLocalServer> mServer;
 };

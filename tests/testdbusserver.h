@@ -10,13 +10,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-
-class DBusServer : public QObject
-{
+class DBusServer : public QObject {
     Q_OBJECT
 
 public:
-
     inline static const QString serviceName = QStringLiteral("cz.dvratil.qcorodbustest");
     inline static const QString interfaceName = QStringLiteral("cz.dvratil.qcorodbustest");
     inline static const QString objectPath = QStringLiteral("/");
@@ -38,21 +35,19 @@ public Q_SLOTS:
 
 // We must fork the DBus server into its own process due to QTBUG-92107 (asyncCall blocks if the
 // remote service is registered in the same process (even if it lives in a different thread)
-#define DBUS_TEST_MAIN(TestClass) \
-    int main(int argc, char **argv) { \
-        const auto child = fork(); \
-        if (child == 0) { \
-            QCoreApplication app(argc, argv); \
-            DBusServer server; \
-            return app.exec(); \
-        } \
-        \
-        QCoreApplication app(argc, argv); \
-        TestClass testClass; \
-        QTEST_SET_MAIN_SOURCE_PATH \
-        const int result = QTest::qExec(&testClass, argc, argv); \
-        waitpid(child, 0, WNOHANG); \
-        return result;  \
+#define DBUS_TEST_MAIN(TestClass)                                                                  \
+    int main(int argc, char **argv) {                                                              \
+        const auto child = fork();                                                                 \
+        if (child == 0) {                                                                          \
+            QCoreApplication app(argc, argv);                                                      \
+            DBusServer server;                                                                     \
+            return app.exec();                                                                     \
+        }                                                                                          \
+                                                                                                   \
+        QCoreApplication app(argc, argv);                                                          \
+        TestClass testClass;                                                                       \
+        QTEST_SET_MAIN_SOURCE_PATH                                                                 \
+        const int result = QTest::qExec(&testClass, argc, argv);                                   \
+        waitpid(child, 0, WNOHANG);                                                                \
+        return result;                                                                             \
     }
-
-

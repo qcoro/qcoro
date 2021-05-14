@@ -6,19 +6,16 @@
 
 #include "task.h"
 
-#include <QPointer>
 #include <QNetworkReply>
+#include <QPointer>
 
 /*! \cond internal */
 
-namespace QCoro::detail
-{
+namespace QCoro::detail {
 
 class NetworkReplyAwaiter {
 public:
-    explicit NetworkReplyAwaiter(QNetworkReply *reply)
-        : mReply(reply)
-    {}
+    explicit NetworkReplyAwaiter(QNetworkReply *reply) : mReply(reply) {}
 
     bool await_ready() const noexcept {
         return !mReply || mReply->isFinished();
@@ -27,9 +24,7 @@ public:
     void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
         if (mReply) {
             QObject::connect(mReply, &QNetworkReply::finished,
-                    [awaitingCoroutine]() mutable {
-                        awaitingCoroutine.resume();
-                    });
+                             [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
         } else {
             awaitingCoroutine.resume();
         }

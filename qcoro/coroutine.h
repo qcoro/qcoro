@@ -4,13 +4,13 @@
 
 #pragma once
 #if defined(__clang__)
-    #include <experimental/coroutine>
-    #define QCORO_STD std::experimental
+#include <experimental/coroutine>
+#define QCORO_STD std::experimental
 #elif defined(__GNUC__)
-    #include <coroutine>
-    #define QCORO_STD std
+#include <coroutine>
+#define QCORO_STD std
 #else
-    #pragma error "Current compiler doesn't support Coroutines."
+#pragma error "Current compiler doesn't support Coroutines."
 #endif
 
 // Moc doesn't seem to understand something in the <concepts> header...
@@ -26,9 +26,10 @@ namespace QCoro {
  */
 template<typename T>
 concept Awaitable = requires(T t) {
-    { t.await_ready() } -> std::same_as<bool>;
-    { t.await_suspend(std::declval<QCORO_STD::coroutine_handle<>>()) };
-    { t.await_resume() };
+    { t.await_ready() }
+    ->std::same_as<bool>;
+    {t.await_suspend(std::declval<QCORO_STD::coroutine_handle<>>())};
+    {t.await_resume()};
 };
 
 } // namespace QCoro

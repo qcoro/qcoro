@@ -4,22 +4,19 @@
 
 #pragma once
 
-#include <QThread>
 #include <QDebug>
+#include <QThread>
 
-#include <mutex>
 #include <condition_variable>
+#include <mutex>
 
 class QTcpServer;
 class QLocalServer;
 
 template<typename Func>
-class Thread : public QThread
-{
+class Thread : public QThread {
 public:
-    explicit Thread(Func &&f)
-        : mFunc(std::forward<Func>(f))
-    {}
+    explicit Thread(Func &&f) : mFunc(std::forward<Func>(f)) {}
 
     ~Thread() = default;
 
@@ -94,10 +91,14 @@ private:
                     lines.push_back(QStringLiteral("Hola %1\n").arg(i));
                 }
 
-                const auto len = std::accumulate(lines.cbegin(), lines.cend(), 0, [](int l, const QString &s) { return l + s.size(); });
+                const auto len =
+                    std::accumulate(lines.cbegin(), lines.cend(), 0,
+                                    [](int l, const QString &s) { return l + s.size(); });
                 conn->write("HTTP/1.1 200 OK\r\n"
                             "Content-Type: text/plain\r\n"
-                            "Content-Length: " + QByteArray::number(len) + "\r\n"
+                            "Content-Length: " +
+                            QByteArray::number(len) +
+                            "\r\n"
                             "\r\n");
                 conn->flush();
                 for (const auto &line : lines) {
@@ -123,11 +124,8 @@ private:
         mPort = 0;
     }
 
-
     std::unique_ptr<QThread> mThread;
     std::mutex mReadyMutex;
     std::condition_variable mServerReady;
     uint16_t mPort = 0;
 };
-
-

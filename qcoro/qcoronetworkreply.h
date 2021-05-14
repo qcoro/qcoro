@@ -17,15 +17,16 @@ private:
         using QCoroIODevice::ReadOperation::ReadOperation;
 
         bool await_ready() const noexcept final {
-            return QCoroIODevice::ReadOperation::await_ready()
-                    || static_cast<const QNetworkReply *>(mDevice.data())->isFinished();
+            return QCoroIODevice::ReadOperation::await_ready() ||
+                   static_cast<const QNetworkReply *>(mDevice.data())->isFinished();
         }
 
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept final {
             QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
 
-            mFinishedConn = QObject::connect(static_cast<QNetworkReply *>(mDevice.data()), &QNetworkReply::finished,
-                                             std::bind(&ReadOperation::finish, this, awaitingCoroutine));
+            mFinishedConn = QObject::connect(
+                static_cast<QNetworkReply *>(mDevice.data()), &QNetworkReply::finished,
+                std::bind(&ReadOperation::finish, this, awaitingCoroutine));
         }
 
     private:
@@ -53,6 +54,4 @@ public:
     }
 };
 
-
-
-}
+} // namespace QCoro::detail

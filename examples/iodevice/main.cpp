@@ -1,5 +1,5 @@
-#include "qcoro/task.h"
 #include "qcoro/iodevice.h"
+#include "qcoro/task.h"
 
 #include <QCoreApplication>
 #include <QHostAddress>
@@ -12,15 +12,12 @@
 
 using namespace std::chrono_literals;
 
-
-class Server : public QObject
-{
+class Server : public QObject {
     Q_OBJECT
 public:
     explicit Server(QHostAddress addr, uint16_t port) {
         mServer.listen(addr, port);
-        connect(&mServer, &QTcpServer::newConnection,
-                this, &Server::handleConnection);
+        connect(&mServer, &QTcpServer::newConnection, this, &Server::handleConnection);
     }
 
 private Q_SLOTS:
@@ -36,8 +33,7 @@ private:
     QTcpServer mServer;
 };
 
-class Client : public QObject
-{
+class Client : public QObject {
     Q_OBJECT
 public:
     explicit Client(QHostAddress addr, uint16_t port) {
@@ -60,8 +56,7 @@ private:
     QTimer mTimer;
 };
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     QCoreApplication app{argc, argv};
     Server server{QHostAddress::LocalHost, 6666};
     Client client{QHostAddress::LocalHost, 6666};

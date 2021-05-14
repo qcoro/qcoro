@@ -6,16 +6,15 @@
 #include "qcoro/timer.h"
 
 #include <QCoreApplication>
-#include <QTimer>
 #include <QDateTime>
+#include <QTimer>
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 using namespace std::chrono_literals;
 
-QCoro::Task<> runMainTimer()
-{
+QCoro::Task<> runMainTimer() {
     std::cout << "runMainTimer started" << std::endl;
     QTimer timer;
     timer.setInterval(2s);
@@ -28,15 +27,13 @@ QCoro::Task<> runMainTimer()
     qApp->quit();
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     QCoreApplication app{argc, argv};
     QTimer ticker;
-    QObject::connect(&ticker, &QTimer::timeout,
-                     &app, []() {
-                        std::cout << QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString()
-                                  << " Secondary timer tick!" << std::endl;
-                     });
+    QObject::connect(&ticker, &QTimer::timeout, &app, []() {
+        std::cout << QDateTime::currentDateTime().toString(Qt::ISODateWithMs).toStdString()
+                  << " Secondary timer tick!" << std::endl;
+    });
     ticker.start(200ms);
 
     QTimer::singleShot(0, runMainTimer);

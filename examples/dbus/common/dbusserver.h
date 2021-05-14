@@ -9,8 +9,7 @@
 
 #include <memory>
 
-class DBusServer: public QObject
-{
+class DBusServer : public QObject {
     Q_OBJECT
 public:
     static const QString serviceName;
@@ -23,4 +22,3 @@ public:
 public Q_SLOTS:
     QString blockingPing(int seconds) const;
 };
-

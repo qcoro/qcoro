@@ -5,8 +5,7 @@
 #include "testobject.h"
 #include "qcoro/timer.h"
 
-class QCoroTimerTest : public QCoro::TestObject<QCoroTimerTest>
-{
+class QCoroTimerTest : public QCoro::TestObject<QCoroTimerTest> {
     Q_OBJECT
 
 private:

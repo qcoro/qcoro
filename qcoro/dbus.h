@@ -6,9 +6,9 @@
 
 #include "task.h"
 
-#include <QDBusPendingCallWatcher>
-#include <QDBusPendingCall>
 #include <QDBusMessage>
+#include <QDBusPendingCall>
+#include <QDBusPendingCallWatcher>
 #include <QDBusPendingReply>
 
 /*! \cond internal */
@@ -17,9 +17,7 @@ namespace QCoro::detail {
 
 class DBusPendingCallAwaiter {
 public:
-    explicit DBusPendingCallAwaiter(const QDBusPendingCall &call)
-        : mCall(call)
-    {}
+    explicit DBusPendingCallAwaiter(const QDBusPendingCall &call) : mCall(call) {}
 
     bool await_ready() const noexcept {
         return mCall.isFinished();
@@ -29,9 +27,9 @@ public:
         auto *watcher = new QDBusPendingCallWatcher{mCall};
         QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                          [awaitingCoroutine](auto *watcher) mutable {
-                            awaitingCoroutine.resume();
-                            watcher->deleteLater();
-                        });
+                             awaitingCoroutine.resume();
+                             watcher->deleteLater();
+                         });
     }
 
     QDBusMessage await_resume() const {
@@ -46,9 +44,7 @@ private:
 template<typename T = void>
 class DBusPendingReplyAwaiter {
 public:
-    explicit DBusPendingReplyAwaiter(const QDBusPendingReply<T> &reply)
-        : mReply(reply)
-    {}
+    explicit DBusPendingReplyAwaiter(const QDBusPendingReply<T> &reply) : mReply(reply) {}
 
     bool await_ready() const noexcept {
         return mReply.isFinished();
@@ -58,9 +54,9 @@ public:
         auto *watcher = new QDBusPendingCallWatcher{mReply};
         QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                          [awaitingCoroutine](auto *watcher) mutable {
-                            awaitingCoroutine.resume();
-                            watcher->deleteLater();
-                        });
+                             awaitingCoroutine.resume();
+                             watcher->deleteLater();
+                         });
     }
 
     QDBusPendingReply<T> await_resume() const {
@@ -81,7 +77,6 @@ template<typename S>
 struct awaiter_type<QDBusPendingReply<S>> {
     using type = DBusPendingReplyAwaiter<S>;
 };
-
 
 template<>
 struct awaiter_type<QDBusPendingReply<>> {

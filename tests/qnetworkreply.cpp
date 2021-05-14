@@ -2,23 +2,22 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "testobject.h"
 #include "testhttpserver.h"
+#include "testobject.h"
 #include "qcoro/network.h"
 
+#include <QHostAddress>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QTcpServer>
-#include <QHostAddress>
-
 
 class QCoroNetworkReplyTest : public QCoro::TestObject<QCoroNetworkReplyTest> {
     Q_OBJECT
 private:
-
     QCoro::Task<> testTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
-        auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1").arg(mServer.port())});
+        auto *reply =
+            nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1").arg(mServer.port())});
 
         co_await reply;
 
@@ -33,7 +32,8 @@ private:
         QCoro::EventLoopChecker eventLoopResponsive;
         QNetworkAccessManager nam;
 
-        auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1/block").arg(mServer.port())});
+        auto *reply = nam.get(
+            QNetworkRequest{QStringLiteral("http://localhost:%1/block").arg(mServer.port())});
 
         co_await reply;
 
@@ -57,7 +57,8 @@ private:
 
     QCoro::Task<> testDoesntCoAwaitFinishedReply_coro(QCoro::TestContext test) {
         QNetworkAccessManager nam;
-        auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1").arg(mServer.port())});
+        auto *reply =
+            nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1").arg(mServer.port())});
 
         co_await reply;
 
