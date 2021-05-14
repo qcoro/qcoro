@@ -23,7 +23,9 @@ private:
         cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath, QDBusConnection::sessionBus());
         QCORO_VERIFY(iface.isValid());
 
-        co_await iface.foo();
+        const auto resp = co_await iface.foo();
+
+        QCORO_VERIFY(resp.isFinished());
     }
 
     QCoro::Task<> testReturnsResult_coro(QCoro::TestContext) {
@@ -49,8 +51,9 @@ private:
         cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath, QDBusConnection::sessionBus());
         QCORO_VERIFY(iface.isValid());
 
-        co_await iface.blockFor(1);
+        const auto result = co_await iface.blockFor(1);
 
+        QCORO_VERIFY(result.isFinished());
         QCORO_VERIFY(eventLoopResponsive);
     }
 

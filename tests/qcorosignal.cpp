@@ -30,14 +30,14 @@ class QCoroSignalTest: public QCoro::TestObject<QCoroSignalTest>
     Q_OBJECT
 
 private:
-    QCoro::Task<> testTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testTriggers_coro(QCoro::TestContext) {
         SignalTest obj;
 
         co_await qCoro(&obj, &SignalTest::voidSignal);
         static_assert(std::is_void_v<decltype(qCoro(&obj, &SignalTest::voidSignal).await_resume())>);
     }
 
-    QCoro::Task<> testReturnsValue_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReturnsValue_coro(QCoro::TestContext) {
         SignalTest obj;
 
         const auto result = co_await qCoro(&obj, &SignalTest::singleArg);
@@ -45,7 +45,7 @@ private:
         QCORO_COMPARE(result, QStringLiteral("YAY!"));
     }
 
-    QCoro::Task<> testReturnsTuple_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReturnsTuple_coro(QCoro::TestContext) {
         SignalTest obj;
 
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg);

@@ -15,7 +15,7 @@ class QCoroNetworkReplyTest: public QCoro::TestObject<QCoroNetworkReplyTest>
     Q_OBJECT
 
 private:
-    QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
 
         auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
@@ -29,7 +29,7 @@ private:
         QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
     }
 
-    QCoro::Task<> testReadTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReadTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
 
         auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
@@ -43,7 +43,7 @@ private:
         QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
     }
 
-    QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
 
         auto *reply = nam.get(QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});

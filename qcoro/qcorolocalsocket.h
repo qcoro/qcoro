@@ -81,7 +81,7 @@ class QCoroLocalSocket: private QCoroIODevice {
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
             QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
             mStateConn = QObject::connect(static_cast<QLocalSocket *>(mDevice.data()), &QLocalSocket::stateChanged,
-                [this, awaitingCoroutine](auto newState) {
+                [this, awaitingCoroutine]() {
                     if (static_cast<const QLocalSocket *>(mDevice.data())->state() == QLocalSocket::UnconnectedState) {
                         finish(awaitingCoroutine);
                     }

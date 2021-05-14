@@ -25,7 +25,7 @@ add_feature_info(Asan QCORO_ENABLE_ASAN "Build with AddressSanitizer")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -pedantic")
 
 
 if (QCORO_ENABLE_ASAN)

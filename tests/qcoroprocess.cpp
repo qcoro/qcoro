@@ -10,7 +10,7 @@ class QCoroProcessTest: public QCoro::TestObject<QCoroProcessTest>
     Q_OBJECT
 
 private:
-    QCoro::Task<> testStartTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testStartTriggers_coro(QCoro::TestContext) {
         QProcess process;
 
         co_await qCoro(process).start(QStringLiteral("true"), {});
@@ -20,7 +20,7 @@ private:
         process.waitForFinished();
     }
 
-    QCoro::Task<> testStartNoArgsTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testStartNoArgsTriggers_coro(QCoro::TestContext) {
         QProcess process;
         process.setProgram(QStringLiteral("true"));
 
@@ -31,7 +31,7 @@ private:
         process.waitForFinished();
     }
 
-    QCoro::Task<> testStartDoesntBlock_coro(QCoro::TestContext context) {
+    QCoro::Task<> testStartDoesntBlock_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker eventLoopResponsive{1, 0ms};
 
         QProcess process;
@@ -64,7 +64,7 @@ private:
         process.waitForFinished();
     }
 
-    QCoro::Task<> testFinishTriggers_coro(QCoro::TestContext ctx) {
+    QCoro::Task<> testFinishTriggers_coro(QCoro::TestContext) {
         QProcess process;
         process.start(QStringLiteral("sleep"), {QStringLiteral("1")});
         process.waitForStarted();
@@ -88,7 +88,7 @@ private:
         QCORO_VERIFY(ok);
     }
 
-    QCoro::Task<> testFinishCoAwaitTimeout_coro(QCoro::TestContext ctx) {
+    QCoro::Task<> testFinishCoAwaitTimeout_coro(QCoro::TestContext) {
         QProcess process;
         process.start(QStringLiteral("sleep"), {QStringLiteral("2")});
         process.waitForStarted();

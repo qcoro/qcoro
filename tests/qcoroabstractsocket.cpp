@@ -16,7 +16,7 @@ class QCoroAbstractSocketTest: public QCoro::TestObject<QCoroAbstractSocketTest>
     Q_OBJECT
 
 private:
-    QCoro::Task<> testWaitForConnectedTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testWaitForConnectedTriggers_coro(QCoro::TestContext) {
         QTcpSocket socket;
         QTimer::singleShot(10ms, [this, &socket]() mutable {
             socket.connectToHost(QHostAddress::LocalHost, mServer.port());
@@ -27,7 +27,7 @@ private:
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
     }
 
-    QCoro::Task<> testWaitForDisconnectedTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testWaitForDisconnectedTriggers_coro(QCoro::TestContext) {
         QTcpSocket socket;
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
@@ -60,7 +60,7 @@ private:
         co_await qCoro(socket).waitForDisconnected();
     }
 
-    QCoro::Task<> testConnectToServerWithArgs_coro(QCoro::TestContext context) {
+    QCoro::Task<> testConnectToServerWithArgs_coro(QCoro::TestContext) {
         QTcpSocket socket;
 
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
@@ -68,14 +68,14 @@ private:
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
     }
 
-    QCoro::Task<> testWaitForConnectedTimeout_coro(QCoro::TestContext context) {
+    QCoro::Task<> testWaitForConnectedTimeout_coro(QCoro::TestContext) {
         QTcpSocket socket;
 
         const bool ok = co_await qCoro(socket).waitForConnected(10ms);
         QCORO_VERIFY(!ok);
     }
 
-    QCoro::Task<> testWaitForDisconnectedTimeout_coro(QCoro::TestContext context) {
+    QCoro::Task<> testWaitForDisconnectedTimeout_coro(QCoro::TestContext) {
         QTcpSocket socket;
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
@@ -84,7 +84,7 @@ private:
         QCORO_VERIFY(!ok);
     }
 
-    QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext) {
         QTcpSocket socket;
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
@@ -101,7 +101,7 @@ private:
         QCORO_VERIFY(!data.isEmpty());
     }
 
-    QCoro::Task<> testReadTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReadTriggers_coro(QCoro::TestContext) {
         QTcpSocket socket;
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
@@ -118,7 +118,7 @@ private:
         QCORO_VERIFY(!data.isEmpty());
     }
 
-    QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext) {
         QTcpSocket socket;
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);

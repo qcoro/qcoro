@@ -143,7 +143,7 @@ VoidPromise myCoroutine() {
     std::cout << "Result successfully co_await-ed: " << result << std::endl;
 }
 
-int main(int argc, char **argv) {
+int main() {
     std::cout << "Calling myCoroutine() from main()." << std::endl;
     myCoroutine();
     std::cout << "Returned from myCoroutine() to main()." << std::endl;

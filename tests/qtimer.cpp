@@ -10,7 +10,7 @@ class QCoroTimerTest : public QCoro::TestObject<QCoroTimerTest>
     Q_OBJECT
 
 private:
-    QCoro::Task<> testTriggers_coro(QCoro::TestContext context) {
+    QCoro::Task<> testTriggers_coro(QCoro::TestContext) {
         QTimer timer;
         timer.setInterval(100ms);
         timer.start();
@@ -18,7 +18,7 @@ private:
         co_await timer;
     }
 
-    QCoro::Task<> testDoesntBlockEventLoop_coro(QCoro::TestContext context) {
+    QCoro::Task<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker eventLoopResponsive;
 
         QTimer timer;

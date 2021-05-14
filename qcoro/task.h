@@ -449,7 +449,7 @@ public:
      * A task that is ready (represents a finished coroutine) must not attempt
      * to suspend the coroutine again.
      */
-    const bool isReady() const {
+    bool isReady() const {
         return !mCoroutine || mCoroutine.done();
     }
 
