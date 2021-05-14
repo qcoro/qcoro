@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "../macros.h"
+
 #include <QTimer>
 
 namespace QCoro::detail {
