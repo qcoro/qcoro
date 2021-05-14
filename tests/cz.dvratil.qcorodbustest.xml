@@ -1,0 +1,25 @@
+<!DOCTYPE node PUBLIC "-//freedesktop/DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node>
+    <interface name="cz.dvratil.qcorodbustest">
+        <method name="foo">
+        </method>
+
+        <method name="ping">
+            <arg name="ping" type="s" direction="in" />
+            <arg type="s" direction="out" />
+        </method>
+
+        <method name="blockFor">
+            <arg name="seconds" type="i" direction="in" />
+        </method>
+
+        <method name="blockAndReturn">
+            <arg name="seconds" type="i" direction="in" />
+            <arg type="s" direction="out" />
+        </method>
+
+        <method name="quit">
+            <annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/>
+        </method>
+    </interface>
+</node>
