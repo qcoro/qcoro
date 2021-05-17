@@ -22,7 +22,7 @@ It requires compiler with support for the couroutines TS.
 
 ## Documentation
 
-👉 📘 [Documentation](https://danvratil.github.io/qcoro)
+👉 📘 [Documentation](https://qcoro.dvratil.cz/)
 
 ## Supported Qt Types
 
@@ -38,7 +38,7 @@ QDBusInterface remoteServiceInterface{serviceName, objectPath, interface};
 const QDBusReply<bool> isReady = co_await remoteServiceInterface.asyncCall(QStringLiteral("isReady"));
 ```
 
-[Full documentation here](https://danvratil.github.io/qcoro/reference/qdbuspendingcall).
+[Full documentation here](https://qcoro.dvratil.cz/reference/qdbuspendingcall).
 
 ### `QFuture`
 
@@ -55,7 +55,7 @@ const int b = co_await task2;
 co_return a + b;
 ```
 
-[Full documentation here](https://danvratil.github.io/qcoro/reference/qfuture).
+[Full documentation here](https://qcoro.dvratil.cz/reference/qfuture).
 
 ### `QNetworkReply`
 
@@ -83,7 +83,7 @@ if (reply->error() != QNetworkReply::NoError) {
  ...
  ```
 
-[Full documentation here](https://danvratil.github.io/qcoro/reference/qnetworkreply).
+[Full documentation here](https://qcoro.dvratil.cz/reference/qnetworkreply).
 
 ### `QTimer`
 
@@ -103,7 +103,7 @@ for (int i = 1; i <= 100; ++i) {
 qDebug() << "Done!";
 ```
 
-[Full documentation here](https://danvratil.github.io/qcoro/reference/qtimer).
+[Full documentation here](https://qcoro.dvratil.cz/reference/qtimer).
 
 ### `QIODevice`
 
@@ -118,5 +118,5 @@ const auto data = co_await socket;
 co_return calculateLatency(data);
 ```
 
-[Full documentation here](https://danvratil.github.io/qcoro/reference/qiodevice).
+[Full documentation here](https://qcoro.dvratil.cz/reference/qiodevice).
 
