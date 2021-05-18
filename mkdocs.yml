@@ -24,9 +24,9 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/twitter
-      links: https://twitter.com/danvratil
+      link: https://twitter.com/danvratil
     - icon: fontawesome/brands/github
-      links: https://github.com/danvratil
+      link: https://github.com/danvratil
 
 nav:
     - Home: index.md
