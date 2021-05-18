@@ -254,6 +254,11 @@ public:
         mValue = std::forward<T>(value);
     }
 
+    //! \copydoc template<typename T> TaskPromise::return_value(T &&value) noexcept
+    void return_value(const T &value) noexcept {
+        mValue = value;
+    }
+
     //! Retrieves the result of the coroutine.
     /*!
      *  \return the value co_returned by the finished coroutine. If the coroutine has
