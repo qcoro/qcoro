@@ -7,7 +7,6 @@
 #include "coroutine.h"
 
 #include <atomic>
-#include <concepts>
 #include <variant>
 
 #include <QDebug>

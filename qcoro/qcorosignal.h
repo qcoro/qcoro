@@ -11,8 +11,11 @@
 #include <QPointer>
 
 #include <cassert>
-#include <concepts>
 #include <optional>
+
+#ifndef Q_MOC_RUN // Moc cannot parse the libc++ concepts header
+#include <concepts>
+#endif
 
 namespace QCoro::detail {
 
