@@ -10,6 +10,7 @@
 #include "qcoronetworkreply.h"
 #include "qcoroprocess.h"
 #include "qcorosignal.h"
+#include "qcorotcpserver.h"
 #include "task.h"
 
 //! Allows co_awaiting on signal emission.
@@ -99,3 +100,19 @@ inline auto qCoro(QIODevice &d) noexcept {
 inline auto qCoro(QIODevice *d) noexcept {
     return QCoro::detail::QCoroIODevice{d};
 }
+
+//! Returns a coroutine-friendly wrapper for QTcpServer object.
+/*!
+ * Returns a wrapper for QTcpServer \c s that provides coroutine-friendly way
+ * of co_awaiting new connections.
+ *
+ * @see docs/reference/qtcpserver.md
+ */
+inline auto qCoro(QTcpServer &s) noexcept {
+    return QCoro::detail::QCoroTcpServer{&s};
+}
+//! \copydoc qCoro(QTcpServer &s) noexcept
+inline auto qCoro(QTcpServer *s) noexcept {
+    return QCoro::detail::QCoroTcpServer{s};
+}
+

@@ -47,5 +47,6 @@ nav:
           - QNetworkReply: reference/qnetworkreply.md
           - QProcess: reference/qprocess.md
           - QTimer: reference/qtimer.md
+          - QTcpServer: reference/qtcpserver.md
     - About:
         - License: about/license.md

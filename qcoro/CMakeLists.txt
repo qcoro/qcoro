@@ -24,6 +24,7 @@ set(qcoro_HEADERS
     qcoronetworkreply.h
     qcoroprocess.h
     qcorosignal.h
+    qcorotcpserver.h
     task.h
     timer.h
 )
