@@ -59,7 +59,7 @@ co_return a + b;
 
 ### `QNetworkReply`
 
-Doing network requests with Qt can be tedious - the singal/slot approach breaks the flow
+Doing network requests with Qt can be tedious - the signal/slot approach breaks the flow
 of your code. Chaining requests and error handling quickly become mess and your code is
 broken into numerous functions. But not with QCoro, where you can simply `co_await` the
 `QNetworkReply` to finish:
