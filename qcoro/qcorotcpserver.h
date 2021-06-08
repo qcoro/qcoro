@@ -6,10 +6,12 @@
 
 #include "impl/waitoperationbase.h"
 
-#include <QTcpServer>
 #include <QPointer>
 
 #include <chrono>
+
+class QTcpServer;
+class QTcpSocket;
 
 namespace QCoro::detail {
 
@@ -20,43 +22,25 @@ class QCoroTcpServer {
     //! An Awaitable that suspends the coroutine until new connection is available
     class WaitForNewConnectionOperation final : public WaitOperationBase<QTcpServer> {
     public:
-        WaitForNewConnectionOperation(QTcpServer *server, int timeout_msecs = 30'000)
-            : WaitOperationBase(server, timeout_msecs) {}
-
-        bool await_ready() const noexcept {
-            return !mObj || mObj->hasPendingConnections();
-        }
-
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
-            mConn = QObject::connect(mObj, &QTcpServer::newConnection,
-                                     [this, awaitingCoroutine]() mutable {
-                                        resume(awaitingCoroutine);
-                                     });
-            startTimeoutTimer(awaitingCoroutine);
-        }
-
-        QTcpSocket *await_resume() {
-            return mTimedOut ? nullptr : mObj->nextPendingConnection();
-        }
+        WaitForNewConnectionOperation(QTcpServer *server, int timeout_msecs = 30'000);
+        bool await_ready() const noexcept;
+        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        QTcpSocket *await_resume();
     };
 
 public:
-    explicit QCoroTcpServer(QTcpServer *server)
-        : mServer(server) {}
+    ///! Constructor.
+    explicit QCoroTcpServer(QTcpServer *server);
 
     //! Co_awaitable equivalent to [`QTcpServer::waitForNewConnection()`][qtdoc-qtcpserver-waitForNewConnection].
-    Awaitable auto waitForNewConnection(int timeout_msecs = 30'000) {
-        return WaitForNewConnectionOperation{mServer.data(), timeout_msecs};
-    }
+    WaitForNewConnectionOperation waitForNewConnection(int timeout_msecs = 30'000);
 
     //! Co_awaitable equivalent to [`QTcpServer::waitForNewConnection()`][qtdoc-qtcpserver-waitForNewConnection].
     /*!
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
      * timeout rather than plain `int`.
      */
-    Awaitable auto waitForNewConnection(std::chrono::milliseconds timeout) {
-        return WaitForNewConnectionOperation{mServer.data(), static_cast<int>(timeout.count())};
-    }
+    WaitForNewConnectionOperation waitForNewConnection(std::chrono::milliseconds timeout);
 
 private:
     QPointer<QTcpServer> mServer;
@@ -67,3 +51,19 @@ private:
 /*!
  * [qtdoc-qtcpserver-waitForNewConnection]: https://doc.qt.io/qt-5/qtcpserver.html#waitForNewConnection
  */
+
+//! Returns a coroutine-friendly wrapper for QTcpServer object.
+/*!
+ * Returns a wrapper for QTcpServer \c s that provides coroutine-friendly way
+ * of co_awaiting new connections.
+ *
+ * @see docs/reference/qtcpserver.md
+ */
+inline auto qCoro(QTcpServer &s) noexcept {
+    return QCoro::detail::QCoroTcpServer{&s};
+}
+//! \copydoc qCoro(QTcpServer &s) noexcept
+inline auto qCoro(QTcpServer *s) noexcept {
+    return QCoro::detail::QCoroTcpServer{s};
+}
+

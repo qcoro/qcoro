@@ -2,13 +2,28 @@
 #
 # SPDX-License-Identifier: MIT
 
-add_library(qcoro INTERFACE)
-add_library(QCoro::QCoro ALIAS qcoro)
-target_include_directories(qcoro
+set(qcoro_SRCS
+    dbus.cpp
+    iodevice.cpp
+    network.cpp
+    qcoroabstractsocket.cpp
+    qcoroiodevice.cpp
+    qcorolocalsocket.cpp
+    qcoronetworkreply.cpp
+    qcoroprocess.cpp
+    qcorotcpserver.cpp
+)
+add_library(QCoro SHARED ${qcoro_SRCS})
+add_library(QCoro::QCoro ALIAS QCoro)
+target_link_libraries(QCoro
+    PUBLIC
+    Qt${QT_VERSION_MAJOR}::Core
+    Qt${QT_VERSION_MAJOR}::Network
+    Qt${QT_VERSION_MAJOR}::DBus
+)
+target_include_directories(QCoro
     INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    INTERFACE $<TARGET_PROPERTY:Qt${QT_VERSION_MAJOR}::Core,INTERFACE_INCLUDE_DIRECTORIES>
-    INTERFACE $<TARGET_PROPERTY:Qt${QT_VERSION_MAJOR}::DBus,INTERFACE_INCLUDE_DIRECTORIES>
-    INTERFACE $<TARGET_PROPERTY:Qt${QT_VERSION_MAJOR}::Network,INTERFACE_INCLUDE_DIRECTORIES>
+    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 set(qcoro_HEADERS
@@ -29,6 +44,10 @@ set(qcoro_HEADERS
     timer.h
 )
 
+set(qcoro_IMPL_HEADERS
+    impl/waitoperationbase.h
+)
+
 if (QT_HAS_COMPAT_ABI)
     set(qcoro_HEADERS ${qcoro_HEADERS} future.h)
 endif()
@@ -38,6 +57,11 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
     COMPONENT Devel
 )
+install(
+    FILES ${qcoro_IMPL_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro/impl
+    COMPONENT Devel
+)
 
-install(TARGETS qcoro EXPORT QCoroTargets)
+install(TARGETS QCoro EXPORT QCoroTargets)
 

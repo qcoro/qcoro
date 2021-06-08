@@ -7,10 +7,11 @@
 #include "impl/waitoperationbase.h"
 #include "qcoroiodevice.h"
 
-#include <QPointer>
-#include <QProcess>
-
 #include <chrono>
+
+#include <QIODevice>
+
+class QProcess;
 
 namespace QCoro::detail {
 
@@ -21,64 +22,28 @@ class QCoroProcess : public QCoroIODevice {
     //! An Awaitable that suspends the coroutine until the process is started.
     class WaitForStartedOperation : public WaitOperationBase<QProcess> {
     public:
-        WaitForStartedOperation(QProcess *process, int timeout_msecs = 30'000)
-            : WaitOperationBase(process, timeout_msecs) {}
-
-        bool await_ready() const noexcept {
-            return !mObj || mObj->state() == QProcess::Running;
-        }
-
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
-            mConn = QObject::connect(mObj, &QProcess::stateChanged,
-                                     [this, awaitingCoroutine](auto newState) mutable {
-                                         switch (newState) {
-                                         case QProcess::NotRunning:
-                                             // State changed from Starting or Running to NotRunning, which means
-                                             // there was some error. Wake up the coroutine.
-                                             resume(awaitingCoroutine);
-                                             break;
-                                         case QProcess::Starting:
-                                             // Wait for it...
-                                             break;
-                                         case QProcess::Running:
-                                             resume(awaitingCoroutine);
-                                             break;
-                                         }
-                                     });
-
-            startTimeoutTimer(awaitingCoroutine);
-        }
+        WaitForStartedOperation(QProcess *process, int timeout_msecs = 30'000);
+        bool await_ready() const noexcept;
+        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
     };
 
     //! An Awaitable that suspends the coroutine until the process is finished.
     class WaitForFinishedOperation : public WaitOperationBase<QProcess> {
     public:
-        WaitForFinishedOperation(QProcess *process, int timeout_msecs)
-            : WaitOperationBase(process, timeout_msecs) {}
-
-        bool await_ready() const noexcept {
-            return !mObj || mObj->state() == QProcess::NotRunning;
-        }
-
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-            mConn = QObject::connect(
-                mObj, qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
-                [this, awaitingCoroutine]() mutable { resume(awaitingCoroutine); });
-            startTimeoutTimer(awaitingCoroutine);
-        }
+        WaitForFinishedOperation(QProcess *process, int timeout_msecs);
+        bool await_ready() const noexcept;
+        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine);
     };
 
 public:
-    explicit QCoroProcess(QProcess *process) : QCoroIODevice(process) {}
+    explicit QCoroProcess(QProcess *process);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
      *
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      */
-    Awaitable auto waitForStarted(int timeout_msecs = 30'000) {
-        return WaitForStartedOperation{static_cast<QProcess *>(mDevice.data()), timeout_msecs};
-    }
+    WaitForStartedOperation waitForStarted(int timeout_msecs = 30'000);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
@@ -88,18 +53,14 @@ public:
      *
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      */
-    Awaitable auto waitForStarted(std::chrono::milliseconds timeout) {
-        return waitForStarted(static_cast<int>(timeout.count()));
-    }
+    WaitForStartedOperation waitForStarted(std::chrono::milliseconds timeout);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
      *
      * [qtdoc-qprocess-waitForFinished]: https://doc.qt.io/qt-5/qprocess.html#waitForFinished
      */
-    Awaitable auto waitForFinished(int timeout_msecs = 30'000) {
-        return WaitForFinishedOperation{static_cast<QProcess *>(mDevice.data()), timeout_msecs};
-    }
+    WaitForFinishedOperation waitForFinished(int timeout_msecs = 30'000);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
@@ -109,9 +70,7 @@ public:
      *
      * [qtdoc-qprocess-waitForFinished]: https://doc.qt.io/qt-4/qprocess.html#waitForFinished
      */
-    Awaitable auto waitForFinished(std::chrono::milliseconds timeout) {
-        return waitForFinished(static_cast<int>(timeout.count()));
-    }
+    WaitForFinishedOperation waitForFinished(std::chrono::milliseconds timeout);
 
     /*!
      * \brief Executes a new process and waits for it to start
@@ -122,10 +81,7 @@ public:
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      * [qtdoc-qprocess-start-2]: https://doc.qt.io/qt-5/qprocess.html#start-2
      */
-    Awaitable auto start(QIODevice::OpenMode mode = QIODevice::ReadWrite) {
-        static_cast<QProcess *>(mDevice.data())->start(mode);
-        return waitForStarted();
-    }
+    WaitForStartedOperation start(QIODevice::OpenMode mode = QIODevice::ReadWrite);
 
     /*!
      * \brief Executes a new process and waits for it to start
@@ -136,11 +92,24 @@ public:
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      * [qtdoc-qprocess-start]: https://doc.qt.io/qt-5/qprocess.html#start-2
      */
-    Awaitable auto start(const QString &program, const QStringList &arguments,
-                         QIODevice::OpenMode mode = QIODevice::ReadWrite) {
-        static_cast<QProcess *>(mDevice.data())->start(program, arguments, mode);
-        return waitForStarted();
-    }
+    WaitForStartedOperation start(const QString &program, const QStringList &arguments,
+                                  QIODevice::OpenMode mode = QIODevice::ReadWrite);
 };
 
 } // namespace QCoro::detail
+
+//! Returns a coroutine-friendly wrapper for QProcess object.
+/*!
+ * Returns a wrapper for the QProcess \c p that provides coroutine-friendly
+ * way to co_await the process to start or finish.
+ *
+ * @see docs/reference/qprocess.md
+ */
+inline auto qCoro(QProcess &p) noexcept {
+    return QCoro::detail::QCoroProcess{&p};
+}
+//! \copydoc qCoro(QProcess &p) noexcept
+inline auto qCoro(QProcess *p) noexcept {
+    return QCoro::detail::QCoroProcess{p};
+}
+

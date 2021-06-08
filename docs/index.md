@@ -106,16 +106,12 @@ make
 sudo make install
 ```
 
-Alternatively, if you don't want to install QCoro into your system, you can just clone the repository (or add 
-it as a git submodule) to your project. Since QCoro is a header-only library, you just need to update your
-project's include paths to pick up the `qcoro` header directory.
-
 2) Add it to your CMake:
 
 ```cmake
 find_package(QCoro REQUIRED)
 ...
-target_link_libraries(your-target QCoro::qcoro)
+target_link_libraries(your-target QCoro::QCoro)
 ```
 
 3) Use it in your code

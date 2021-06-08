@@ -7,9 +7,9 @@
 #include "coroutine.h"
 #include "macros.h"
 
-#include <QByteArray>
-#include <QIODevice>
 #include <QPointer>
+
+class QIODevice;
 
 namespace QCoro::detail {
 
@@ -23,14 +23,9 @@ private:
         virtual ~OperationBase() = default;
 
     protected:
-        explicit OperationBase(QIODevice *device) : mDevice(device) {}
+        explicit OperationBase(QIODevice *device);
 
-        virtual void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-            QObject::disconnect(mConn);
-            QObject::disconnect(mCloseConn);
-            // Delayed trigger
-            QTimer::singleShot(0, [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
-        }
+        virtual void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine);
 
         QPointer<QIODevice> mDevice;
         QMetaObject::Connection mConn;
@@ -41,29 +36,13 @@ private:
 protected:
     class ReadOperation : public OperationBase {
     public:
-        ReadOperation(QIODevice *device, std::function<QByteArray(QIODevice *)> &&resultCb)
-            : OperationBase(device), mResultCb(std::move(resultCb)) {}
-
+        ReadOperation(QIODevice *device, std::function<QByteArray(QIODevice *)> &&resultCb);
         Q_DISABLE_COPY(ReadOperation)
         QCORO_DEFAULT_MOVE(ReadOperation)
 
-        virtual bool await_ready() const noexcept {
-            return !mDevice || !mDevice->isOpen() || !mDevice->isReadable() ||
-                   mDevice->bytesAvailable() > 0;
-        }
-
-        virtual void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
-            Q_ASSERT(mDevice);
-            mConn = QObject::connect(mDevice, &QIODevice::readyRead,
-                                     std::bind(&ReadOperation::finish, this, awaitingCoroutine));
-            mCloseConn =
-                QObject::connect(mDevice, &QIODevice::aboutToClose,
-                                 std::bind(&ReadOperation::finish, this, awaitingCoroutine));
-        }
-
-        auto await_resume() {
-            return mResultCb(mDevice);
-        }
+        virtual bool await_ready() const noexcept;
+        virtual void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        QByteArray await_resume();
 
     private:
         std::function<QByteArray(QIODevice *)> mResultCb;
@@ -71,45 +50,13 @@ protected:
 
     class WriteOperation : public OperationBase {
     public:
-        WriteOperation(QIODevice *device, const QByteArray &data)
-            : OperationBase(device), mBytesToBeWritten(device->write(data)) {}
-
+        WriteOperation(QIODevice *device, const QByteArray &data);
         Q_DISABLE_COPY(WriteOperation)
         QCORO_DEFAULT_MOVE(WriteOperation)
 
-        bool await_ready() const noexcept {
-            if (!mDevice || !mDevice->isOpen() || !mDevice->isWritable()) {
-                return true;
-            }
-
-            if (mBytesWritten == 0) {
-                return true;
-            }
-
-            if (mDevice->bytesToWrite() == 0) {
-                return true;
-            }
-
-            return false;
-        }
-
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
-            Q_ASSERT(mDevice);
-            mConn = QObject::connect(mDevice, &QIODevice::bytesWritten,
-                                     [this, awaitingCoroutine](qint64 written) {
-                                         mBytesWritten += written;
-                                         if (mBytesWritten >= mBytesToBeWritten) {
-                                             finish(awaitingCoroutine);
-                                         }
-                                     });
-            mCloseConn =
-                QObject::connect(mDevice, &QIODevice::aboutToClose,
-                                 std::bind(&WriteOperation::finish, this, awaitingCoroutine));
-        }
-
-        qint64 await_resume() noexcept {
-            return mBytesWritten;
-        }
+        bool await_ready() const noexcept;
+        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        qint64 await_resume() noexcept;
 
     private:
         qint64 mBytesToBeWritten = 0;
@@ -118,7 +65,7 @@ protected:
 
 public:
     //! Constructor.
-    explicit QCoroIODevice(QIODevice *device) : mDevice{device} {}
+    explicit QCoroIODevice(QIODevice *device);
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::readAll()`][qdoc-qiodevice-readall].
@@ -135,9 +82,7 @@ public:
      * [qdoc-qiodevice-readall]: https://doc.qt.io/qt-5/qiodevice.html#readAll
      * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
      */
-    ReadOperation readAll() {
-        return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
-    }
+    ReadOperation readAll();
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::read()`][qdoc-qiodevice-read].
@@ -154,9 +99,7 @@ public:
      * [qdoc-qiodevice-read]: https://doc.qt.io/qt-5/qiodevice.html#read-1
      * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
      */
-    ReadOperation read(qint64 maxSize) {
-        return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->read(maxSize); });
-    }
+    ReadOperation read(qint64 maxSize);
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::readLine()`][qdoc-qiodevice-readLine].
@@ -174,9 +117,7 @@ public:
      * [qdoc-qiodevice-readLine]: https://doc.qt.io/qt-5/qiodevice.html#readLine
      * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
      */
-    ReadOperation readLine(qint64 maxSize = 0) {
-        return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
-    }
+    ReadOperation readLine(qint64 maxSize = 0);
 
     // TODO
     //auto bytesAvailable(qint64 minBytes) {
@@ -197,12 +138,28 @@ public:
      * [qdoc-qiodevice-write]: https://doc.qt.io/qt-5/qiodevice.html#write-2
      * [qdoc-qiodevice-bytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#bytesWritten
      */
-    auto write(const QByteArray &buffer) {
-        return WriteOperation(mDevice, buffer);
-    }
+    WriteOperation write(const QByteArray &buffer);
 
 protected:
     QPointer<QIODevice> mDevice = {};
 };
 
 } // namespace QCoro::detail
+
+
+//! Returns a coroutine-friendly wrapper for a QIODevice-derived object.
+/*!
+ * Returns a wrapper for QIODevice \c d that provides coroutine-friendly way
+ * of co_awaiting reading and writing operation.
+ *
+ * @see docs/reference/qiodevice.md
+ */
+inline auto qCoro(QIODevice &d) noexcept {
+    return QCoro::detail::QCoroIODevice{&d};
+}
+//! \copydoc qCoro(QIODevice *d) noexcept
+inline auto qCoro(QIODevice *d) noexcept {
+    return QCoro::detail::QCoroIODevice{d};
+}
+
+

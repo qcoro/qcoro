@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
-#include "qcoro/coro.h"
+#include "qcoro/qcorosignal.h"
 
 #include <QTimer>
 

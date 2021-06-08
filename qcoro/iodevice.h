@@ -6,9 +6,10 @@
 
 #include "task.h"
 
-#include <QIODevice>
 #include <QMetaMethod>
 #include <QPointer>
+
+class QIODevice;
 
 /*! \cond internal */
 
@@ -16,24 +17,12 @@ namespace QCoro::detail {
 
 class IODeviceAwaiter {
 public:
-    explicit IODeviceAwaiter(QIODevice *device) : mDevice(device) {}
-    explicit IODeviceAwaiter(QIODevice &device) : mDevice(&device){};
+    explicit IODeviceAwaiter(QIODevice *device);
+    explicit IODeviceAwaiter(QIODevice &device);
 
-    bool await_ready() const noexcept {
-        return mDevice && (!mDevice->isOpen() || mDevice->bytesAvailable() > 0);
-    }
-
-    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
-        mConn =
-            QObject::connect(mDevice, &QIODevice::readyRead, [this, awaitingCoroutine]() mutable {
-                QObject::disconnect(mConn);
-                awaitingCoroutine.resume();
-            });
-    }
-
-    QByteArray await_resume() const {
-        return mDevice->readAll();
-    }
+    bool await_ready() const noexcept;
+    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+    QByteArray await_resume() const;
 
 private:
     QPointer<QIODevice> mDevice;

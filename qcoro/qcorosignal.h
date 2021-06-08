@@ -88,3 +88,17 @@ template<concepts::QObject T, typename FuncPtr>
 QCoroSignal(T *, FuncPtr &&) -> QCoroSignal<T, FuncPtr>;
 
 } // namespace QCoro::detail
+
+//! Allows co_awaiting on signal emission.
+/*!
+ * Returns an Awaitable object that allows co_awaiting for a signal to
+ * be emitted. The result of the co_awaiting is a tuple with the signal
+ * arguments.
+ *
+ * @see docs/reference/coro.md
+ */
+template<QCoro::detail::concepts::QObject T, typename FuncPtr>
+inline auto qCoro(T *obj, FuncPtr &&ptr) {
+    return QCoro::detail::QCoroSignal(obj, std::forward<FuncPtr>(ptr));
+}
+

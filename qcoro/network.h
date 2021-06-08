@@ -6,8 +6,9 @@
 
 #include "task.h"
 
-#include <QNetworkReply>
 #include <QPointer>
+
+class QNetworkReply;
 
 /*! \cond internal */
 
@@ -15,24 +16,11 @@ namespace QCoro::detail {
 
 class NetworkReplyAwaiter {
 public:
-    explicit NetworkReplyAwaiter(QNetworkReply *reply) : mReply(reply) {}
+    explicit NetworkReplyAwaiter(QNetworkReply *reply);
 
-    bool await_ready() const noexcept {
-        return !mReply || mReply->isFinished();
-    }
-
-    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-        if (mReply) {
-            QObject::connect(mReply, &QNetworkReply::finished,
-                             [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
-        } else {
-            awaitingCoroutine.resume();
-        }
-    }
-
-    QNetworkReply *await_resume() const {
-        return mReply;
-    }
+    bool await_ready() const noexcept;
+    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine);
+    QNetworkReply *await_resume() const;
 
 private:
     QPointer<QNetworkReply> mReply;

@@ -16,24 +16,11 @@ private:
     public:
         using QCoroIODevice::ReadOperation::ReadOperation;
 
-        bool await_ready() const noexcept final {
-            return QCoroIODevice::ReadOperation::await_ready() ||
-                   static_cast<const QNetworkReply *>(mDevice.data())->isFinished();
-        }
-
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept final {
-            QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
-
-            mFinishedConn = QObject::connect(
-                static_cast<QNetworkReply *>(mDevice.data()), &QNetworkReply::finished,
-                std::bind(&ReadOperation::finish, this, awaitingCoroutine));
-        }
+        bool await_ready() const noexcept final;
+        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept final;
 
     private:
-        void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) final {
-            QObject::disconnect(mFinishedConn);
-            QCoroIODevice::ReadOperation::finish(awaitingCoroutine);
-        }
+        void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) final;
 
         QMetaObject::Connection mFinishedConn;
     };
@@ -41,17 +28,26 @@ private:
 public:
     using QCoroIODevice::QCoroIODevice;
 
-    ReadOperation readAll() {
-        return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
-    }
-
-    ReadOperation read(qint64 maxSize) {
-        return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->read(maxSize); });
-    }
-
-    ReadOperation readLine(qint64 maxSize = 0) {
-        return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
-    }
+    ReadOperation readAll();
+    ReadOperation read(qint64 maxSize);
+    ReadOperation readLine(qint64 maxSize = 0);
 };
 
 } // namespace QCoro::detail
+
+//! Returns a coroutine-friendly wrapper for QNetworkReply object.
+/*!
+ * Returns a wrapper for the QNetworkReply \c s that provides coroutine-friendly
+ * way to co_await read and write operations.
+ *
+ * @see docs/reference/qnetworkreply.md
+ */
+inline auto qCoro(QNetworkReply &s) noexcept {
+    return QCoro::detail::QCoroNetworkReply{&s};
+}
+//! \copydoc qCoro(QAbstractSocket &s) noexcept
+inline auto qCoro(QNetworkReply *s) noexcept {
+    return QCoro::detail::QCoroNetworkReply{s};
+}
+
+

@@ -4,7 +4,7 @@
 
 #include "testhttpserver.h"
 #include "testobject.h"
-#include "qcoro/coro.h"
+#include "qcoro/qcoroabstractsocket.h"
 
 #include <QTcpServer>
 #include <QTcpSocket>

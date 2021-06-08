@@ -4,9 +4,10 @@
 
 #include "testhttpserver.h"
 #include "testobject.h"
-#include "qcoro/coro.h"
+#include "qcoro/qcorolocalsocket.h"
 
 #include <QLocalServer>
+#include <QLocalSocket>
 
 #include <thread>
 

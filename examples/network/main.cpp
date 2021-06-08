@@ -11,6 +11,7 @@
 #include <QMessageBox>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
+#include <QNetworkReply>
 #include <QProgressBar>
 #include <QPushButton>
 

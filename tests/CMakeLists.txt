@@ -2,7 +2,7 @@ include(CMakeParseArguments)
 
 add_library(qcoro_test STATIC testobject.cpp)
 target_link_libraries(qcoro_test PUBLIC
-    qcoro
+    QCoro
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Test
 )
@@ -15,7 +15,7 @@ function(qcoro_add_test _name)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
 
     add_executable(test-${_name} ${_name}.cpp)
-    target_link_libraries(test-${_name} qcoro qcoro_test Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test
+    target_link_libraries(test-${_name} QCoro qcoro_test Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test
                          ${TEST_LINK_LIBRARIES} Threads::Threads)
     add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
@@ -32,7 +32,7 @@ function(qcoro_add_dbus_test _name)
         qt_add_dbus_interface(test_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
     endif()
     add_executable(test-${_name} ${test_SRCS})
-    target_link_libraries(test-${_name} qcoro qcoro_test ${TEST_LINK_LIBRARIES})
+    target_link_libraries(test-${_name} QCoro qcoro_test ${TEST_LINK_LIBRARIES})
     target_include_directories(test-${_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     add_test(NAME test-${_name} COMMAND dbus-launch $<TARGET_FILE:test-${_name}>)
 endfunction()

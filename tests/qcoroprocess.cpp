@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
-#include "qcoro/coro.h"
+#include "qcoro/qcoroprocess.h"
+
+#include <QProcess>
 
 class QCoroProcessTest : public QCoro::TestObject<QCoroProcessTest> {
     Q_OBJECT

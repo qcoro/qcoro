@@ -17,25 +17,11 @@ namespace QCoro::detail {
 
 class DBusPendingCallAwaiter {
 public:
-    explicit DBusPendingCallAwaiter(const QDBusPendingCall &call) : mCall(call) {}
+    explicit DBusPendingCallAwaiter(const QDBusPendingCall &call);
 
-    bool await_ready() const noexcept {
-        return mCall.isFinished();
-    }
-
-    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-        auto *watcher = new QDBusPendingCallWatcher{mCall};
-        QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
-                         [awaitingCoroutine](auto *watcher) mutable {
-                             awaitingCoroutine.resume();
-                             watcher->deleteLater();
-                         });
-    }
-
-    QDBusMessage await_resume() const {
-        Q_ASSERT(mCall.isFinished());
-        return mCall.reply();
-    }
+    bool await_ready() const noexcept;
+    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+    QDBusMessage await_resume() const;
 
 private:
     QDBusPendingCall mCall;
