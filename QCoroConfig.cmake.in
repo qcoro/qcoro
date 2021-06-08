@@ -1,3 +1,10 @@
 @PACKAGE_INIT@
 
+include(CMakeFindDependencyMacro)
+find_dependency(Qt@QT_VERSION_MAJOR@Core)
+find_dependency(Qt@QT_VERSION_MAJOR@DBus)
+find_dependency(Qt@QT_VERSION_MAJOR@Network)
+find_dependency(Qt@QT_VERSION_MAJOR@Widgets)
+find_dependency(Qt@QT_VERSION_MAJOR@Concurrent)
+
 include("${CMAKE_CURRENT_LIST_DIR}/QCoroTargets.cmake")
