@@ -9,6 +9,7 @@
 #include <atomic>
 #include <variant>
 #include <concepts>
+#include <memory>
 
 #include <QDebug>
 #include <QEventLoop>
