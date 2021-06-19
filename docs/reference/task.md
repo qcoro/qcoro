@@ -50,10 +50,10 @@ QCoro::Task<void> getUserDetails(UserID userId) {
 ## Blocking wait
 
 Sometimes it's necessary to wait for a coroutine in a blocking manner - this is especially useful
-in tests where possibly no event loop is running. QCoro has `QCoro::blockingWait()` function
+in tests where possibly no event loop is running. QCoro has `QCoro::waitFor()` function
 which takes `QCoro::Task<T>` (that is, result of calling any QCoro-based coroutine) and blocks
 until the coroutine finishes. If the coroutine has a non-void return value, the value is returned
-from `blockingWait().`
+from `waitFor().`
 
 ```cpp
 QCoro::Task<int> computeAnswer() {
@@ -63,7 +63,7 @@ QCoro::Task<int> computeAnswer() {
 
 void nonCoroutineFunction() {
     // The following line will block as if computeAnswer were not a coroutine.
-    const int answer = QCoro::blockingWait(computeAnswer());
+    const int answer = QCoro::waitFor(computeAnswer());
     std::cout << "The answer is: " << answer << std::endl;
 }
 ```
