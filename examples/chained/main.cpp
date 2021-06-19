@@ -25,7 +25,7 @@ QCoro::Task<QString> generateRandomString() {
     co_return QStringLiteral("RandomString!");
 }
 
-QCoro::Task<int> generateRandomNumber() {
+QCoro::Task<qsizetype> generateRandomNumber() {
     std::cout << "GenerateRandomNumber started" << std::endl;
     std::cout << "GenerateRandomNumber co_awaiting on generateRandomString()" << std::endl;
     const QString string = co_await generateRandomString();
