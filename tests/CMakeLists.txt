@@ -52,6 +52,7 @@ qcoro_add_test(qcoroabstractsocket LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Network
 qcoro_add_test(qcoronetworkreply LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Network)
 qcoro_add_test(qcorotcpserver LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Network)
 qcoro_add_test(qcorosignal)
+qcoro_add_test(task)
 
 # Tests for test utilities
 qcoro_add_test(testhttpserver LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Network)

@@ -8,9 +8,12 @@
 
 #include <atomic>
 #include <variant>
+#include <concepts>
 
 #include <QDebug>
 #include <QtGlobal>
+#include <QEventLoop>
+#include <QTimer>
 
 namespace QCoro {
 
@@ -183,8 +186,14 @@ public:
      * as an Awaitable type.
      */
     template<typename T>
-    auto await_transform(Task<T> &&task) {
-        return std::forward<Task<T>>(task);
+    auto await_transform(QCoro::Task<T> &&task) {
+        return std::forward<QCoro::Task<T>>(task);
+    }
+
+    //! \copydoc template<typename T> QCoro::TaskPromiseBase::await_transform(QCoro::Task<T> &&)
+    template<typename T>
+    auto &await_transform(QCoro::Task<T> &task) {
+        return task;
     }
 
     //! If the type T is already an awaitable, then just forward it as it is.
@@ -256,6 +265,16 @@ public:
 
     //! \copydoc template<typename T> TaskPromise::return_value(T &&value) noexcept
     void return_value(const T &value) noexcept {
+        mValue = value;
+    }
+
+    template<typename U> requires std::constructible_from<T, U>
+    void return_value(U &&value) noexcept {
+        mValue = std::move(value);
+    }
+
+    template<typename U> requires std::constructible_from<T, U>
+    void return_value(const U &value) noexcept {
         mValue = value;
     }
 
@@ -471,10 +490,15 @@ public:
              * \return the result from the coroutine's promise, factically the
              * value co_returned by the coroutine. */
             auto await_resume() {
-                Q_ASSERT(this->mAwaitedCoroutine != nullptr);
-                return this->mAwaitedCoroutine.promise().result();
+                if constexpr (std::is_void_v<T>) {
+                    return;
+                } else {
+                    Q_ASSERT(this->mAwaitedCoroutine != nullptr);
+                    return this->mAwaitedCoroutine.promise().result();
+                }
             }
         };
+
         return TaskAwaiter{mCoroutine};
     }
 
@@ -491,10 +515,15 @@ public:
              * \return an r-value reference to the coroutine's promise result, factically
              *  a value co_returned by the coroutine. */
             auto await_resume() {
-                Q_ASSERT(this->mAwaitedCoroutine != nullptr);
-                return std::move(this->mAwaitedCoroutine.promise().result());
+                if constexpr (std::is_void_v<T>) {
+                    return;
+                } else {
+                    Q_ASSERT(this->mAwaitedCoroutine != nullptr);
+                    return std::move(this->mAwaitedCoroutine.promise().result());
+                }
             }
         };
+
         return TaskAwaiter{mCoroutine};
     }
 
@@ -519,5 +548,62 @@ Task<void> inline TaskPromise<void>::get_return_object() noexcept {
 }
 
 } // namespace detail
+
+
+namespace detail {
+
+template<typename T, typename Func, typename = std::enable_if_t<!std::is_void_v<T>>>
+T waitFor(Func &&coro) {
+    QEventLoop el;
+    T result;
+    QTimer::singleShot(0, [&el, &result, coro = std::move(coro)]() mutable -> QCoro::Task<> {
+        co_await coro(result);
+        el.quit();
+    });
+    el.exec();
+    return result;
+}
+
+template<typename T, typename Func, typename = std::enable_if_t<std::is_void_v<T>>>
+void waitFor(Func &&coro) {
+    QEventLoop el;
+    QTimer::singleShot(0, [&el, coro = std::move(coro)]() mutable -> QCoro::Task<> {
+        co_await coro();
+        el.quit();
+    });
+    el.exec();
+}
+
+} // namespace detail
+
+//! Waits for a coroutine to complete in a blocking manner.
+/*!
+ * Sometimes you may need to wait for a coroutine to finish  without co_awaiting it - that is,
+ * you want to wait for the coroutine in a blocking mode. This function does exactly that.
+ * The function creates a nested QEventLoop and executes it until the coroutine has finished.
+ *
+ * \param task Coroutine to blockingly wait for.
+ * \returns Result of the coroutine.
+ */
+template<typename T>
+inline T waitFor(QCoro::Task<T> &task) {
+    return detail::waitFor<T>([&task](T &result) mutable -> QCoro::Task<> { result = co_await task; });
+}
+
+template<typename T>
+inline T waitFor(QCoro::Task<T> &&task) {
+    return detail::waitFor<T>([task = std::move(task)](T &result) mutable -> QCoro::Task<> { result = co_await task; });
+}
+
+//! \overload
+inline void waitFor(QCoro::Task<> &task) {
+    return detail::waitFor<void>([&task]() mutable -> QCoro::Task<> { co_await task; });
+}
+//
+//! \overload
+inline void waitFor(QCoro::Task<> &&task) {
+    return detail::waitFor<void>([task = std::move(task)]() mutable -> QCoro::Task<> { co_await task; });
+}
+
 
 } // namespace QCoro

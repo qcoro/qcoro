@@ -47,3 +47,28 @@ QCoro::Task<void> getUserDetails(UserID userId) {
     is re-thrown from the `co_await` call in the awaiting coroutine.
 
 
+## Blocking wait
+
+Sometimes it's necessary to wait for a coroutine in a blocking manner - this is especially useful
+in tests where possibly no event loop is running. QCoro has `QCoro::blockingWait()` function
+which takes `QCoro::Task<T>` (that is, result of calling any QCoro-based coroutine) and blocks
+until the coroutine finishes. If the coroutine has a non-void return value, the value is returned
+from `blockingWait().`
+
+```cpp
+QCoro::Task<int> computeAnswer() {
+    std::this_thread::sleep_for(std::chrono::year{7'500'000});
+    co_return 42;
+}
+
+void nonCoroutineFunction() {
+    // The following line will block as if computeAnswer were not a coroutine.
+    const int answer = QCoro::blockingWait(computeAnswer());
+    std::cout << "The answer is: " << answer << std::endl;
+}
+```
+
+!!! info "Event loops"
+    The implementation internally uses a `QEventLoop` to wait for the coroutine to be completed.
+    This means that a `QCoreApplication` instance must exist, although it does not need to be
+    executed. Usual warnings about using a nested event loop apply here as well.
