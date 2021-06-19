@@ -8,3 +8,5 @@ find_dependency(Qt@QT_VERSION_MAJOR@Widgets)
 find_dependency(Qt@QT_VERSION_MAJOR@Concurrent)
 
 include("${CMAKE_CURRENT_LIST_DIR}/QCoroTargets.cmake")
+
+include("${CMAKE_CURRENT_LIST_DIR}/QCoroMacros.cmake")

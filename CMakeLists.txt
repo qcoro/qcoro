@@ -32,14 +32,8 @@ if (QCORO_ENABLE_ASAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines-ts -stdlib=libc++")
-else()
-    message(FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER_ID} is not currently supported.")
-endif()
-
+include(QCoroMacros.cmake)
+qcoro_enable_coroutines()
 
 #-----------------------------------------------------------#
 # Dependencies
@@ -102,6 +96,7 @@ write_basic_package_version_file(
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfigVersion.cmake"
+              "${CMAKE_CURRENT_SOURCE_DIR}/QCoroMacros.cmake"
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QCoro
         COMPONENT Devel)
 

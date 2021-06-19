@@ -18,7 +18,12 @@ sudo make install
 
 ```cmake
 find_package(QCoro REQUIRED)
+
+# Set necessary compiler flags to enable coroutine support
+qcoro_enable_coroutines()
+
 ...
+
 target_link_libraries(your-target QCoro::QCoro)
 ```
 
