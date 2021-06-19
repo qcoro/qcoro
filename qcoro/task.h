@@ -11,9 +11,9 @@
 #include <concepts>
 
 #include <QDebug>
-#include <QtGlobal>
 #include <QEventLoop>
-#include <QTimer>
+#include <QObject>
+#include <QCoreApplication>
 
 namespace QCoro {
 
@@ -490,12 +490,8 @@ public:
              * \return the result from the coroutine's promise, factically the
              * value co_returned by the coroutine. */
             auto await_resume() {
-                if constexpr (std::is_void_v<T>) {
-                    return;
-                } else {
-                    Q_ASSERT(this->mAwaitedCoroutine != nullptr);
-                    return this->mAwaitedCoroutine.promise().result();
-                }
+                Q_ASSERT(this->mAwaitedCoroutine != nullptr);
+                return this->mAwaitedCoroutine.promise().result();
             }
         };
 
@@ -515,10 +511,10 @@ public:
              * \return an r-value reference to the coroutine's promise result, factically
              *  a value co_returned by the coroutine. */
             auto await_resume() {
+                Q_ASSERT(this->mAwaitedCoroutine != nullptr);
                 if constexpr (std::is_void_v<T>) {
-                    return;
+                    this->mAwaitedCoroutine.promise().result();
                 } else {
-                    Q_ASSERT(this->mAwaitedCoroutine != nullptr);
                     return std::move(this->mAwaitedCoroutine.promise().result());
                 }
             }
@@ -552,26 +548,50 @@ Task<void> inline TaskPromise<void>::get_return_object() noexcept {
 
 namespace detail {
 
-template<typename T, typename Func, typename = std::enable_if_t<!std::is_void_v<T>>>
-T waitFor(Func &&coro) {
-    QEventLoop el;
-    T result;
-    QTimer::singleShot(0, [&el, &result, coro = std::move(coro)]() mutable -> QCoro::Task<> {
-        co_await coro(result);
-        el.quit();
-    });
-    el.exec();
-    return result;
-}
+//! Helper class to run a coroutine in a nested event loop.
+/*!
+ * We cannot just use QTimer or QMetaObject::invokeMethod() to schedule the func lambda to be
+ * invoked from an event loop, because internally, Qt deallocates some structures when the
+ * lambda returns, which causes invalid memory access and potentially double-free corruption
+ * because the coroutine returns twice - once on suspend and once when it really finishes.
+ * So instead we do basically what Qt does internally, but we make sure to not delete th
+ * QFunctorSlotObjectWithNoArgs until after the event loop quits.
+ */
+class Waiter {
+public:
+    template<typename Func>
+    void run(Func &&func) {
+        auto slot = std::make_unique<QtPrivate::QFunctorSlotObjectWithNoArgs<Func, decltype(func())>>(std::move(func));
+        QCoreApplication::postEvent(&m_loop, createEvent(slot.get()));
+        m_loop.exec();
+    }
 
-template<typename T, typename Func, typename = std::enable_if_t<std::is_void_v<T>>>
-void waitFor(Func &&coro) {
-    QEventLoop el;
-    QTimer::singleShot(0, [&el, coro = std::move(coro)]() mutable -> QCoro::Task<> {
-        co_await coro();
-        el.quit();
-    });
-    el.exec();
+    void done() {
+        m_loop.quit();
+    }
+
+private:
+    QEvent *createEvent(QtPrivate::QSlotObjectBase *slot);
+
+    QEventLoop m_loop;
+};
+
+template<typename T, typename Coroutine>
+T waitFor(Coroutine &&coro) {
+    Waiter waiter;
+    if constexpr (std::is_void_v<T>) {
+        waiter.run([&waiter, &coro]() mutable -> QCoro::Task<> {
+            co_await coro;
+            waiter.done();
+        });
+    } else {
+        T result;
+        waiter.run([&waiter, &result, &coro]() mutable -> QCoro::Task<> {
+            result = co_await coro;
+            waiter.done();
+        });
+        return result;
+    }
 }
 
 } // namespace detail
@@ -587,23 +607,13 @@ void waitFor(Func &&coro) {
  */
 template<typename T>
 inline T waitFor(QCoro::Task<T> &task) {
-    return detail::waitFor<T>([&task](T &result) mutable -> QCoro::Task<> { result = co_await task; });
+    return detail::waitFor<T>(task);
 }
 
+// \overload
 template<typename T>
 inline T waitFor(QCoro::Task<T> &&task) {
-    return detail::waitFor<T>([task = std::move(task)](T &result) mutable -> QCoro::Task<> { result = co_await task; });
+    return detail::waitFor<T>(task);
 }
-
-//! \overload
-inline void waitFor(QCoro::Task<> &task) {
-    return detail::waitFor<void>([&task]() mutable -> QCoro::Task<> { co_await task; });
-}
-//
-//! \overload
-inline void waitFor(QCoro::Task<> &&task) {
-    return detail::waitFor<void>([task = std::move(task)]() mutable -> QCoro::Task<> { co_await task; });
-}
-
 
 } // namespace QCoro
