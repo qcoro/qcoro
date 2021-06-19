@@ -47,7 +47,7 @@ jobs:
     - name: Install Qt5
       if: ${{ matrix.qt_version == 5 }}
       shell: bash
-      run: sudo apt-get install -y --no-install-recommends qtbase5-dev
+      run: sudo apt-get install -y --no-install-recommends qtbase5-dev qtbase5-private-dev
 
     - name: Install Qt6
       if: ${{ matrix.qt_version == 6 }}
