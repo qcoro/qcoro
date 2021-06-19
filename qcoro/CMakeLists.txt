@@ -29,6 +29,7 @@ target_include_directories(QCoro
 )
 
 set(qcoro_HEADERS
+    concepts.h
     coro.h
     coroutine.h
     dbus.h

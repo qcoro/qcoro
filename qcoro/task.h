@@ -5,10 +5,10 @@
 #pragma once
 
 #include "coroutine.h"
+#include "concepts.h"
 
 #include <atomic>
 #include <variant>
-#include <concepts>
 #include <memory>
 
 #include <QDebug>
@@ -269,12 +269,12 @@ public:
         mValue = value;
     }
 
-    template<typename U> requires std::constructible_from<T, U>
+    template<typename U> requires concepts::constructible_from<T, U>
     void return_value(U &&value) noexcept {
         mValue = std::move(value);
     }
 
-    template<typename U> requires std::constructible_from<T, U>
+    template<typename U> requires concepts::constructible_from<T, U>
     void return_value(const U &value) noexcept {
         mValue = value;
     }
