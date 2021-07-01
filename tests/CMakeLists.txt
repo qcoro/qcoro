@@ -41,8 +41,14 @@ endfunction()
 
 qcoro_add_test(qtimer)
 qcoro_add_test(qnetworkreply LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Network)
-qcoro_add_dbus_test(qdbuspendingcall LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::DBus)
-qcoro_add_dbus_test(qdbuspendingreply LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::DBus)
+
+include(CheckIncludeFile)
+check_include_file_cxx("sys/wait.h" HAVE_SYS_WAIT_H)
+if (HAVE_SYS_WAIT_H)
+    qcoro_add_dbus_test(qdbuspendingcall LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::DBus)
+    qcoro_add_dbus_test(qdbuspendingreply LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::DBus)
+endif()
+
 if (QT_HAS_COMPAT_ABI)
     qcoro_add_test(qfuture LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Concurrent)
 endif()

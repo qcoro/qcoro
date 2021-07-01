@@ -27,6 +27,7 @@ target_include_directories(QCoro
     INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
     PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+set_target_properties(QCoro PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
 
 set(qcoro_HEADERS
     concepts.h

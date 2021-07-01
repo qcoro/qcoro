@@ -6,7 +6,7 @@
 #if defined(__clang__)
 #include <experimental/coroutine>
 #define QCORO_STD std::experimental
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) || defined(_MSC_VER)
 #include <coroutine>
 #define QCORO_STD std
 #else
