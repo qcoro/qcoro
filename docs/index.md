@@ -53,12 +53,12 @@ of this documentation.
 ## Supported Compilers
 
 This library requires a compiler that supports the Coroutine TS (obviously). Currently
-GCC and Clang are supported, MSVC should be possible too, but I haven't tried.
+GCC, Clang and MSVC are supported.
 
 All examples were tested with GCC 10 and Clang 11, although even slightly older versions
 should work.
 
-In both GCC and Clang, coroutine support must be explicitly enabled:
+In both GCC and Clang, coroutine support must be explicitly enabled.
 
 ### GCC
 
@@ -102,7 +102,10 @@ flags automatically.
 
 ### MSVC
 
-Currently not supported by QCoro, although MSVC does have full implementation of the
-Coroutines TS. It should be fairly easy to make QCoro work with MSVC, though. If you
-are willing to help, please od get in touch.
+Coroutine support in MSVC is enabled automatically by CMake when C++20 standard is specified
+in `CMAKE_CXX_STANDARD`:
+
+```
+set(CMAKE_CXX_STANDARD 20)
+```
 
