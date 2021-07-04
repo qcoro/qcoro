@@ -14,7 +14,7 @@ set(qcoro_SRCS
     qcorotcpserver.cpp
     task.cpp
 )
-add_library(QCoro SHARED ${qcoro_SRCS})
+add_library(QCoro ${qcoro_SRCS})
 add_library(QCoro::QCoro ALIAS QCoro)
 target_link_libraries(QCoro
     PUBLIC
