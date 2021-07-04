@@ -27,8 +27,9 @@ set(CMAKE_AUTOMOC ON)
 
 if (MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
-    # Disable warning C5054: operator '&': deprecated between enumerations of different types caused by QtWidgets/qsizepolicy.h
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5054")
+    # Disable warning C5054: "operator '&': deprecated between enumerations of different types" caused by QtWidgets/qsizepolicy.h
+    # Disable warning C4127: "conditional expression is constant" caused by QtCore/qiterable.h
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5054 /wd4127")
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -pedantic")
 endif()
