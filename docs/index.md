@@ -70,6 +70,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
 ```
 
+Alternatively, just use `qcoro_enable_coroutines()` CMake macro provided by QCoro to set the
+flags automatically.
+
 ### Clang
 
 In Clang coroutines are still considered experimental (unlike in GCC), so
@@ -81,6 +84,21 @@ CMake:
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines-ts -stdlib=libc++")
 ```
+
+Alternatively, just use `qcoro_enable_coroutines()` CMake macro provided by QCoro to set the
+flags automatically.
+
+
+!!! info "LLVM libc++ vs. GNU libstdc++"
+    While both libraries implement the same standard they are not mutually compatible - for one thing LLVM's 
+    libc++ is a bit behind libstdc++ on implementing all the features, but more importantly they are not
+    ABI compatible. That means that if you compile Qt with libstdc++ (which most Linux distributions do)
+    and your application with QCoro using libc++, you will likely run into `undefined reference` errors
+    when linking your app against Qt.
+
+    One option is to build Qt youself with libc++, other option is to use GCC or MSVC and avoid Clang until 
+    it has full support for coroutines, which will hopefully allow using libstdc++ with Clang.
+
 
 ### MSVC
 
