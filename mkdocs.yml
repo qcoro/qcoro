@@ -30,7 +30,7 @@ extra:
 
 nav:
     - Home: index.md
-    - Installation: install.md
+    - Building and Using QCoro: building-and-using.md
     - Coroutines:
         - Qt vs. co_await: coroutines/qt-vs-coawait.md
         - co_await Explained: coroutines/coawait.md

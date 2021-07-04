@@ -88,35 +88,3 @@ Currently not supported by QCoro, although MSVC does have full implementation of
 Coroutines TS. It should be fairly easy to make QCoro work with MSVC, though. If you
 are willing to help, please od get in touch.
 
-## Using QCoro
-
-Using QCoro is easy and only requires a few steps:
-
-1) Get QCoro, build and install it
-
-```shell
-git clone https://github.com/danvratil/qcoro.git
-cd qcoro
-mkdir build
-cd build
-cmake ..
-make
-# This will install QCoro into /usr/local/ prefix, change it by passing -DCMAKE_INSTALL_PREFIX=/usr
-# to the cmake command above.
-sudo make install
-```
-
-2) Add it to your CMake:
-
-```cmake
-find_package(QCoro REQUIRED)
-...
-target_link_libraries(your-target QCoro::QCoro)
-```
-
-3) Use it in your code
-
-See the Reference section for detail.
-
-And that's it!
-
