@@ -60,12 +60,13 @@ jobs:
       if: ${{ matrix.qt_version == 6 && matrix.os == 'ubuntu-latest' }}
       shell: bash
       run: |
+          export QT_VERSION=6.1.2
           sudo apt-get install -y --no-install-recommends libgl-dev libegl-dev
           pip3 install aqtinstall
-          aqt install -O /opt/qt6 -m qtbase icu --noarchives 6.1.2 linux desktop gcc_64
-          echo "/opt/qt6/6.0.4/gcc_64/bin/" >> $GITHUB_PATH
-          echo "LD_LIBRARY_PATH=/opt/qt6/6.0.4/gcc_64/lib/:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "XDG_DATA_DIRS=/opt/qt6/6.0.4/gcc_64/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
+          aqt install -O /opt/qt6 -m qtbase icu --noarchives ${QT_VERSION} linux desktop gcc_64
+          echo "/opt/qt6/${QT_VERSION}/gcc_64/bin/" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=/opt/qt6/${QT_VERSION}/gcc_64/lib/:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "XDG_DATA_DIRS=/opt/qt6/${QT_VERSION}/gcc_64/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
 
     - name: Install Qt5 Windows
       if: ${{ matrix.qt_version == 5 && matrix.os == 'windows-latest' }}
@@ -81,9 +82,10 @@ jobs:
       if: ${{ matrix.qt_version == 6 && matrix.os == 'windows-latest' }}
       shell: cmd
       run: |
+          set QT_VERSION=6.1.2
           pip3 install aqtinstall
-          aqt install -O C:\Qt -m qtbase icu --noarchives 6.1.2 windows desktop win64_msvc2019_64
-          set QT6_BASE_DIR=C:\Qt\6.1.2\msvc2019_64
+          aqt install -O C:\Qt -m qtbase icu --noarchives %QT_VERSION% windows desktop win64_msvc2019_64
+          set QT6_BASE_DIR=C:\Qt\%QT_VERSION%\msvc2019_64
           echo CMAKE_PREFIX_PATH=%QT6_BASE_DIR%\lib\cmake > %GITHUB_ENV%
           echo %QT6_BASE_DIR%\bin>> %GITHUB_PATH%
 
