@@ -56,11 +56,16 @@ if (BUILD_TESTING)
     list(APPEND REQUIRED_QT_COMPONENTS Test)
 endif()
 
+set(MIN_REQUIRED_QT5_VERSION "5.12")
+# 6.1.2 fixes QTBUG-93270 which prevents compiling against Qt6 with C++20 enabled
+set(MIN_REQUIRED_QT6_VERSION "6.1.2")
+
+
 if (NOT USE_QT_VERSION)
     # FIXME: find_package(QT NAMES Qt6 Qt5 ...) seems to prefer Qt5 on my system
-    find_package(Qt6 COMPONENTS ${REQUIRED_QT_COMPONENTS})
+    find_package(Qt6 ${MIN_REQUIRED_QT6_VERSION} COMPONENTS ${REQUIRED_QT_COMPONENTS})
     if (NOT Qt6_FOUND)
-        find_package(Qt5 COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
+        find_package(Qt5 ${MIN_REQUIRED_QT5_VERSION} COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
         find_package(Qt5Core COMPONENTS Private REQUIRED)
         set(QT_VERSION_MAJOR 5)
     else()
@@ -68,7 +73,8 @@ if (NOT USE_QT_VERSION)
         set(QT_VERSION_MAJOR 6)
     endif()
 else()
-    find_package(Qt${USE_QT_VERSION} COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
+    find_package(Qt${USE_QT_VERSION} ${MIN_REQUIRED_QT${USE_QT_VERSION}_VERSION}
+                 COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
     find_package(Qt${USE_QT_VERSION}Core COMPONENTS Private)
     set(QT_VERSION_MAJOR ${USE_QT_VERSION})
 endif()

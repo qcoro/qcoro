@@ -62,7 +62,7 @@ jobs:
       run: |
           sudo apt-get install -y --no-install-recommends libgl-dev libegl-dev
           pip3 install aqtinstall
-          aqt install -O /opt/qt6 -m qtbase icu --noarchives 6.0.4 linux desktop gcc_64
+          aqt install -O /opt/qt6 -m qtbase icu --noarchives 6.1.2 linux desktop gcc_64
           echo "/opt/qt6/6.0.4/gcc_64/bin/" >> $GITHUB_PATH
           echo "LD_LIBRARY_PATH=/opt/qt6/6.0.4/gcc_64/lib/:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "XDG_DATA_DIRS=/opt/qt6/6.0.4/gcc_64/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
