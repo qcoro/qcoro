@@ -28,8 +28,12 @@ jobs:
             compiler: /usr/bin/clang++-11
             name: clang-11
             qt_version: 6
-          #- os: windows-latest
-          #  compiler: msvc
+          - os: windows-latest
+            name: msvc
+            qt_version: 5
+          - os: windows-latest
+            name: msvc
+            qt_version: 6
 
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }}-${{ matrix.name }}-qt${{ matrix.qt_version }}
@@ -38,6 +42,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       shell: bash
       run: |
         sudo apt-get update
@@ -45,13 +50,14 @@ jobs:
         if [[ "${{ matrix.name }}" == "clang"* ]]; then
           sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
         fi
-    - name: Install Qt5
-      if: ${{ matrix.qt_version == 5 }}
+
+    - name: Install Qt5 Ubuntu
+      if: ${{ matrix.qt_version == 5 && matrix.os == 'ubuntu-latest' }}
       shell: bash
       run: sudo apt-get install -y --no-install-recommends qtbase5-dev qtbase5-private-dev
 
-    - name: Install Qt6
-      if: ${{ matrix.qt_version == 6 }}
+    - name: Install Qt6 Ubuntu
+      if: ${{ matrix.qt_version == 6 && matrix.os == 'ubuntu-latest' }}
       shell: bash
       run: |
           sudo apt-get install -y --no-install-recommends libgl-dev libegl-dev
@@ -61,17 +67,51 @@ jobs:
           echo "LD_LIBRARY_PATH=/opt/qt6/6.0.4/gcc_64/lib/:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "XDG_DATA_DIRS=/opt/qt6/6.0.4/gcc_64/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
 
+    - name: Install Qt5 Windows
+      if: ${{ matrix.qt_version == 5 && matrix.os == 'windows-latest' }}
+      shell: cmd
+      run: |
+          pip3 install aqtinstall
+          aqt install -O C:\Qt -m qtbase icu --noarchives 5.15.2 windows desktop win64_msvc2019_64
+          set QT5_BASE_DIR=C:\Qt\5.15.2\msvc2019_64
+          echo CMAKE_PREFIX_PATH=%QT5_BASE_DIR%\lib\cmake > %GITHUB_ENV%
+          echo %QT5_BASE_DIR%\bin>> %GITHUB_PATH%
+
+    - name: Install Qt6 Windows
+      if: ${{ matrix.qt_version == 6 && matrix.os == 'windows-latest' }}
+      shell: cmd
+      run: |
+          pip3 install aqtinstall
+          aqt install -O C:\Qt -m qtbase icu --noarchives 6.1.2 windows desktop win64_msvc2019_64
+          set QT6_BASE_DIR=C:\Qt\6.1.2\msvc2019_64
+          echo CMAKE_PREFIX_PATH=%QT6_BASE_DIR%\lib\cmake > %GITHUB_ENV%
+          echo %QT6_BASE_DIR%\bin>> %GITHUB_PATH%
+
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
 
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
+      env:
+        compiler: ${{ matrix.compiler }}
       run: |
-        echo $PATH
-        echo $LD_LIBRARY_PATH
-        echo $XDG_DATA_DIRS
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DQCORO_ENABLE_ASAN=ON -DUSE_QT_VERSION=${{ matrix.qt_version }}
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE ${compiler:+-DCMAKE_CXX_COMPILER=${compiler}} -DQCORO_ENABLE_ASAN=ON -DUSE_QT_VERSION=${{ matrix.qt_version }}
+
+    - name: Add ASAN DLL directory to PATH
+      if: ${{ matrix.os == 'windows-latest' }}
+      shell: cmd
+      run: |
+        setlocal enabledelayedexpansion
+        for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (set InstallDir=%%i)
+        if exist "%InstallDir%\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" (
+          set /p Version=<"%InstallDir%\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt"
+          set Version=!Version: =!
+        )
+        if not "%Version%" == "" (
+          set /p="%InstallDir%\VC\Tools\MSVC\%Version%\bin\HostX64\x64" < nul > %GITHUB_PATH%
+          exit 0
+        )
 
     - name: Build
       working-directory: ${{github.workspace}}/build
