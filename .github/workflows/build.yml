@@ -11,94 +11,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        qt_version: [ 5.12.1, 6.1.2 ]
+        compiler: [ gcc-10, clang-11, msvc ]
+        exclude:
+          - os: ubuntu-latest
+            compiler: msvc
+          - os: windows-latest
+            compiler: gcc-10
+          - os: windows-latest
+            compiler: clang-11
+          - os: windows-latest
+            qt_version: 5.12.1
         include:
-          - os: ubuntu-latest
-            compiler: /usr/bin/g++-10
-            name: gcc-10
-            qt_version: 5
-          - os: ubuntu-latest
-            compiler: /usr/bin/clang++-11
-            name: clang-11
-            qt_version: 5
-          - os: ubuntu-latest
-            compiler: /usr/bin/g++-10
-            name: gcc-10
-            qt_version: 6
-          - os: ubuntu-latest
-            compiler: /usr/bin/clang++-11
-            name: clang-11
-            qt_version: 6
           - os: windows-latest
-            name: msvc
-            qt_version: 5
-          - os: windows-latest
-            name: msvc
-            qt_version: 6
+            compiler: msvc
+            qt_version: 5.15.2
 
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.name }}-qt${{ matrix.qt_version }}
+    name: ${{ matrix.os }}-qt${{ matrix.qt_version}}-${{ matrix.compiler }}
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout sources
+      uses: actions/checkout@v2
 
-    - name: Install dependencies
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      shell: bash
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends build-essential dbus dbus-x11
-        if [[ "${{ matrix.name }}" == "clang"* ]]; then
-          sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
-        fi
-
-    - name: Install Qt5 Ubuntu
-      if: ${{ matrix.qt_version == 5 && matrix.os == 'ubuntu-latest' }}
-      shell: bash
-      run: sudo apt-get install -y --no-install-recommends qtbase5-dev qtbase5-private-dev
-
-    - name: Install Qt6 Ubuntu
-      if: ${{ matrix.qt_version == 6 && matrix.os == 'ubuntu-latest' }}
-      shell: bash
-      run: |
-          export QT_VERSION=6.1.2
-          sudo apt-get install -y --no-install-recommends libgl-dev libegl-dev
-          pip3 install aqtinstall
-          aqt install -O /opt/qt6 -m qtbase icu --noarchives ${QT_VERSION} linux desktop gcc_64
-          echo "/opt/qt6/${QT_VERSION}/gcc_64/bin/" >> $GITHUB_PATH
-          echo "LD_LIBRARY_PATH=/opt/qt6/${QT_VERSION}/gcc_64/lib/:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "XDG_DATA_DIRS=/opt/qt6/${QT_VERSION}/gcc_64/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
-
-    - name: Install Qt5 Windows
-      if: ${{ matrix.qt_version == 5 && matrix.os == 'windows-latest' }}
-      shell: cmd
-      run: |
-          pip3 install aqtinstall
-          aqt install -O C:\Qt -m qtbase icu --noarchives 5.15.2 windows desktop win64_msvc2019_64
-          set QT5_BASE_DIR=C:\Qt\5.15.2\msvc2019_64
-          echo CMAKE_PREFIX_PATH=%QT5_BASE_DIR%\lib\cmake > %GITHUB_ENV%
-          echo %QT5_BASE_DIR%\bin>> %GITHUB_PATH%
-
-    - name: Install Qt6 Windows
-      if: ${{ matrix.qt_version == 6 && matrix.os == 'windows-latest' }}
-      shell: cmd
-      run: |
-          set QT_VERSION=6.1.2
-          pip3 install aqtinstall
-          aqt install -O C:\Qt -m qtbase icu --noarchives %QT_VERSION% windows desktop win64_msvc2019_64
-          set QT6_BASE_DIR=C:\Qt\%QT_VERSION%\msvc2019_64
-          echo CMAKE_PREFIX_PATH=%QT6_BASE_DIR%\lib\cmake > %GITHUB_ENV%
-          echo %QT6_BASE_DIR%\bin>> %GITHUB_PATH%
+    - name: Install Qt
+      uses: ./.github/actions/install-qt
+      with:
+        qt_version: ${{ matrix.qt_version }}
+        compiler: ${{ matrix.compiler }}
 
     - name: Create Build Environment
-      run: cmake -E make_directory ${{github.workspace}}/build
+      run: |
+        cmake -E make_directory ${{github.workspace}}/build
 
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
-      env:
-        compiler: ${{ matrix.compiler }}
       run: |
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE ${compiler:+-DCMAKE_CXX_COMPILER=${compiler}} -DQCORO_ENABLE_ASAN=ON -DUSE_QT_VERSION=${{ matrix.qt_version }}
+        QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
+        ARGS="-DCMAKE_BUILD_TYPE=$BULD_TYPE -DQCORO_ENABLE_ASAN=ON -DUSE_QT_VERSION=$QT_VERSION_MAJOR"
+        if [[ "${{ matrix.compiler }}" == "gcc-10"* ]]; then
+          ARGS="$ARGS -DCMAKE_CXX_COMPILER=/usr/bin/g++-10"
+        elif [[ "${{ matrix.compiler }}" == "clang-11" ]]; then
+          ARGS="$ARGS -DCMAKE_CXX_COMPILER=/usr/bin/clang++-11"
+        fi
+
+        cmake $GITHUB_WORKSPACE $ARGS
 
     - name: Add ASAN DLL directory to PATH
       if: ${{ matrix.os == 'windows-latest' }}
@@ -118,16 +77,16 @@ jobs:
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build . --config $BUILD_TYPE --parallel 4
 
     - name: Test
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: ctest -C $BUILD_TYPE --output-on-failure
+      run: ctest -C $BUILD_TYPE --output-on-failure --verbose
 
     - name: Upload build logs on failure
       if: failure()
       uses: actions/upload-artifact@v2
       with:
-        name: build-${{ matrix.os }}-${{ matrix.name }}
+        name: build-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.qt_version }}
         path: build/**
