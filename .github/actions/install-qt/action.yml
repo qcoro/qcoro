@@ -1,0 +1,40 @@
+name: 'Install Qt'
+description: 'Install Qt'
+inputs:
+  qt_version:
+    description: 'Version of Qt to install'
+    required: true
+  qt_modules:
+    description: 'List of Qt modules to intall'
+    default: qtbase icu
+  compiler:
+    description: 'Name of the compiler to use'
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        pip3 install aqtinstall
+        if [[ "${{ inputs.compiler }}" == "msvc" ]]; then
+          aqt install -O C:\Qt -m ${{ inputs.qt_modules }} --noarchives ${{ inputs.qt_version }} windows desktop win64_msvc2019_64
+          QT_BASE_DIR="C:\Qt\${{ inputs.qt_version }}\msvc2019_64"
+
+          powershell "./.github/actions/install-qt/install-dbus.ps1" "$QT_BASE_DIR"
+
+          echo "$QT_BASE_DIR\\bin" >> $GITHUB_PATH
+          echo "CMAKE_PREFIX_PATH=$QT_BASE_DIR\\lib\\cmake" >> $GITHUB_ENV
+        else
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential dbus dbus-x11 libgl-dev libegl-dev
+          if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
+            sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
+          fi
+          aqt install -O /opt/qt -m ${{ inputs.qt_modules }} --noarchives ${{ inputs.qt_version }} linux desktop gcc_64
+
+          QT_BASE_DIR="/opt/qt/${{ inputs.qt_version }}/gcc_64/"
+          echo "$QT_BASE_DIR/bin" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "XDG_DATA_DIRS=$QT_BASE_DIR/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
+        fi
+
