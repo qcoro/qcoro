@@ -10,6 +10,7 @@
 #include <QTcpSocket>
 
 #include <thread>
+#include <mutex>
 
 using namespace std::chrono_literals;
 
@@ -21,12 +22,14 @@ private:
         QTcpServer server;
         QCORO_VERIFY(server.listen(QHostAddress::LocalHost, 45678));
 
+        std::mutex mutex;
         bool ok = false;
-        std::thread clientThread{[&ok]() mutable {
+        std::thread clientThread{[&]() mutable {
             std::this_thread::sleep_for(500ms);
 
             QTcpSocket socket;
             socket.connectToHost(QHostAddress::LocalHost, 45678);
+            std::lock_guard lock{mutex};
             if (!socket.waitForConnected(10'000)) {
                 ok = false;
                 return;
@@ -44,6 +47,7 @@ private:
         const auto data = co_await qCoro(connection).readAll();
         QCORO_COMPARE(data, QByteArray{"Hello World!"});
 
+        std::lock_guard lock{mutex};
         QCORO_VERIFY(ok);
 
         clientThread.join();
@@ -56,9 +60,11 @@ private:
         QCORO_VERIFY(server.listen(QHostAddress::LocalHost, 45678));
 
         bool ok = false;
+        std::mutex mutex;
         std::thread clientThread{[&]() mutable {
             QTcpSocket socket;
             socket.connectToHost(QHostAddress::LocalHost, 45678);
+            std::lock_guard lock{mutex};
             if (!socket.waitForConnected(10'000)) {
                 ok = false;
                 return;
@@ -77,6 +83,8 @@ private:
         connection->waitForReadyRead(); // can't use coroutine, it might suspend or not, depending on how eventloop
                                         // gets triggered, which fails the test since it's setShouldNotSuspend()
         QCORO_COMPARE(connection->readAll(), QByteArray{"Hello World!"});
+
+        std::lock_guard lock{mutex};
         QCORO_VERIFY(ok);
 
         clientThread.join();
