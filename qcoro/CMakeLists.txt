@@ -12,14 +12,12 @@ set(qcoro_SRCS
     qcoronetworkreply.cpp
     qcoroprocess.cpp
     qcorotcpserver.cpp
-    task.cpp
 )
 add_library(QCoro ${qcoro_SRCS})
 add_library(QCoro::QCoro ALIAS QCoro)
 target_link_libraries(QCoro
     PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::CorePrivate
     Qt${QT_VERSION_MAJOR}::Network
     Qt${QT_VERSION_MAJOR}::DBus
 )

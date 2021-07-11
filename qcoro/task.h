@@ -558,39 +558,28 @@ namespace detail {
  * So instead we do basically what Qt does internally, but we make sure to not delete th
  * QFunctorSlotObjectWithNoArgs until after the event loop quits.
  */
-class Waiter {
-public:
-    template<typename Func>
-    void run(Func &&func) {
-        auto slot = std::make_unique<QtPrivate::QFunctorSlotObjectWithNoArgs<Func, decltype(func())>>(std::move(func));
-        QCoreApplication::postEvent(&m_loop, createEvent(slot.get()));
-        m_loop.exec();
-    }
+template<typename Coroutine>
+Task<> runCoroutine(QEventLoop &loop, Coroutine &&coroutine) {
+    co_await coroutine;
+    loop.quit();
+}
 
-    void done() {
-        m_loop.quit();
-    }
-
-private:
-    QEvent *createEvent(QtPrivate::QSlotObjectBase *slot);
-
-    QEventLoop m_loop;
-};
+template<typename T, typename Coroutine>
+Task<> runCoroutine(QEventLoop &loop, T &result, Coroutine &&coroutine) {
+    result = co_await coroutine;
+    loop.quit();
+}
 
 template<typename T, typename Coroutine>
 T waitFor(Coroutine &&coro) {
-    Waiter waiter;
+    QEventLoop loop;
     if constexpr (std::is_void_v<T>) {
-        waiter.run([&waiter, &coro]() mutable -> QCoro::Task<> {
-            co_await coro;
-            waiter.done();
-        });
+        runCoroutine(loop, std::forward<Coroutine>(coro));
+        loop.exec();
     } else {
         T result;
-        waiter.run([&waiter, &result, &coro]() mutable -> QCoro::Task<> {
-            result = co_await coro;
-            waiter.done();
-        });
+        runCoroutine(loop, result, std::forward<Coroutine>(coro));
+        loop.exec();
         return result;
     }
 }
