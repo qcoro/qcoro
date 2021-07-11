@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <QCoreApplication>
 #include <QObject>
+#include <QProcess>
+#include <QTimer>
 
 #include <QString>
 
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <unistd.h>
+#include <iostream>
 
 class DBusServer : public QObject {
     Q_OBJECT
@@ -31,23 +32,42 @@ public Q_SLOTS:
     QString blockAndReturn(int seconds);
 
     void quit();
+
+private:
+    QTimer mSuicideTimer;
 };
 
-// We must fork the DBus server into its own process due to QTBUG-92107 (asyncCall blocks if the
+// We must run the DBus server into its own process due to QTBUG-92107 (asyncCall blocks if the
 // remote service is registered in the same process (even if it lives in a different thread)
 #define DBUS_TEST_MAIN(TestClass)                                                                  \
-    int main(int argc, char **argv) {                                                              \
-        const auto child = fork();                                                                 \
-        if (child == 0) {                                                                          \
-            QCoreApplication app(argc, argv);                                                      \
-            DBusServer server;                                                                     \
-            return app.exec();                                                                     \
+    bool startDBusServer(QProcess &process) {                                                      \
+        process.start(QStringLiteral(TESTDBUSSERVER_EXECUTABLE), QStringList{});                   \
+        if (!process.waitForStarted()) {                                                           \
+            std::cerr << "Failed to start testdbusserver" << std::endl;                            \
+            return false;                                                                          \
         }                                                                                          \
+        return true;                                                                               \
+    }                                                                                              \
                                                                                                    \
+    bool stopDBusServer(QProcess &process) {                                                       \
+        process.waitForFinished();                                                                 \
+        if (process.exitCode() != 0) {                                                             \
+            std::cerr << "testdbuserver terminated with exit code " << process.exitCode()          \
+                      << std::endl;                                                                \
+            return false;                                                                          \
+        }                                                                                          \
+        return true;                                                                               \
+    }                                                                                              \
+                                                                                                   \
+    int main(int argc, char **argv) {                                                              \
         QCoreApplication app(argc, argv);                                                          \
+        QProcess dbusServer;                                                                       \
+        if (!startDBusServer(dbusServer))                                                          \
+            return 1;                                                                              \
         TestClass testClass;                                                                       \
         QTEST_SET_MAIN_SOURCE_PATH                                                                 \
         const int result = QTest::qExec(&testClass, argc, argv);                                   \
-        waitpid(child, 0, WNOHANG);                                                                \
+        if (!stopDBusServer(dbusServer))                                                           \
+            return 1;                                                                              \
         return result;                                                                             \
     }
