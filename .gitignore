@@ -3,3 +3,5 @@ build-*
 .*.swp
 .ccls-cache
 compile_commands.json
+/.vs
+/CMakeSettings.json
