@@ -7,23 +7,58 @@
 
 #include <QProcess>
 
+#ifdef Q_OS_WIN
+// There's no equivalent to "true" command on Windows, so do a single ping to localhost instead,
+// which terminates almost immediately.
+#define DUMMY_EXEC QStringLiteral("ping")
+#define DUMMY_ARGS                                                                                 \
+    { QStringLiteral("127.0.0.1"), QStringLiteral("-n"), QStringLiteral("1") }
+// On windows, the equivalent to Linux "sleep" is "timeout", but it fails due to QProcess redirecting
+// stdin, which "timeout" doesn't support (it waits for keypress to interrupt). However, "ping" pings
+// every second, so specifying number of pings to the desired timeout makes it behave basically like
+// the Linux "sleep".
+#define SLEEP_EXEC QStringLiteral("ping")
+#define SLEEP_ARGS(timeout)                                                                        \
+    { QStringLiteral("127.0.0.1"), QStringLiteral("-n"), QString::number(timeout) }
+   
+#else
+#define DUMMY_EXEC QStringLiteral("true")
+#define DUMMY_ARGS {}
+#define SLEEP_EXEC QStringLiteral("sleep")
+#define SLEEP_ARGS(timeout) { QString::number(timeout) }
+#endif
+
 class QCoroProcessTest : public QCoro::TestObject<QCoroProcessTest> {
     Q_OBJECT
 
 private:
-    QCoro::Task<> testStartTriggers_coro(QCoro::TestContext) {
-        QProcess process;
+    QCoro::Task<> testStartTriggers_coro(QCoro::TestContext context) {
+#ifdef Q_OS_WIN
+        // QProcess::start() on Windows is synchronous, despite what the documentation says,
+        // so the coroutine will not suspend.
+        context.setShouldNotSuspend();
+#else
+        Q_UNUSED(context);
+#endif
 
-        co_await qCoro(process).start(QStringLiteral("true"), {});
+        QProcess process;
+        co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
 
         QCORO_COMPARE(process.state(), QProcess::Running);
 
         process.waitForFinished();
     }
 
-    QCoro::Task<> testStartNoArgsTriggers_coro(QCoro::TestContext) {
+    QCoro::Task<> testStartNoArgsTriggers_coro(QCoro::TestContext context) {
+#ifdef Q_OS_WIN
+        context.setShouldNotSuspend();
+#else
+        Q_UNUSED(context);
+#endif
+
         QProcess process;
-        process.setProgram(QStringLiteral("true"));
+        process.setProgram(DUMMY_EXEC);
+        process.setArguments(DUMMY_ARGS);
 
         co_await qCoro(process).start();
 
@@ -36,7 +71,7 @@ private:
         QCoro::EventLoopChecker eventLoopResponsive{1, 0ms};
 
         QProcess process;
-        co_await qCoro(process).start(QStringLiteral("true"), {});
+        co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
 
         QCORO_VERIFY(eventLoopResponsive);
 
@@ -49,10 +84,10 @@ private:
 #pragma message "Workaround for GCC ICE!"
         // Workaround GCC bug https://bugzilla.redhat.com/1952671
         // GCC ICEs at the end of this function due to presence of two co_await statements.
-        process.start(QStringLiteral("sleep"), {QStringLiteral("1")});
+        process.start(SLEEP_EXEC, SLEEP_ARGS(1)});
         process.waitForStarted();
 #else
-        co_await qCoro(process).start(QStringLiteral("sleep"), {QStringLiteral("1")});
+        co_await qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1));
 #endif
 
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -67,7 +102,7 @@ private:
 
     QCoro::Task<> testFinishTriggers_coro(QCoro::TestContext) {
         QProcess process;
-        process.start(QStringLiteral("sleep"), {QStringLiteral("1")});
+        process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -80,7 +115,7 @@ private:
 
     QCoro::Task<> testFinishDoesntCoAwaitFinishedProcess_coro(QCoro::TestContext ctx) {
         QProcess process;
-        process.start(QStringLiteral("true"), QStringList{});
+        process.start(DUMMY_EXEC, QStringList DUMMY_ARGS);
         process.waitForFinished();
 
         ctx.setShouldNotSuspend();
@@ -91,7 +126,8 @@ private:
 
     QCoro::Task<> testFinishCoAwaitTimeout_coro(QCoro::TestContext) {
         QProcess process;
-        process.start(QStringLiteral("sleep"), {QStringLiteral("2")});
+
+        process.start(SLEEP_EXEC, SLEEP_ARGS(2));
         process.waitForStarted();
 
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -107,7 +143,9 @@ private:
 private Q_SLOTS:
     addTest(StartTriggers)
     addTest(StartNoArgsTriggers)
+#ifndef Q_OS_WIN // start always blocks on Windows
     addTest(StartDoesntBlock)
+#endif
     addTest(StartDoesntCoAwaitRunningProcess)
     addTest(FinishTriggers)
     addTest(FinishDoesntCoAwaitFinishedProcess)
