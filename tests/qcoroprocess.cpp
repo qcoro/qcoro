@@ -84,7 +84,7 @@ private:
 #pragma message "Workaround for GCC ICE!"
         // Workaround GCC bug https://bugzilla.redhat.com/1952671
         // GCC ICEs at the end of this function due to presence of two co_await statements.
-        process.start(SLEEP_EXEC, SLEEP_ARGS(1)});
+        process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 #else
         co_await qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1));
