@@ -34,7 +34,7 @@ private Q_SLOTS:
         QTest::addColumn<QByteArray>("expectedData");
         QTest::addColumn<std::chrono::seconds>("timeout");
 
-        QTest::newRow("/") << QStringLiteral("http://localhost:%1/") << QByteArray{"abcdef"} << 1s;
+        QTest::newRow("/") << QStringLiteral("http://localhost:%1/") << QByteArray{"abcdef"} << 5s;
 
         QTest::newRow("/block") << QStringLiteral("http://localhost:%1/block")
                                 << QByteArray{"abcdef"} << 5s;

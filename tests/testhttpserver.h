@@ -65,7 +65,7 @@ private:
             return;
         }
         assert(server.isListening());
-
+        
         {
             std::scoped_lock lock(mReadyMutex);
             if constexpr (std::is_same_v<ServerType, QTcpServer>) {
@@ -77,7 +77,14 @@ private:
 
         mServerReady.notify_all();
 
-        if (!server.waitForNewConnection(2000)) {
+        for (int i = 0; i < 10; ++i) {
+            if (server.waitForNewConnection(1000)) {
+                break;
+            }
+        }
+
+        if (!server.hasPendingConnections()) {
+            qDebug() << "No incoming connection in 10 seconds, quitting";
             mPort = 0;
             return;
         }
@@ -85,6 +92,7 @@ private:
         auto *conn = server.nextPendingConnection();
         if (conn->waitForReadyRead(1000)) {
             const auto request = conn->readLine();
+            qDebug() << request;
             if (request == "GET /stream HTTP/1.1\r\n") {
                 QStringList lines;
                 for (int i = 0; i < 10; ++i) {
@@ -118,6 +126,8 @@ private:
             }
             conn->flush();
             conn->close();
+        } else {
+            qDebug() << "No request within 1 second, quitting!";
         }
 
         delete conn;
