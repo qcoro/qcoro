@@ -10,15 +10,25 @@ target_link_libraries(qcoro_test PUBLIC
 add_executable(testdbusserver EXCLUDE_FROM_ALL testdbusserver.cpp)
 target_link_libraries(testdbusserver Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::DBus)
 
+set(qcoro_test_dbus_SRCS)
+if (${QT_VERSION_MAJOR} EQUAL 5)
+    qt5_add_dbus_interface(qcoro_test_dbus_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
+else()
+    qt_add_dbus_interface(qcoro_test_dbus_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
+endif()
+add_library(qcoro_test_dbus OBJECT ${qcoro_test_dbus_SRCS})
+target_link_libraries(qcoro_test_dbus PUBLIC Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::DBus)
+
 function(qcoro_add_test _name)
     set(options)
     set(oneValueArgs)
     set(multiValueAgs LINK_LIBRARIES)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
-
     add_executable(test-${_name} ${_name}.cpp)
-    target_link_libraries(test-${_name} QCoro qcoro_test Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test
-                         ${TEST_LINK_LIBRARIES} Threads::Threads)
+    target_link_libraries(test-${_name} QCoro qcoro_test
+                          Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test
+                          ${TEST_LINK_LIBRARIES}
+                          Threads::Threads)
     add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
 
@@ -28,14 +38,9 @@ function(qcoro_add_dbus_test _name)
     set(multiValueAgs LINK_LIBRARIES)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
     set(test_SRCS ${_name}.cpp)
-    if (${QT_VERSION_MAJOR} EQUAL 5)
-        qt5_add_dbus_interface(test_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
-    else()
-        qt_add_dbus_interface(test_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
-    endif()
     add_executable(test-${_name} ${test_SRCS})
-    add_dependencies(test-${_name} testdbusserver)
-    target_link_libraries(test-${_name} QCoro qcoro_test ${TEST_LINK_LIBRARIES})
+    add_dependencies(test-${_name} testdbusserver qcoro_test_dbus)
+    target_link_libraries(test-${_name} QCoro qcoro_test qcoro_test_dbus ${TEST_LINK_LIBRARIES})
     target_include_directories(test-${_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_compile_definitions(test-${_name} PRIVATE TESTDBUSSERVER_EXECUTABLE=\"$<TARGET_FILE:testdbusserver>\")
     add_test(NAME test-${_name} COMMAND dbus-launch $<TARGET_FILE:test-${_name}>)
