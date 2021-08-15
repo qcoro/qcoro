@@ -15,7 +15,6 @@ theme:
   features:
     - navigation.expand
     - navigation.tracking
-    - navigation.instant
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.indexes
@@ -30,6 +29,20 @@ markdown_extensions:
 plugins:
   - search
   - include-markdown
+  - blogging:
+      dirs:
+        - news
+      sort:
+        from: new
+        by: creation
+      time_format: "%B %d, %Y"
+      meta_time_format: "%Y-%m-%d"
+      locale: en
+      theme:
+        name: button
+        options:
+          plain_button: true
+
   - macros:
       module_name: docs/macros
 
@@ -47,9 +60,10 @@ nav:
     - Home: index.md
     - Building and Using QCoro: building-and-using.md
     - Coroutines:
-        - Qt vs. co_await: coroutines/qt-vs-coawait.md
-        - co_await Explained: coroutines/coawait.md
-        - Further Reading: coroutines/reading.md
+      - Qt vs. co_await: coroutines/qt-vs-coawait.md
+      - co_await Explained: coroutines/coawait.md
+      - Further Reading: coroutines/reading.md
+    - News: news.md
     - Reference:
       - Coro:
         - reference/coro/index.md
