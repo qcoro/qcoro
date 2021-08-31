@@ -4,10 +4,7 @@
 
 #pragma once
 
-#include "qcoroabstractsocket.h"
-#include "qcoroiodevice.h"
-#include "qcorolocalsocket.h"
-#include "qcoronetworkreply.h"
-#include "qcoroprocess.h"
-#include "qcorosignal.h"
-#include "qcorotcpserver.h"
+#include "qcoro.h"
+#include "qcorocore.h"
+#include "qcorodbus.h"
+#include "qcoronetwork.h"

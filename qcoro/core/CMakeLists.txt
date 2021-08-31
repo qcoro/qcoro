@@ -15,26 +15,43 @@ target_link_libraries(QCoroCore
     Qt${QT_VERSION_MAJOR}::Core
 )
 target_include_directories(QCoroCore
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>;$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/qcoro/core>
+    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>;$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qcoro>
+    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QCoro>
 )
 set_target_properties(QCoroCore PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
 
-set(qcoro_core_HEADERS
-    iodevice.h
-    qcoroiodevice.h
-    qcoroprocess.h
-    qcorosignal.h
-    timer.h
+generate_headers(
+    qcoro_core_CamelCase_HEADERS
+    HEADER_NAMES
+        QCoroCore
+        IODevice
+        QCoroIODevice
+        QCoroProcess
+        QCoroSignal
+        Timer
+    OUTPUT_DIR QCoro/Core
+    ORIGINAL_HEADERS_VAR qcoro_core_HEADERS
 )
 
 if (QT_HAS_COMPAT_ABI)
-    set(qcoro_core_HEADERS ${qcoro_core_HEADERS} future.h)
+    generate_headers(
+        qcoro_core_CamelCase_HEADERS
+        HEADER_NAMES
+            Future
+        OUTPUT_DIR QCoro/Core
+        ORIGINAL_HEADERS_VAR qcoro_core_HEADERS
+    )
 endif()
 
 install(
     FILES ${qcoro_core_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro/core
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
+    COMPONENT Devel
+)
+install(
+    FILES ${qcoro_core_CamelCase_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/QCoro
     COMPONENT Devel
 )
 

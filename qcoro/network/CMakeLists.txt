@@ -16,22 +16,32 @@ target_link_libraries(QCoroNetwork
     Qt${QT_VERSION_MAJOR}::Network
 )
 target_include_directories(QCoroNetwork
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>;$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/qcoro/network>
+    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>;$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qcoro/network>
+    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QCoro>
 )
 set_target_properties(QCoroNetwork PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
 
-set(qcoro_network_HEADERS
-    network.h
-    qcoroabstractsocket.h
-    qcorolocalsocket.h
-    qcoronetworkreply.h
-    qcorotcpserver.h
+generate_headers(
+    qcoro_network_CamelCase_HEADERS
+    HEADER_NAMES
+        QCoroNetwork
+        QCoroAbstractSocket
+        QCoroLocalSocket
+        QCoroNetworkReply
+        QCoroTcpServer
+    OUTPUT_DIR QCoro/Network
+    ORIGINAL_HEADERS_VAR qcoro_network_HEADERS
 )
 
 install(
     FILES ${qcoro_network_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro/network
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
+    COMPONENT Devel
+)
+install(
+    FILES ${qcoro_network_CamelCase_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/QCoro
     COMPONENT Devel
 )
 
