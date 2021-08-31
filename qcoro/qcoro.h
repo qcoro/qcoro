@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "qcoro.h"
+#include "task.h"
 #include "qcorocore.h"
 #include "qcorodbus.h"
 #include "qcoronetwork.h"

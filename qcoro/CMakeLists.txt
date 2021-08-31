@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 set(qcoro_HEADERS
-    concepts.h
+    concepts_p.h
     coroutine.h
-    macros.h
+    macros_p.h
     task.h
     waitoperationbase_p.h
 )
@@ -15,6 +15,7 @@ generate_headers(
     qcoro_CamelCase_HEADERS
     HEADER_NAMES
         Task
+        QCoro
     OUTPUT_DIR QCoro
     ORIGINAL_HEADERS_VAR qcoro_HEADERS
 )
