@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include "qcoro/task.h"
 #include "qcoro/core/qcoroiodevice.h"
+#include "qcoro/waitoperationbase_p.h"
 
 #include <QNetworkReply>
 
@@ -25,12 +27,26 @@ private:
         QMetaObject::Connection mFinishedConn;
     };
 
+    class WaitForFinishedOperation final {
+    public:
+        explicit WaitForFinishedOperation(QPointer<QNetworkReply> reply);
+
+        bool await_ready() const noexcept;
+        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine);
+        QNetworkReply *await_resume() const noexcept;
+
+    private:
+        QPointer<QNetworkReply> mReply;
+    };
+
+    friend struct awaiter_type<QNetworkReply *>;
 public:
     using QCoroIODevice::QCoroIODevice;
 
     ReadOperation readAll();
     ReadOperation read(qint64 maxSize);
     ReadOperation readLine(qint64 maxSize = 0);
+    WaitForFinishedOperation waitForFinished();
 };
 
 } // namespace QCoro::detail
@@ -49,5 +65,15 @@ inline auto qCoro(QNetworkReply &s) noexcept {
 inline auto qCoro(QNetworkReply *s) noexcept {
     return QCoro::detail::QCoroNetworkReply{s};
 }
+
+/*! \cond internal */
+namespace QCoro::detail {
+
+template<>
+struct awaiter_type<QNetworkReply *> {
+    using type = QCoroNetworkReply::WaitForFinishedOperation;
+};
+
+} // namespace QCoro::detail
 
 

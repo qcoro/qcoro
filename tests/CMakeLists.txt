@@ -81,7 +81,6 @@ if (QCORO_WITH_QTDBUS)
 endif()
 
 if (QCORO_WITH_QTNETWORK)
-    qcoro_add_network_test(qnetworkreply)
     qcoro_add_network_test(qcorolocalsocket)
     qcoro_add_network_test(qcoroabstractsocket)
     qcoro_add_network_test(qcoronetworkreply)

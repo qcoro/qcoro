@@ -15,6 +15,77 @@ class QCoroNetworkReplyTest : public QCoro::TestObject<QCoroNetworkReplyTest> {
     Q_OBJECT
 
 private:
+    QCoro::Task<> testTriggers_coro(QCoro::TestContext) {
+        QNetworkAccessManager nam;
+        auto *reply =
+            nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1").arg(mServer.port())});
+
+        co_await reply;
+
+        QCORO_VERIFY(reply->isFinished());
+        QCORO_COMPARE(reply->error(), QNetworkReply::NoError);
+        QCORO_COMPARE(reply->readAll(), "abcdef");
+
+        delete reply;
+    }
+
+    QCoro::Task<> testQCoroWrapperTriggers_coro(QCoro::TestContext) {
+        QNetworkAccessManager nam;
+        auto *reply =
+            nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1").arg(mServer.port())});
+
+        co_await qCoro(reply).waitForFinished();
+
+        QCORO_VERIFY(reply->isFinished());
+        QCORO_COMPARE(reply->error(), QNetworkReply::NoError);
+        QCORO_COMPARE(reply->readAll(), "abcdef");
+
+        delete reply;
+    }
+
+    QCoro::Task<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
+        QCoro::EventLoopChecker eventLoopResponsive;
+        QNetworkAccessManager nam;
+
+        auto *reply = nam.get(
+            QNetworkRequest{QStringLiteral("http://localhost:%1/block").arg(mServer.port())});
+
+        co_await reply;
+
+        QCORO_VERIFY(eventLoopResponsive);
+        QCORO_VERIFY(reply->isFinished());
+        QCORO_COMPARE(reply->error(), QNetworkReply::NoError);
+        QCORO_COMPARE(reply->readAll(), "abcdef");
+
+        delete reply;
+    }
+
+    QCoro::Task<> testDoesntCoAwaitNullReply_coro(QCoro::TestContext test) {
+        test.setShouldNotSuspend();
+
+        QNetworkReply *reply = nullptr;
+
+        co_await reply;
+
+        delete reply;
+    }
+
+    QCoro::Task<> testDoesntCoAwaitFinishedReply_coro(QCoro::TestContext test) {
+        QNetworkAccessManager nam;
+        auto *reply =
+            nam.get(QNetworkRequest{QStringLiteral("http://localhost:%1").arg(mServer.port())});
+
+        co_await reply;
+
+        QCORO_VERIFY(reply->isFinished());
+
+        test.setShouldNotSuspend();
+        co_await reply;
+
+        delete reply;
+    }
+
+
     QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext) {
         QNetworkAccessManager nam;
 
@@ -71,6 +142,11 @@ private Q_SLOTS:
         mServer.stop();
     }
 
+    addTest(Triggers)
+    addTest(QCoroWrapperTriggers)
+    addTest(DoesntBlockEventLoop)
+    addTest(DoesntCoAwaitNullReply)
+    addTest(DoesntCoAwaitFinishedReply)
     addTest(ReadAllTriggers)
     addTest(ReadTriggers)
     addTest(ReadLineTriggers)

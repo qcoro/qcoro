@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 set(qcoro_network_SRCS
-    network.cpp
     qcoroabstractsocket.cpp
     qcorolocalsocket.cpp
     qcoronetworkreply.cpp
