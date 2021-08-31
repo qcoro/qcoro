@@ -34,7 +34,7 @@ generate_headers(
     ORIGINAL_HEADERS_VAR qcoro_core_HEADERS
 )
 
-if (QT_HAS_COMPAT_ABI)
+if (QCORO_QT_HAS_COMPAT_ABI)
     generate_headers(
         qcoro_core_CamelCase_HEADERS
         HEADER_NAMES

@@ -71,7 +71,7 @@ qcoro_add_test(qcoroprocess)
 qcoro_add_test(qcorosignal)
 qcoro_add_test(task)
 qcoro_add_test(testconstraints)
-if (QT_HAS_COMPAT_ABI)
+if (QCORO_QT_HAS_COMPAT_ABI)
     qcoro_add_test(qfuture LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Concurrent)
 endif()
 

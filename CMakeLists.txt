@@ -93,10 +93,15 @@ else()
     set(QT_VERSION_MAJOR ${USE_QT_VERSION})
 endif()
 
-has_compatible_stl_abi(QT_HAS_COMPAT_ABI)
-if (NOT QT_HAS_COMPAT_ABI)
+has_compatible_stl_abi(QCORO_QT_HAS_COMPAT_ABI)
+if (NOT QCORO_QT_HAS_COMPAT_ABI)
     message(WARNING "Qt is built with an incompatible STL, some features will be disabled!")
 endif()
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/config.h
+)
 
 #-----------------------------------------------------------#
 # Sources
@@ -115,6 +120,12 @@ endif()
 #-----------------------------------------------------------#
 
 include(CMakePackageConfigHelpers)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/config.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
+    COMPONENT Devel
+)
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/QCoroConfig.cmake.in"
