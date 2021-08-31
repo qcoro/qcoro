@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
-#include "qcoro/future.h"
+
+#include "qcoro/core/future.h"
 
 #include <QtConcurrentRun>
 

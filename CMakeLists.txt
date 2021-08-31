@@ -18,6 +18,11 @@ add_feature_info(Examples QCORO_BUILD_EXAMPLES "Build examples")
 option(QCORO_ENABLE_ASAN "Build with AddressSanitizer" OFF)
 add_feature_info(Asan QCORO_ENABLE_ASAN "Build with AddressSanitizer")
 
+option(QCORO_WITH_QTDBUS "Build QtDBus support" ON)
+add_feature_info(QtDBus QCORO_WITH_QTDBUS "Build QtDBus support")
+option(QCORO_WITH_QTNETWORK "Build QtNetwork support" ON)
+add_feature_info(QtNetwork QCORO_WITH_QTNETWORK "Build QtNetwork support")
+
 #-----------------------------------------------------------#
 # Compiler Settings
 #-----------------------------------------------------------#
@@ -51,7 +56,16 @@ qcoro_enable_coroutines()
 
 find_package(Threads REQUIRED)
 
-set(REQUIRED_QT_COMPONENTS Core DBus Network Widgets Concurrent)
+set(REQUIRED_QT_COMPONENTS Core)
+if (QCORO_WITH_QTDBUS)
+    list(APPEND REQUIRED_QT_COMPONENTS DBus)
+endif()
+if (QCORO_WITH_QTNETWORK)
+    list(APPEND REQUIRED_QT_COMPONENTS Network)
+endif()
+if (QCORO_BUILD_EXAMPLES)
+    list(APPEND REQUIRED_QT_COMPONENTS Widgets Concurrent)
+endif()
 if (BUILD_TESTING)
     list(APPEND REQUIRED_QT_COMPONENTS Test)
 endif()

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "impl/waitoperationbase.h"
-#include "qcoroiodevice.h"
+#include "qcoro/waitoperationbase_p.h"
+#include "qcoro/core/qcoroiodevice.h"
 
 #include <QLocalSocket>
 

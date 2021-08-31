@@ -1,4 +1,4 @@
-#include "qcoro/iodevice.h"
+#include "qcoro/core/iodevice.h"
 #include "qcoro/task.h"
 
 #include <QCoreApplication>

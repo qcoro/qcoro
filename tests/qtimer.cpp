@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
-#include "qcoro/timer.h"
+
+#include "qcoro/core/timer.h"
 
 class QCoroTimerTest : public QCoro::TestObject<QCoroTimerTest> {
     Q_OBJECT

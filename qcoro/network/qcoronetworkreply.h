@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "qcoroiodevice.h"
+#include "qcoro/core/qcoroiodevice.h"
 
 #include <QNetworkReply>
 

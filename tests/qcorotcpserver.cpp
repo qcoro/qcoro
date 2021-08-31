@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
-#include "qcoro/qcorotcpserver.h"
-#include "qcoro/qcoroiodevice.h"
+
+#include "qcoro/network/qcorotcpserver.h"
+#include "qcoro/core/qcoroiodevice.h"
 
 #include <QTcpServer>
 #include <QTcpSocket>

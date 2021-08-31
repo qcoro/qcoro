@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "qcoro/network.h"
+#include "qcoro/network/network.h"
 #include "qcoro/task.h"
 
 #include <QApplication>

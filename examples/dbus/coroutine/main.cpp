@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcoro/coroutine.h"
-#include "qcoro/dbus.h"
+#include "qcoro/dbus/dbus.h"
 #include "qcoro/task.h"
 
 #include "common/dbusserver.h"

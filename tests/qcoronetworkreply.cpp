@@ -4,7 +4,8 @@
 
 #include "testhttpserver.h"
 #include "testobject.h"
-#include "qcoro/qcoronetworkreply.h"
+
+#include "qcoro/network/qcoronetworkreply.h"
 
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>

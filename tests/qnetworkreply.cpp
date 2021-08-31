@@ -4,7 +4,8 @@
 
 #include "testhttpserver.h"
 #include "testobject.h"
-#include "qcoro/network.h"
+
+#include "qcoro/network/network.h"
 
 #include <QHostAddress>
 #include <QNetworkAccessManager>
