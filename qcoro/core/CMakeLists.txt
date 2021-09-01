@@ -30,7 +30,7 @@ generate_headers(
         QCoroProcess
         QCoroSignal
         Timer
-    OUTPUT_DIR QCoro/Core
+    OUTPUT_DIR QCoro
     ORIGINAL_HEADERS_VAR qcoro_core_HEADERS
 )
 
@@ -38,8 +38,8 @@ if (QCORO_QT_HAS_COMPAT_ABI)
     generate_headers(
         qcoro_core_CamelCase_HEADERS
         HEADER_NAMES
-            Future
-        OUTPUT_DIR QCoro/Core
+            QCoroFuture
+        OUTPUT_DIR QCoro
         ORIGINAL_HEADERS_VAR qcoro_core_HEADERS
     )
 endif()

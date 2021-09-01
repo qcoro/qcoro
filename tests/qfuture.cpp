@@ -4,7 +4,7 @@
 
 #include "testobject.h"
 
-#include "qcoro/core/future.h"
+#include "qcorofuture.h"
 
 #include <QtConcurrentRun>
 
@@ -16,6 +16,13 @@ private:
     QCoro::Task<> testTriggers_coro(QCoro::TestContext) {
         auto future = QtConcurrent::run([] { std::this_thread::sleep_for(100ms); });
         co_await future;
+
+        QCORO_VERIFY(future.isFinished());
+    }
+
+    QCoro::Task<> testQCoroWrapperTriggers_coro(QCoro::TestContext test) {
+        auto future = QtConcurrent::run([] { std::this_thread::sleep_for(100ms); });
+        co_await qCoro(future).waitForFinished();
 
         QCORO_VERIFY(future.isFinished());
     }
@@ -60,6 +67,7 @@ private Q_SLOTS:
     addTest(DoesntBlockEventLoop)
     addTest(DoesntCoAwaitFinishedFuture)
     addTest(DoesntCoAwaitCanceledFuture)
+    addTest(QCoroWrapperTriggers)
 };
 
 QTEST_GUILESS_MAIN(QCoroFutureTest)
