@@ -6,6 +6,7 @@ set(qcoro_core_SRCS
     iodevice.cpp
     qcoroiodevice.cpp
     qcoroprocess.cpp
+    qcorotimer.cpp
 )
 add_library(QCoroCore ${qcoro_core_SRCS})
 add_library(QCoro::Core ALIAS QCoroCore)
@@ -29,7 +30,7 @@ generate_headers(
         QCoroIODevice
         QCoroProcess
         QCoroSignal
-        Timer
+        QCoroTimer
     OUTPUT_DIR QCoro
     ORIGINAL_HEADERS_VAR qcoro_core_HEADERS
 )

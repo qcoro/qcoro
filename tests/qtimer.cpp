@@ -4,7 +4,7 @@
 
 #include "testobject.h"
 
-#include "qcoro/core/timer.h"
+#include "qcorotimer.h"
 
 class QCoroTimerTest : public QCoro::TestObject<QCoroTimerTest> {
     Q_OBJECT
@@ -16,6 +16,14 @@ private:
         timer.start();
 
         co_await timer;
+    }
+
+    QCoro::Task<> testQCoroWrapperTriggers_coro(QCoro::TestContext) {
+        QTimer timer;
+        timer.setInterval(100ms);
+        timer.start();
+
+        co_await qCoro(timer).waitForTimeout();
     }
 
     QCoro::Task<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
@@ -50,6 +58,7 @@ private:
 
 private Q_SLOTS:
     addTest(Triggers)
+    addTest(QCoroWrapperTriggers)
     addTest(DoesntBlockEventLoop)
     addTest(DoesntCoAwaitInactiveTimer)
     addTest(DoesntCoAwaitNullTimer)
