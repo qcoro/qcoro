@@ -55,6 +55,13 @@ QString DBusServer::blockAndReturn(int seconds) {
     return QStringLiteral("Slept for %1 seconds").arg(seconds);
 }
 
+QString DBusServer::blockAndReturnMultipleArguments(int seconds, bool &out) {
+    std::this_thread::sleep_for(std::chrono::seconds{seconds});
+    mSuicideTimer.start();
+    out = true;
+    return QStringLiteral("Hello World!");
+}
+
 QString DBusServer::ping(const QString &ping) {
     mSuicideTimer.start();
     return ping;

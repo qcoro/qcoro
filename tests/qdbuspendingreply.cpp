@@ -6,7 +6,7 @@
 #include "testdbusserver.h"
 #include "testobject.h"
 
-#include "qcoro/dbus/dbus.h"
+#include "qcorodbuspendingreply.h"
 
 #include <QDBusConnection>
 #include <QDBusError>
@@ -25,6 +25,16 @@ private:
         QCORO_VERIFY(iface.isValid());
 
         const auto resp = co_await iface.foo();
+
+        QCORO_VERIFY(resp.isFinished());
+    }
+
+    QCoro::Task<> testQCoroWrapperTriggers_coro(QCoro::TestContext) {
+        cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
+                                        QDBusConnection::sessionBus());
+        QCORO_VERIFY(iface.isValid());
+
+        const auto resp = co_await qCoro(iface.foo()).waitForFinished();
 
         QCORO_VERIFY(resp.isFinished());
     }
@@ -77,6 +87,19 @@ private:
         QCORO_VERIFY(reply.isValid());
     }
 
+    QCoro::Task<> testHandlesMultipleArguments_coro(QCoro::TestContext test) {
+        cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
+                                         QDBusConnection::sessionBus());
+        QCORO_VERIFY(iface.isValid());
+
+        QDBusPendingReply<QString, bool> reply = iface.asyncCall("blockAndReturnMultipleArguments", 1);
+        co_await reply;
+
+        QCORO_VERIFY(reply.isFinished());
+        QCORO_COMPARE(reply.argumentAt<0>(), QStringLiteral("Hello World!"));
+        QCORO_COMPARE(reply.argumentAt<1>(), true);
+    }
+
 private Q_SLOTS:
     void initTestCase() {
         for (int i = 0; i < 10; ++i) {
@@ -98,10 +121,12 @@ private Q_SLOTS:
     }
 
     addTest(Triggers)
+    addTest(QCoroWrapperTriggers)
     addTest(ReturnsResult)
     addTest(ReturnsBlockingResult)
     addTest(DoesntBlockEventLoop)
     addTest(DoesntCoAwaitFinishedCall)
+    addTest(HandlesMultipleArguments)
 };
 
 DBUS_TEST_MAIN(QCoroDBusPendingCallTest)

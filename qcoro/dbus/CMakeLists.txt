@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 set(qcoro_dbus_SRCS
-    dbus.cpp
+    qcorodbuspendingcall.cpp
 )
 
 add_library(QCoroDBus ${qcoro_dbus_SRCS})
@@ -25,8 +25,9 @@ generate_headers(
     qcoro_dbus_CamelCase_HEADERS
     HEADER_NAMES
         QCoroDBus
-        DBus
-    OUTPUT_DIR QCoro/DBus
+        QCoroDBusPendingCall
+        QCoroDBusPendingReply
+    OUTPUT_DIR QCoro
     ORIGINAL_HEADERS_VAR qcoro_dbus_HEADERS
 )
 

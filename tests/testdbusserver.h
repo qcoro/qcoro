@@ -30,6 +30,7 @@ public Q_SLOTS:
 
     void blockFor(int seconds);
     QString blockAndReturn(int seconds);
+    QString blockAndReturnMultipleArguments(int seconds, bool &out);
 
     void quit();
 

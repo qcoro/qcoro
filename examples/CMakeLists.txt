@@ -1,5 +1,5 @@
 add_subdirectory(basics)
-if (QCORO_WITH_QTBUS)
+if (QCORO_WITH_QTDBUS)
     add_subdirectory(dbus)
 endif()
 if (QCORO_WITH_QTNETWORK)

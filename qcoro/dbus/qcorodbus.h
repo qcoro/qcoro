@@ -2,4 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "dbus.h"
+#include "qcorodbuspendingcall.h"
+#include "qcorodbuspendingreply.h"
+

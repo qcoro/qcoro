@@ -18,6 +18,12 @@
             <arg type="s" direction="out" />
         </method>
 
+        <method name="blockAndReturnMultipleArguments">
+            <arg name="seconds" type="i" direction="in" />
+            <arg type="s" direction="out" />
+            <arg type="b" direction="out" />
+        </method>
+
         <method name="quit">
             <annotation name="org.freedesktop.DBus.Method.NoReply" value="true"/>
         </method>
