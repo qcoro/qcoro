@@ -1,0 +1,5 @@
+setuptools
+wheel
+mkdocs
+mkdocs-material
+mkdocs-section-index

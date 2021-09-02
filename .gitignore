@@ -5,3 +5,4 @@ build-*
 compile_commands.json
 /.vs
 /CMakeSettings.json
+venv
