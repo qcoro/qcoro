@@ -20,6 +20,7 @@ markdown_extensions:
 
 plugins:
   - search
+  - include-markdown
 
 extra:
   social:
@@ -41,6 +42,7 @@ nav:
         - Supported Types:
           - QAbstractSocket: reference/qabstractsocket.md
           - QDBusPendingCall: reference/qdbuspendingcall.md
+          - QDBusPendingReply: reference/qdbuspendingreply.md
           - QFuture: reference/qfuture.md
           - QIODevice: reference/qiodevice.md
           - QLocalSocket: reference/qlocalsocket.md

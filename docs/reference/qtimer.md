@@ -13,10 +13,10 @@ co-awaiting coroutine is suspended, until the timer finishes, that is until
 The timer must be active. If the timer is not active (not started yet or already
 finished) the `co_await` expression will return immediately.
 
-To make it work, include `qcoro/timer.h` in your implementation.
+To make it work, include `QCoroTimer` in your implementation.
 
 ```cpp
-#include <qcoro/timer.h>
+#include <QCoroTimer>
 #include <chrono>
 
 using namespace std::chrono_literals;

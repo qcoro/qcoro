@@ -57,9 +57,55 @@ private:
 
     friend struct awaiter_type<QDBusPendingReply<Args ...>>;
 public:
+    //! Constructor.
     explicit QCoroDBusPendingReply(const QDBusPendingReply<Args ...> &reply)
         : mReply(reply) {}
 
+    /*!
+     \brief Operation that allows co_awaiting completion of the pending DBus reply.
+
+     <!-- doc-waitForFinished-start -->
+     Waits until the DBus call is finished. This is equivalent to using
+     [`QDBusPendingCallWatcher`][qdoc-qdbuspendingcallwatcher] and waiting for it
+     to emit the [`finished()`][qdoc-qdbuspendingcallwatcher-finished] signal.
+
+     Returns a `QDBusMessage` representing the received reply. If the reply is already
+     finished or an error has occurred the coroutine will not suspend and will return
+     a result immediatelly.
+
+     This is a coroutine-friendly equivalent to using [`QDBusPendingCallWatcher`][qdoc-qdbuspendingcallwatcher]:
+
+     ```cpp
+     QDBusPendingCall call = interface.asyncCall(...);
+     QDBusPendingCallWatcher *watcher = new QDBusPendingCallWatcher(call);
+     QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+                      this, [](QDBusPendingCallWatcher *watcher) {
+                         watcher->deleteLater();
+                         const QDBusReply<...> reply = *watcher;
+                         ...
+                     });
+     ```
+
+     It is also possible to just directly use a `QDBusPendingReply` in a `co_await`
+     expression to await its completion:
+     ```cpp
+     QDBusPendingReply<...> pendingReply = interface.asyncCall(...);
+     const auto reply = co_await pendingReply;
+     ```
+
+     The above is equivalent to:
+     ```cpp
+     QDBusPendingReply<...> pendingReply = interface.asyncCall(...);
+     const auto reply = co_await qCoro(pendingReply).waitForFinished();
+     ```
+
+     [qdoc-qdbuspendingcallwatcher]: https://doc.qt.io/qt-5/qdbuspendingcallwatcher.html
+     [qdoc-qdbuspendingcallwatcher-finished]: https://doc.qt.io/qt-5/qdbuspendingcallwatcher.html#finished
+
+     <!-- doc-waitForFinished-end -->
+
+     @see docs/reference/qdbuspendingreply.md
+     */
     WaitForFinishedOperation waitForFinished() {
         return WaitForFinishedOperation{mReply};
     }
@@ -72,9 +118,25 @@ struct awaiter_type<QDBusPendingReply<Args ...>> {
 
 } // namespace QCoro::detail
 
+/*! \endcond */
+
+//! Returns a coroutine-friendly wrapper for a QDBusPendingReply object.
+/*!
+ * Returns a wrapper for the QDBusPendingReply \c reply that provides
+ * a coroutine-friendly way to await the completion of the pending reply.
+ *
+ * Note that is is also possible to just directly `co_await` the `QDBusPendingReply`
+ * completion without using the wrapper class:
+ *
+ * ```
+ * QDBusPendingReply<...> pendingReply = interface.asyncCall(...);
+ * const auto reply = co_await pendingReply;
+ * ```
+ *
+ * @see docs/reference/qdbuspendingreply.md
+ */
 template<typename ... Args>
 inline auto qCoro(const QDBusPendingReply<Args ...> &reply) {
     return QCoro::detail::QCoroDBusPendingReply<Args ...>{reply};
 }
 
-/*! \endcond */

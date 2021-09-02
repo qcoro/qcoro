@@ -1,34 +1,37 @@
 # QFuture
 
 ```cpp
-const QString result = co_await QtConcurrent::run(taskReturningQString);
+class QCoroFuture
 ```
 
-The QCoro frameworks allows `co_await`ing on [QFuture][qdoc-qfuture] objects,
-which represent an asynchronously executed call. The co-awaiting coroutine is suspended until
-the `QFuture` is finished. If the `QFuture` object is already finished, the coroutine
-will not be suspended.
-
-To be able to use `co_await` with `QFuture`, include `qcoro/future.h` in your implementation.
+[`QFuture`][qdoc-qfuture], which represents an asynchronously executed call, doesn't have any
+operation on its own that could be awaited asynchronously, this is usually done through a helper
+class called [`QFutureWatcher`][qdoc-qfuturewatcher]. To simplify the API, QCoro allows to directly
+`co_await` completion of the running `QFuture` or use a wrapper class `QCoroFuture`. To wrap
+a `QFuture` into a `QCoroFuture`, use [`qCoro()`][qcoro-coro]:
 
 ```cpp
-#include <qcoro/future.h>
+template<typename T>
+QCoroFuture qCoro(const QFuture<T> &future);
+```
 
-QCoro::Task<> runTask() {
-    // Starts a concurrent task and co_awaits on the returned QFuture. While the task is
-    // running, the coroutine is suspended.
-    const QString value = co_await QtConcurrent::run([]() {
-        QString result;
-        ...
-        // do some long-running computation
-        ...
-        return result;
-    });
-    // When the future has finished, the coroutine is resumed and the result of the
-    // QFuture is returned and stored in `value`.
+## `waitForFinished()`
 
-    // ... now do something with the value
-}
+{%
+    include-markdown "../../qcoro/core/qcorofuture.h"
+        dedent=true
+        rewrite-relative-urls=false
+        start="<!-- doc-waitForFinished-start -->"
+        end="<!-- doc-waitForFinished-end -->"
+%}
+
+
+## Example
+
+```cpp
+{% include "../examples/qfuture.cpp" %}
 ```
 
 [qdoc-qfuture]: https://doc.qt.io/qt-5/qfuture.html
+[qdoc-qfuturewatcher]: https://doc.qt.io/qt-5/qfuturewatcher.html
+[qcoro-coro]: coro.md

@@ -12,6 +12,8 @@
 
 class QIODevice;
 
+/*! \cond internal */
+
 namespace QCoro::detail {
 
 class QCoroIODevice {
@@ -164,6 +166,7 @@ struct awaiter_type<T *> {
 
 } // namespace QCoro::detail
 
+/*! \endcond */
 
 //! Returns a coroutine-friendly wrapper for a QIODevice-derived object.
 /*!
