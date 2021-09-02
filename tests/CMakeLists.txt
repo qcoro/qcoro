@@ -61,7 +61,12 @@ function(qcoro_add_dbus_test _name)
     target_link_libraries(test-${_name} QCoroDBus qcoro_test qcoro_test_dbus ${TEST_LINK_LIBRARIES})
     target_include_directories(test-${_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_compile_definitions(test-${_name} PRIVATE TESTDBUSSERVER_EXECUTABLE=\"$<TARGET_FILE:testdbusserver>\")
-    add_test(NAME test-${_name} COMMAND dbus-launch $<TARGET_FILE:test-${_name}>)
+    if (APPLE)
+        # On MacOS dbus-launch doesn't work, so we rely on the session dbus running
+        add_test(NAME test-${_name} COMMAND test-${_name})
+    else()
+        add_test(NAME test-${_name} COMMAND dbus-launch $<TARGET_FILE:test-${_name}>)
+    endif()
 endfunction()
 
 
