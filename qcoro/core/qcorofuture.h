@@ -6,6 +6,8 @@
 
 #include "task.h"
 
+#include <type_traits>
+
 #include <QFuture>
 #include <QFutureWatcher>
 
@@ -48,8 +50,7 @@ private:
         QFutureWatcher<T_> mFutureWatcher;
     };
 
-    template<typename T_ = T>
-    class WaitForFinishedOperationImpl : public WaitForFinishedOperationBase<T_> {
+    class WaitForFinishedOperationImplT : public WaitForFinishedOperationBase<T> {
     public:
         using WaitForFinishedOperationBase<T>::WaitForFinishedOperationBase;
 
@@ -58,15 +59,15 @@ private:
         }
     };
 
-    template<>
-    class WaitForFinishedOperationImpl<void> : public WaitForFinishedOperationBase<void> {
+    class WaitForFinishedOperationImplVoid : public WaitForFinishedOperationBase<void> {
     public:
         using WaitForFinishedOperationBase<void>::WaitForFinishedOperationBase;
 
         void await_resume() const noexcept {}
     };
 
-    using WaitForFinishedOperation = WaitForFinishedOperationImpl<T>;
+    using WaitForFinishedOperation = std::conditional_t<
+        std::is_void_v<T>, WaitForFinishedOperationImplVoid, WaitForFinishedOperationImplT>;
 
     friend struct awaiter_type<QFuture<T>>;
 

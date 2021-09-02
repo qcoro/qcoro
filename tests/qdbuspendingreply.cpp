@@ -87,7 +87,7 @@ private:
         QCORO_VERIFY(reply.isValid());
     }
 
-    QCoro::Task<> testHandlesMultipleArguments_coro(QCoro::TestContext test) {
+    QCoro::Task<> testHandlesMultipleArguments_coro(QCoro::TestContext) {
         cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
                                          QDBusConnection::sessionBus());
         QCORO_VERIFY(iface.isValid());

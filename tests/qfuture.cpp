@@ -20,7 +20,7 @@ private:
         QCORO_VERIFY(future.isFinished());
     }
 
-    QCoro::Task<> testQCoroWrapperTriggers_coro(QCoro::TestContext test) {
+    QCoro::Task<> testQCoroWrapperTriggers_coro(QCoro::TestContext) {
         auto future = QtConcurrent::run([] { std::this_thread::sleep_for(100ms); });
         co_await qCoro(future).waitForFinished();
 
