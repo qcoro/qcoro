@@ -25,7 +25,7 @@ class Task;
 
 namespace detail {
 
-template<typename T, typename = void>
+template<typename T>
 struct awaiter_type;
 
 template<typename T>

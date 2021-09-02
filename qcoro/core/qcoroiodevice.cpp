@@ -79,6 +79,12 @@ qint64 QCoroIODevice::WriteOperation::await_resume() noexcept {
     return mBytesWritten;
 }
 
+QCoroIODevice::ReadAllOperation::ReadAllOperation(QIODevice *device)
+    : ReadOperation(device, [](QIODevice *d) { return d->readAll(); }) {}
+
+QCoroIODevice::ReadAllOperation::ReadAllOperation(QIODevice &device)
+    : ReadAllOperation(&device) {}
+
 QCoroIODevice::QCoroIODevice(QIODevice *device)
     : mDevice{device}
 {}
@@ -98,3 +104,4 @@ QCoroIODevice::ReadOperation QCoroIODevice::readLine(qint64 maxSize) {
 QCoroIODevice::WriteOperation QCoroIODevice::write(const QByteArray &buffer) {
     return WriteOperation(mDevice, buffer);
 }
+

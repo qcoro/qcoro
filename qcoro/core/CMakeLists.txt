@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: MIT
 
 set(qcoro_core_SRCS
-    iodevice.cpp
     qcoroiodevice.cpp
     qcoroprocess.cpp
     qcorotimer.cpp
@@ -26,7 +25,6 @@ generate_headers(
     qcoro_core_CamelCase_HEADERS
     HEADER_NAMES
         QCoroCore
-        IODevice
         QCoroIODevice
         QCoroProcess
         QCoroSignal

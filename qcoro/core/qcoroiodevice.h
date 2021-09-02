@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "task.h"
 #include "coroutine.h"
 #include "macros_p.h"
 
@@ -63,6 +64,14 @@ protected:
         qint64 mBytesWritten = 0;
     };
 
+    class ReadAllOperation final : public ReadOperation {
+    public:
+        explicit ReadAllOperation(QIODevice *device);
+        explicit ReadAllOperation(QIODevice &device);
+    };
+
+    template<typename T>
+    friend struct awaiter_type;
 public:
     //! Constructor.
     explicit QCoroIODevice(QIODevice *device);
@@ -144,6 +153,15 @@ protected:
     QPointer<QIODevice> mDevice = {};
 };
 
+template<typename T> requires std::is_base_of_v<QIODevice, T>
+struct awaiter_type<T> {
+    using type = QCoroIODevice::ReadAllOperation;
+};
+template<typename T> requires std::is_base_of_v<QIODevice, T>
+struct awaiter_type<T *> {
+    using type = QCoroIODevice::ReadAllOperation;
+};
+
 } // namespace QCoro::detail
 
 
@@ -161,5 +179,4 @@ inline auto qCoro(QIODevice &d) noexcept {
 inline auto qCoro(QIODevice *d) noexcept {
     return QCoro::detail::QCoroIODevice{d};
 }
-
 
