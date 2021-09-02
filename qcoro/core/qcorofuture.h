@@ -5,6 +5,7 @@
 #pragma once
 
 #include "task.h"
+#include "macros_p.h"
 
 #include <type_traits>
 
@@ -21,33 +22,28 @@ private:
     template<typename T_>
     class WaitForFinishedOperationBase {
     public:
-        WaitForFinishedOperationBase(const QFuture<T_> &future) {
-            QObject::connect(&mFutureWatcher, &QFutureWatcher<T_>::finished,
-                             [this]() { futureReady(); });
-            mFutureWatcher.setFuture(future);
-        }
+        explicit WaitForFinishedOperationBase(const QFuture<T_> &future)
+                : mFuture(future) {}
+        Q_DISABLE_COPY(WaitForFinishedOperationBase)
+        QCORO_DEFAULT_MOVE(WaitForFinishedOperationBase)
 
         bool await_ready() const noexcept {
-            return mFutureWatcher.isFinished() || mFutureWatcher.isCanceled();
+            return mFuture.isFinished() || mFuture.isCanceled();
         }
 
         void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
-            if (mFutureWatcher.isFinished()) {
+            auto *watcher = new QFutureWatcher<T_>();
+            auto cb = [watcher, awaitingCoroutine]() mutable {
+                watcher->deleteLater();
                 awaitingCoroutine.resume();
-            }
-
-            mAwaitingCoroutine = awaitingCoroutine;
+            };
+            QObject::connect(watcher, &QFutureWatcher<T_>::finished, cb);
+            QObject::connect(watcher, &QFutureWatcher<T_>::canceled, cb);
+            watcher->setFuture(mFuture);
         }
-
-    private:
-        void futureReady() {
-            mAwaitingCoroutine.resume();
-        }
-
-        QCORO_STD::coroutine_handle<> mAwaitingCoroutine;
 
     protected:
-        QFutureWatcher<T_> mFutureWatcher;
+        QFuture<T_> mFuture;
     };
 
     class WaitForFinishedOperationImplT : public WaitForFinishedOperationBase<T> {
@@ -55,7 +51,7 @@ private:
         using WaitForFinishedOperationBase<T>::WaitForFinishedOperationBase;
 
         T await_resume() const noexcept {
-            return this->mFutureWatcher.result();
+            return this->mFuture.result();
         }
     };
 
