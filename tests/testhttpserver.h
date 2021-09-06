@@ -84,7 +84,6 @@ private:
         }
 
         if (!server.hasPendingConnections()) {
-            qDebug() << "No incoming connection in 10 seconds, quitting";
             mPort = 0;
             return;
         }
@@ -92,7 +91,6 @@ private:
         auto *conn = server.nextPendingConnection();
         if (conn->waitForReadyRead(1000)) {
             const auto request = conn->readLine();
-            qDebug() << request;
             if (request == "GET /stream HTTP/1.1\r\n") {
                 QStringList lines;
                 for (int i = 0; i < 10; ++i) {
