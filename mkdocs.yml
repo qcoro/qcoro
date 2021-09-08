@@ -56,5 +56,6 @@ nav:
           - QProcess: reference/qprocess.md
           - QTimer: reference/qtimer.md
           - QTcpServer: reference/qtcpserver.md
+    - Changelog: changelog.md
     - About:
         - License: about/license.md
