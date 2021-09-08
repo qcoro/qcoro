@@ -16,10 +16,17 @@ markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
   - pymdownx.inlinehilite
+  - pymdownx.extra
   - admonition
 
 plugins:
   - search
+  - include-markdown
+  - macros:
+      module_name: docs/macros
+
+extra_css:
+  - stylesheets/doctable.css
 
 extra:
   social:
@@ -41,6 +48,7 @@ nav:
         - Supported Types:
           - QAbstractSocket: reference/qabstractsocket.md
           - QDBusPendingCall: reference/qdbuspendingcall.md
+          - QDBusPendingReply: reference/qdbuspendingreply.md
           - QFuture: reference/qfuture.md
           - QIODevice: reference/qiodevice.md
           - QLocalSocket: reference/qlocalsocket.md
@@ -48,5 +56,6 @@ nav:
           - QProcess: reference/qprocess.md
           - QTimer: reference/qtimer.md
           - QTcpServer: reference/qtcpserver.md
+    - Changelog: changelog.md
     - About:
         - License: about/license.md

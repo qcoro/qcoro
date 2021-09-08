@@ -1,8 +1,8 @@
 #include <QObject>
 #include <QTest>
 
-#include "../qcoro/coroutine.h"
-#include "../qcoro/task.h"
+#include "qcoro/coroutine.h"
+#include "qcoro/task.h"
 
 namespace helper {
 

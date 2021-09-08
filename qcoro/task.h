@@ -5,7 +5,7 @@
 #pragma once
 
 #include "coroutine.h"
-#include "concepts.h"
+#include "concepts_p.h"
 
 #include <atomic>
 #include <variant>
@@ -25,7 +25,7 @@ class Task;
 
 namespace detail {
 
-template<typename T, typename = void>
+template<typename T>
 struct awaiter_type;
 
 template<typename T>
@@ -199,8 +199,14 @@ public:
 
     //! If the type T is already an awaitable, then just forward it as it is.
     template<Awaitable T>
-    auto await_transform(T &&awaitable) {
+    auto && await_transform(T &&awaitable) {
         return std::forward<T>(awaitable);
+    }
+
+    //! \copydoc template<Awaitable T> QCoro::TaskPromiseBase::await_transform(T &&)
+    template<Awaitable T>
+    auto await_transform(T &awaitable) {
+        return awaitable;
     }
 
     //! Called by \c TaskAwaiter when co_awaited.

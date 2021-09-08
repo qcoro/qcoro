@@ -5,17 +5,14 @@
 #pragma once
 
 #include "coroutine.h"
-#include "macros.h"
+#include "macros_p.h"
+#include "concepts_p.h"
 
 #include <QObject>
 #include <QPointer>
 
 #include <cassert>
 #include <optional>
-
-#ifndef Q_MOC_RUN // Moc cannot parse the libc++ concepts header
-#include <concepts>
-#endif
 
 namespace QCoro::detail {
 

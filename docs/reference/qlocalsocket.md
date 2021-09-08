@@ -1,8 +1,6 @@
 # QLocalSocket
 
-```cpp
-class QCoroLocalSocket : public QCoroIODevice;
-```
+{{ doctable("QCoroNetwork", "QCoroLocalSocket", ("qiodevice", "QCoroIODevice")) }}
 
 [`QLocalSocket`][qtdoc-qlocalsocket] has several potentially asynchronous operations
 in addition to reading and writing, which are provided by [`QIODevice`][qtdoc-qiodevice]

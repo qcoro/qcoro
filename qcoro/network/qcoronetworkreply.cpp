@@ -24,6 +24,27 @@ void QCoroNetworkReply::ReadOperation::finish(QCORO_STD::coroutine_handle<> awai
     QCoroIODevice::ReadOperation::finish(awaitingCoroutine);
 }
 
+QCoroNetworkReply::WaitForFinishedOperation::WaitForFinishedOperation(QPointer<QNetworkReply> reply)
+    : mReply(reply)
+{}
+
+bool QCoroNetworkReply::WaitForFinishedOperation::await_ready() const noexcept {
+    return !mReply || mReply->isFinished();
+}
+
+void QCoroNetworkReply::WaitForFinishedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+    if (mReply) {
+        QObject::connect(mReply, &QNetworkReply::finished,
+                         [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
+    } else {
+        awaitingCoroutine.resume();
+    }
+}
+
+QNetworkReply *QCoroNetworkReply::WaitForFinishedOperation::await_resume() const noexcept {
+    return mReply;
+}
+
 QCoroNetworkReply::ReadOperation QCoroNetworkReply::readAll() {
     return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
 }
@@ -34,4 +55,8 @@ QCoroNetworkReply::ReadOperation QCoroNetworkReply::read(qint64 maxSize) {
 
 QCoroNetworkReply::ReadOperation QCoroNetworkReply::readLine(qint64 maxSize) {
     return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
+}
+
+QCoroNetworkReply::WaitForFinishedOperation QCoroNetworkReply::waitForFinished() {
+    return WaitForFinishedOperation(static_cast<QNetworkReply *>(mDevice.data()));
 }

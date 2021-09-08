@@ -40,7 +40,7 @@ a pointer or a reference to a Qt type, and returns a QCoro type that wraps the Q
 provides coroutine-friendly API for the type.
 
 Some objects have only a single asynchronous event, so it makes sense to make them
-directly `co_await`able. An example is `QTimer`, where only one think can be `co_await`ed -
+directly `co_await`able. An example is `QTimer`, where only one thing can be `co_await`ed -
 the timer timeout. Thus with QCoro, it's possible to simply do this:
 
 ```cpp
@@ -56,7 +56,7 @@ which returns a wrapper that provides coroutine-friendly versions of the asynchr
 for the given type.
 
 Let's take QProcess as an example: one may want to `co_await` for the program to start or finish.
-Therefor, the type must be wrapped into `qCoro()` like this:
+Therefore the type must be wrapped into `qCoro()` like this:
 
 ```cpp
 QProcess process;
@@ -72,9 +72,9 @@ co_await qCoro(process).finished();
 ```
 
 `qCoro()` is simply overloaded for all the Qt types currently supported by the QCoro library.
-The function returns a wrapper object (e.g. `QCoro::detail::QProcessWrapper`) which copies the
+The function returns a wrapper object (e.g. `QCoro::detail::QCoroProcess`) which copies the
 QProcess API. It doesn't copy the entire API, only the bits that we want to make `co_await`able.
-When you call one of those metods (e.g. `QProcessWrapper::start()`), it returns an awaitable
+When you call one of those metods (e.g. `QCoroProcess::start()`), it returns an awaitable
 type that calls `QProcess::start()`, suspends the coroutine and resumes it again when the
 wrapped `QProcess` object emits the `started()` signal.
 

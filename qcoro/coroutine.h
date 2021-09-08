@@ -16,7 +16,7 @@
 // Moc doesn't seem to understand something in the <concepts> header...
 #ifndef Q_MOC_RUN
 
-#include <concepts>
+#include "concepts_p.h"
 
 namespace QCoro {
 

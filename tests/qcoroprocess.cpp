@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
-#include "qcoro/qcoroprocess.h"
+
+#include "qcoro/core/qcoroprocess.h"
 
 #include <QProcess>
 

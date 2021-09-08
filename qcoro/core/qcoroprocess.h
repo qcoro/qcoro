@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "impl/waitoperationbase.h"
+#include "waitoperationbase_p.h"
 #include "qcoroiodevice.h"
 
 #include <chrono>

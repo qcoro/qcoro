@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "qcoro/future.h"
+#include "qcorofuture.h"
 
 #include <QCoreApplication>
 #include <QTimer>

@@ -1,5 +1,12 @@
 # QIODevice
 
+{{
+    doctable("QCoroCore", "QCoroIODevice", None,
+            [('qabstractsocket', 'QCoroAbstractSocket'),
+             ('qlocalsocket', 'QCoroLocalSocket'),
+             ('qnetworkreply', 'QCoroNetworkReply'),
+             ('qprocess', 'QCoroProcess')])
+}}
 ```cpp
 class QCoroIODevice
 ```
@@ -27,6 +34,19 @@ Waits until there are any data to be read from the device (similar to waiting un
 emits [`QIODevice::readyRead()`][qtdoc-qiodevice-readyread] signal) and then returns all data
 available in the buffer as a `QByteArray`. Doesn't suspend the coroutine if there are already
 data available in the `QIODevice` or if the `QIODevice` is not opened for reading.
+
+This is the default operation when `co_await`ing an instance of a `QIODevice` directly. Thus,
+it is possible to just do
+
+```cpp
+const QByteArray content = co_await device;
+```
+
+instead of
+
+```cpp
+const QByteArray content = qCoro(device).readAll();
+```
 
 See documentation for [`QIODevice::readAll()`][qtdoc-qiodevice-readall] for details.
 

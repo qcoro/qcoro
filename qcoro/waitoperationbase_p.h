@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "../macros.h"
-#include "../coroutine.h"
+#include "macros_p.h"
+#include "coroutine.h"
 
 #include <QTimer>
 #include <memory>

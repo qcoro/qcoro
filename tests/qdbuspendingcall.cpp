@@ -4,7 +4,8 @@
 
 #include "testdbusserver.h"
 #include "testobject.h"
-#include "qcoro/dbus.h"
+
+#include "qcorodbuspendingcall.h"
 
 #include <QDBusConnection>
 #include <QDBusError>

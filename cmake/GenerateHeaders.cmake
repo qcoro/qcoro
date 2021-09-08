@@ -1,0 +1,28 @@
+function(generate_headers output_var)
+    set(options)
+    set(oneValueArgs OUTPUT_DIR ORIGINAL_PREFIX ORIGINAL_HEADERS_VAR)
+    set(multiValueArgs HEADER_NAMES)
+    cmake_parse_arguments(GH "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if (GH_OUTPUT_DIR)
+        set(GH_OUTPUT_DIR "${GH_OUTPUT_DIR}/")
+    endif()
+
+    foreach(_headername ${GH_HEADER_NAMES})
+        string(TOLOWER "${_headername}" originalbase)
+        set(CC_ORIGINAL_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${GH_ORIGINAL_PREFIX}/${originalbase}.h")
+        if (NOT EXISTS ${CC_ORIGINAL_FILE})
+            message(FATAL_ERROR "Could not find header \"${CC_ORIGINAL_FILE}\"")
+        endif()
+
+        set(CC_HEADER_FILE "${CMAKE_CURRENT_BINARY_DIR}/${GH_OUTPUT_DIR}/${_headername}")
+        if (NOT EXISTS ${CC_HEADER_FILE})
+            file(WRITE ${CC_HEADER_FILE} "#include \"${GH_ORIGINAL_PREFIX}${originalbase}.h\"")
+        endif()
+        list(APPEND ${output_var} ${CC_HEADER_FILE})
+        list(APPEND ${GH_ORIGINAL_HEADERS_VAR} ${CC_ORIGINAL_FILE})
+    endforeach()
+
+    set(${output_var} ${${output_var}} PARENT_SCOPE)
+    set(${GH_ORIGINAL_HEADERS_VAR} ${${GH_ORIGINAL_HEADERS_VAR}} PARENT_SCOPE)
+endfunction()

@@ -7,7 +7,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(GNUInstallDirs)
 include(CTest)
 include(FeatureSummary)
+
+# Custom includes
 include(HasCompatibleStlAbi)
+include(GenerateHeaders)
 
 #-----------------------------------------------------------#
 # Options
@@ -17,6 +20,11 @@ option(QCORO_BUILD_EXAMPLES "Build examples" ON)
 add_feature_info(Examples QCORO_BUILD_EXAMPLES "Build examples")
 option(QCORO_ENABLE_ASAN "Build with AddressSanitizer" OFF)
 add_feature_info(Asan QCORO_ENABLE_ASAN "Build with AddressSanitizer")
+
+option(QCORO_WITH_QTDBUS "Build QtDBus support" ON)
+add_feature_info(QtDBus QCORO_WITH_QTDBUS "Build QtDBus support")
+option(QCORO_WITH_QTNETWORK "Build QtNetwork support" ON)
+add_feature_info(QtNetwork QCORO_WITH_QTNETWORK "Build QtNetwork support")
 
 #-----------------------------------------------------------#
 # Compiler Settings
@@ -51,7 +59,16 @@ qcoro_enable_coroutines()
 
 find_package(Threads REQUIRED)
 
-set(REQUIRED_QT_COMPONENTS Core DBus Network Widgets Concurrent)
+set(REQUIRED_QT_COMPONENTS Core)
+if (QCORO_WITH_QTDBUS)
+    list(APPEND REQUIRED_QT_COMPONENTS DBus)
+endif()
+if (QCORO_WITH_QTNETWORK)
+    list(APPEND REQUIRED_QT_COMPONENTS Network)
+endif()
+if (QCORO_BUILD_EXAMPLES)
+    list(APPEND REQUIRED_QT_COMPONENTS Widgets Concurrent)
+endif()
 if (BUILD_TESTING)
     list(APPEND REQUIRED_QT_COMPONENTS Test)
 endif()
@@ -76,10 +93,15 @@ else()
     set(QT_VERSION_MAJOR ${USE_QT_VERSION})
 endif()
 
-has_compatible_stl_abi(QT_HAS_COMPAT_ABI)
-if (NOT QT_HAS_COMPAT_ABI)
+has_compatible_stl_abi(QCORO_QT_HAS_COMPAT_ABI)
+if (NOT QCORO_QT_HAS_COMPAT_ABI)
     message(WARNING "Qt is built with an incompatible STL, some features will be disabled!")
 endif()
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/config.h
+)
 
 #-----------------------------------------------------------#
 # Sources
@@ -98,6 +120,12 @@ endif()
 #-----------------------------------------------------------#
 
 include(CMakePackageConfigHelpers)
+
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/config.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
+    COMPONENT Devel
+)
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/QCoroConfig.cmake.in"

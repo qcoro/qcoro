@@ -2,68 +2,55 @@
 #
 # SPDX-License-Identifier: MIT
 
-set(qcoro_SRCS
-    dbus.cpp
-    iodevice.cpp
-    network.cpp
-    qcoroabstractsocket.cpp
-    qcoroiodevice.cpp
-    qcorolocalsocket.cpp
-    qcoronetworkreply.cpp
-    qcoroprocess.cpp
-    qcorotcpserver.cpp
-)
-add_library(QCoro ${qcoro_SRCS})
-add_library(QCoro::QCoro ALIAS QCoro)
-target_link_libraries(QCoro
-    PUBLIC
-    Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::Network
-    Qt${QT_VERSION_MAJOR}::DBus
-)
-target_include_directories(QCoro
-    INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
-    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
-set_target_properties(QCoro PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
-
 set(qcoro_HEADERS
-    concepts.h
-    coro.h
+    concepts_p.h
     coroutine.h
-    dbus.h
-    iodevice.h
-    macros.h
-    network.h
-    qcoroabstractsocket.h
-    qcoroiodevice.h
-    qcorolocalsocket.h
-    qcoronetworkreply.h
-    qcoroprocess.h
-    qcorosignal.h
-    qcorotcpserver.h
+    macros_p.h
     task.h
-    timer.h
+    waitoperationbase_p.h
 )
 
-set(qcoro_IMPL_HEADERS
-    impl/waitoperationbase.h
+
+generate_headers(
+    qcoro_CamelCase_HEADERS
+    HEADER_NAMES
+        Task
+        QCoro
+    OUTPUT_DIR QCoro
+    ORIGINAL_HEADERS_VAR qcoro_HEADERS
 )
 
-if (QT_HAS_COMPAT_ABI)
-    set(qcoro_HEADERS ${qcoro_HEADERS} future.h)
-endif()
+add_library(QCoro INTERFACE)
+
+target_include_directories(QCoro
+    INTERFACE $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>;$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/qcoro>
+    INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>;$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qcoro>
+    INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QCoro>
+)
 
 install(
     FILES ${qcoro_HEADERS}
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
     COMPONENT Devel
 )
+
 install(
-    FILES ${qcoro_IMPL_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro/impl
+    FILES ${qcoro_CamelCase_HEADERS}
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/QCoro
     COMPONENT Devel
 )
 
 install(TARGETS QCoro EXPORT QCoroTargets)
+
+############################
+
+add_subdirectory(core)
+
+if (QCORO_WITH_QTDBUS)
+    add_subdirectory(dbus)
+endif()
+
+if (QCORO_WITH_QTNETWORK)
+    add_subdirectory(network)
+endif()
 

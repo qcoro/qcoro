@@ -120,3 +120,7 @@ co_return calculateLatency(data);
 
 [Full documentation here](https://qcoro.dvratil.cz/reference/qiodevice).
 
+### ...and more!
+
+Go check the [full documentation](https://qcoro.dvratil.cz) to learn more.
+

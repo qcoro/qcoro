@@ -10,7 +10,8 @@ QCoro to customize the build:
 * `-DBUILD_SHARED_LIBS` - whether to build QCoro as a shared library (`OFF` by default).
 * `-DBUILD_TESTING` - whether to build tests (`ON` by default).
 * `-DUSE_QT_VERSION` - set to `5` or `6` to force a particular version of Qt. When not set the highest available version is used.
-
+* `-DQCORO_WITH_QTDBUS` - whether to compile support for QtDBus (`ON` by default).
+* `-DQCORO_WITH_QTNETWORK` - whether to compile support for QtNetwork (`ON` by default).
 
 ```
 mkdir build
@@ -32,7 +33,10 @@ qcoro_enable_coroutines()
 
 ...
 
-target_link_libraries(your-target QCoro::QCoro)
+target_link_libraries(your-target QCoro::QCoroCore)
 ```
+
+If you also want to use coroutine support for types from QtNetwork or QtDBus modules, you have
+to also link against `QCoro::QCoroDBus` and `QCoro::QCoroNetwork` targets respectively.
 
 

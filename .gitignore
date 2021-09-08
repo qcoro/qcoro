@@ -5,4 +5,7 @@ build-*
 compile_commands.json
 /.vs
 /CMakeSettings.json
+
+# Python (from mkdocs)
+__pycache__
 venv
