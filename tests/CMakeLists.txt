@@ -46,7 +46,8 @@ function(qcoro_add_network_test _name)
     target_link_libraries(test-${_name} QCoroNetwork qcoro_test
                           Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test
                           Qt${QT_VERSION_MAJOR}::Network
-                          Threads::Threads)
+                          Threads::Threads
+                          ${TEST_LINK_LIBRARIES})
     add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
 
