@@ -1,0 +1,7 @@
+setuptools
+wheel
+mkdocs
+mkdocs-material
+mkdocs-section-index
+mkdocs-include-markdown-plugin
+mkdocs-macros-plugin
