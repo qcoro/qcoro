@@ -1,8 +1,6 @@
 # QAbstractSocket
 
-```cpp
-class QCoroAbstractSocket : public QCoroIODevice;
-```
+{{ doctable("QCoroNetwork", "QCoroAbstractSocket", ("qiodevice", "QCoroIODevice")) }}
 
 [`QAbstractSocket`][qtdoc-qabstractsocket] is a base class for [`QTcpSocket`][qtdoc-qtcpsocket]
 and [`QUdpSocket`][qtdoc-qudpsocket] and has some potentially asynchronous operations.
@@ -70,7 +68,7 @@ Awaitable auto QCoroAbstractSocket::connectToHost(const QString &hostName, quint
 ## Examples
 
 ```cpp
-%{ include "../examples/qtcpsocket.cpp" %}
+{% include "../examples/qtcpsocket.cpp" %}
 ```
 
 

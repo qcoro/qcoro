@@ -1,5 +1,12 @@
 # QIODevice
 
+{{
+    doctable("QCoroCore", "QCoroIODevice", None,
+            [('qabstractsocket', 'QCoroAbstractSocket'),
+             ('qlocalsocket', 'QCoroLocalSocket'),
+             ('qnetworkreply', 'QCoroNetworkReply'),
+             ('qprocess', 'QCoroProcess')])
+}}
 ```cpp
 class QCoroIODevice
 ```

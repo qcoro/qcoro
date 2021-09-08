@@ -1,8 +1,6 @@
 # QFuture
 
-```cpp
-class QCoroFuture
-```
+{{ doctable("QCoroCore", "QCoroFuture") }}
 
 [`QFuture`][qdoc-qfuture], which represents an asynchronously executed call, doesn't have any
 operation on its own that could be awaited asynchronously, this is usually done through a helper

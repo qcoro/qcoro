@@ -1,5 +1,7 @@
 # QTimer
 
+{{ doctable("QCoroCore", "QCoroTimer") }}
+
 ```cpp
 QTimer timer;
 timer.start(1s);

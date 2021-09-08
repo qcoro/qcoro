@@ -1,8 +1,6 @@
 # QTcpServer
 
-```cpp
-class QCoroTcpServer : public QTcpServer;
-```
+{{ doctable("QCoroNetwork", "QCoroTcpServer") }}
 
 [`QTcpServer`][qtdoc-qtcpserver] really only has one asynchronous operation worth `co_await`ing, and that's
 `waitForNewConnection()`.

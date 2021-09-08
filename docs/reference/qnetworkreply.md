@@ -1,8 +1,6 @@
 # QNetworkReply
 
-```cpp
-class QCoroNetworkReply : public QCoroIODevice
-```
+{{ doctable("QCoroNetwork", "QCoroNetworkReply", ("qiodevice", "QCoroIODevice")) }}
 
 [`QNetworkReply`][qdoc-qnetworkreply] has two asynchronous aspects: one is waiting for the
 reply to finish, and one for reading the response data as they arrive. QCoro supports both.

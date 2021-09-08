@@ -1,8 +1,7 @@
 # QDBusPendingCall
 
-```cpp
-class QCoroDBusPendingCall
-```
+{{ doctable("QCoroDBus", "QCoroDBusPendingCall") }}
+
 
 [`QDBusPendingCall`][qdoc-qdbuspendingcall] on its own doesn't have any operation that could
 be awaited asynchronously, this is usually done through a helper class called

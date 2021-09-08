@@ -1,0 +1,15 @@
+.doctable {
+    width: 100%
+}
+
+.doctable .md-typeset__table {
+    width: 100%
+}
+
+.doctable td {
+    width: 100%
+}
+
+.doctable .md-typeset__table table th {
+    vertical-align: middle
+}
