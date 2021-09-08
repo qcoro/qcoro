@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "qcoro/task.h"
+#include "task.h"
 
 #include <QMetaObject>
 #include <QPointer>

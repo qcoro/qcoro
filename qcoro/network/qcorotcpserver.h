@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "qcoro/waitoperationbase_p.h"
+#include "waitoperationbase_p.h"
 
 #include <QPointer>
 

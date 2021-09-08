@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "qcoro/task.h"
-#include "qcoro/core/qcoroiodevice.h"
-#include "qcoro/waitoperationbase_p.h"
+#include "task.h"
+#include "qcoroiodevice.h"
+#include "waitoperationbase_p.h"
 
 #include <QNetworkReply>
 
