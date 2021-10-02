@@ -22,6 +22,7 @@ target_include_directories(QCoroNetwork
     PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QCoro>
 )
 set_target_properties(QCoroNetwork PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
+set_target_properties(QCoroNetwork PROPERTIES VERSION ${qcoro_VERSION} SOVERSION ${qcoro_SOVERSION})
 
 generate_headers(
     qcoro_network_CamelCase_HEADERS
