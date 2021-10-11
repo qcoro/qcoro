@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 (2021-10-11)
+
+* Added SOVERSION to shared libraries ([#17](https://github.com/danvratil/qcoro/pulls/#17))
+* Fixed building tests when not building examples ([#19](https://github.com/danvratil/qcoro/pulls/#19))
+* Fixed CI
+
+Thanks to everyone who contributed to QCoro 0.3.0!
+
 ## 0.2.0 (2021-09-08)
 
 ### Library modularity
