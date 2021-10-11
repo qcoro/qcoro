@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-set(qcoro_VERSION 0.3.0)
+set(qcoro_VERSION 0.4.0)
 set(qcoro_SOVERSION 0)
 project(qcoro LANGUAGES CXX VERSION ${qcoro_VERSION})
 
