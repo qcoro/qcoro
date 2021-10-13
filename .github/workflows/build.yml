@@ -50,7 +50,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
-        ARGS="-DCMAKE_BUILD_TYPE=$BULD_TYPE -DUSE_QT_VERSION=$QT_VERSION_MAJOR"
+        ARGS="-DCMAKE_BUILD_TYPE=$BULD_TYPE -DUSE_QT_VERSION=$QT_VERSION_MAJOR -DQCORO_WITH_DBUS=ON"
         # Don't enable ASAN on Qt5 MSVC build: it crashes due to some false-positive issue outside of QCoro
         if [[ "${{ matrix.compiler }}" != "msvc" || "${QT_VERSION_MAJOR}" != "5" ]]; then
           ARGS="${ARGS} -DQCORO_ENABLE_ASAN=ON"
