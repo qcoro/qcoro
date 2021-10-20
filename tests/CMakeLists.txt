@@ -95,3 +95,7 @@ if (QCORO_WITH_QTNETWORK)
     # Tests for test utilities
     qcoro_add_network_test(testhttpserver)
 endif()
+
+if (QCORO_WITH_IO)
+    add_subdirectory(io)
+endif()

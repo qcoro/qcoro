@@ -26,6 +26,8 @@ option(QCORO_WITH_QTDBUS "Build QtDBus support" ON)
 add_feature_info(QtDBus QCORO_WITH_QTDBUS "Build QtDBus support")
 option(QCORO_WITH_QTNETWORK "Build QtNetwork support" ON)
 add_feature_info(QtNetwork QCORO_WITH_QTNETWORK "Build QtNetwork support")
+option(QCORO_WITH_IO "Build native async IO API" ON)
+add_feature_info(IO QCORO_WITH_IO "Build native async IO API")
 
 #-----------------------------------------------------------#
 # Compiler Settings
@@ -103,6 +105,16 @@ configure_file(
     ${CMAKE_SOURCE_DIR}/config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
+
+
+if (QCORO_WITH_IO)
+    if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+        find_package(Liburing REQUIRED)
+        set(QCORO_IO_BACKEND "iouring")
+    else()
+        message(FATAL_ERROR "Sorry, QCoroIO is currently only supported on Linux.")
+    endif()
+endif()
 
 #-----------------------------------------------------------#
 # Sources

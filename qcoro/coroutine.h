@@ -35,7 +35,6 @@ concept has_operator_coawait = requires(T t) {
     { t.operator co_await() };
 };
 
-
 } // namespace detail
 
 //! A concept describing the Awaitable type

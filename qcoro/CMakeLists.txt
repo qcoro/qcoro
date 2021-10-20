@@ -54,3 +54,7 @@ if (QCORO_WITH_QTNETWORK)
     add_subdirectory(network)
 endif()
 
+if (QCORO_WITH_IO)
+    add_subdirectory(io)
+endif()
+
