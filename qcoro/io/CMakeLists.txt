@@ -1,7 +1,8 @@
-set(io_SRCS
-    ioengine.cpp)
-
 add_library(QCoroIO ${io_SRCS})
+target_sources(QCoroIO
+    PRIVATE
+    ioengine.cpp
+)
 target_link_libraries(QCoroIO
     PUBLIC
     QCoro
@@ -9,8 +10,10 @@ target_link_libraries(QCoroIO
 )
 
 if ("${QCORO_IO_BACKEND}" STREQUAL "iouring")
-    add_subdirectory(io_uring)
-    target_link_libraries(QCoroIO PRIVATE qcoroio_iouring)
+    target_sources(QCoroIO
+        PRIVATE
+        ioengine_iouring.cpp
+    )
+    target_link_libraries(QCoroIO PRIVATE Liburing::Liburing)
 endif()
-
 

@@ -5,8 +5,11 @@
 set(qcoro_HEADERS
     concepts_p.h
     coroutine.h
+    error.h
+    expected.h
     macros_p.h
     task.h
+    tl_expected_p.h
     waitoperationbase_p.h
 )
 
@@ -15,6 +18,8 @@ generate_headers(
     qcoro_CamelCase_HEADERS
     HEADER_NAMES
         Task
+        Error
+        Expected
         QCoro
     OUTPUT_DIR QCoro
     ORIGINAL_HEADERS_VAR qcoro_HEADERS

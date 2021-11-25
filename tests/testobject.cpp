@@ -30,3 +30,4 @@ TestContext &TestContext::operator=(TestContext &&other) noexcept {
 void TestContext::setShouldNotSuspend() {
     mEventLoop->setProperty("shouldNotSuspend", true);
 }
+

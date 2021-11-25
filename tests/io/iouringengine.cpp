@@ -1,4 +1,4 @@
-#include "../../qcoro/io/io_uring/iouring_engine.h"
+#include "../../qcoro/io/ioengine_p.h"
 
 #include "../testobject.h"
 
@@ -23,7 +23,7 @@ class IOUringEngineTest : public QCoro::TestObject<IOUringEngineTest> {
 
 private:
     QCoro::Task<> testRead_coro(QCoro::TestContext) {
-        QCoroIO::Backend::IOUringEngine engine;
+        QCoroIO::IOEngine engine;
         QCORO_VERIFY(engine.init());
 
         QTemporaryFile tmpFile;
@@ -37,14 +37,46 @@ private:
         const size_t fileSize = readFile.size();
         QByteArray data;
         while (static_cast<size_t>(data.size()) < fileSize) {
-            data += co_await engine.read(readFile.handle(), 100, data.size());
+            const auto newData = co_await engine.read(readFile.handle(), 10, data.size());
+            if (newData) {
+                data += *newData;
+            } else {
+                qWarning() << "Read failed: " << newData.error();
+                QCORO_FAIL("Read failed");
+            }
         }
 
         QCORO_COMPARE(data, QByteArray{file_content});
     }
 
+    QCoro::Task<> testWrite_coro(QCoro::TestContext) {
+        QCoroIO::IOEngine engine;
+        QCORO_VERIFY(engine.init());
+
+        QTemporaryFile tmpFile;
+        QCORO_VERIFY(tmpFile.open());
+        for (size_t i = 0; i < sizeof(file_content) - 1; ) {
+            const auto to_write = std::min(sizeof(file_content) - 1 - i, 10UL);
+            const auto written = co_await engine.write(tmpFile.handle(), file_content + i, to_write, i);
+            if (written) {
+                i += *written;
+            } else {
+                qWarning() << "Write failed: " << written.error();
+                QCORO_FAIL("Write failed")
+            }
+        }
+
+        tmpFile.close();
+
+        tmpFile.open();
+        const auto fileContent = tmpFile.readAll();
+        QCORO_COMPARE(fileContent.size(), sizeof(file_content) - 1);
+        QCORO_COMPARE(fileContent, QByteArray{file_content});
+    }
+
 private Q_SLOTS:
     addTest(Read)
+    addTest(Write)
 
 };
 

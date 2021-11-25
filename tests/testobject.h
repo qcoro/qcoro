@@ -67,7 +67,6 @@ protected:
         QTimer::singleShot(5s, &el, [&el]() mutable { el.exit(1); });
 
         [[maybe_unused]] const auto unused = (static_cast<TestClass *>(this)->*testFunction)(el);
-
         bool testFinished = el.property("testFinished").toBool();
         const bool shouldNotSuspend = el.property("shouldNotSuspend").toBool();
         if (testFinished) {
@@ -101,3 +100,10 @@ protected:
         if (!QTest::qCompare(actual, expected, #actual, #expected, __FILE__, __LINE__))            \
             co_return;                                                                             \
     } while (false)
+
+#define QCORO_FAIL(message)                                                                        \
+    do {                                                                                           \
+        QTest::qFail(message, __FILE__, __LINE__);                                                 \
+        co_return;                                                                                 \
+    } while (false);
+
