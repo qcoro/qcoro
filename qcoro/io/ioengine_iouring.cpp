@@ -2,6 +2,8 @@
 
 #include <liburing.h>
 #include <sys/eventfd.h>
+#include <sys/types.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <system_error>
@@ -39,13 +41,9 @@ public:
             return;
         }
 
-        if (cqe->res < 0) {
-            qWarning("Asynchronous operation has failed: %s (%d)", strerror(-cqe->res), -cqe->res);
-        } else {
-            IOUringOperation *op = static_cast<IOUringOperation *>(io_uring_cqe_get_data(cqe));
-            Q_ASSERT(op != nullptr);
-            op->complete(cqe->res);
-        }
+        IOUringOperation *op = static_cast<IOUringOperation *>(io_uring_cqe_get_data(cqe));
+        Q_ASSERT(op != nullptr);
+        op->complete(cqe->res);
 
         io_uring_cqe_seen(&ring, cqe);
     }
@@ -56,6 +54,81 @@ public:
     int evfd = 0;
 };
 
+class OpenOperationPrivate final : public IOUringOperation {
+public:
+    OpenOperationPrivate(struct io_uring *ring, const QString &filePath, QCoroIO::FileModes fileMode) {
+        auto *sqe = io_uring_get_sqe(ring);
+        int flags = O_RDONLY;
+        if (static_cast<int>(fileMode & FileMode::ReadWrite) == static_cast<int>(FileMode::ReadWrite)) {
+            flags = O_RDWR;
+        } else if (fileMode & FileMode::WriteOnly) {
+            flags = O_WRONLY;
+        }
+
+        if ((fileMode & FileMode::WriteOnly) && !(fileMode & FileMode::ExistingOnly)) {
+            flags |= O_CREAT;
+        }
+        if (fileMode & QCoroIO::FileMode::Truncate) {
+            flags |= O_TRUNC;
+        }
+        if (fileMode & QCoroIO::FileMode::Append) {
+            flags |= O_APPEND;
+        }
+        if (fileMode & QCoroIO::FileMode::NewOnly) {
+            flags &= ~O_EXCL;
+        }
+
+        io_uring_prep_openat(sqe, 0, qUtf8Printable(filePath), flags, 0666);
+        io_uring_sqe_set_data(sqe, this);
+        io_uring_submit(ring);
+    }
+
+    void complete(int32_t fd) override {
+        if (fd < 1) {
+            m_res = QCoro::makeUnexpected(QCoro::ErrorCode(-fd, std::system_category()));
+        } else {
+            m_res = static_cast<int>(fd);
+        }
+
+        m_complete = true;
+        QTimer::singleShot(0, [coroutine = m_awaitingCoroutine]() mutable {
+            coroutine.resume();
+        });
+    }
+
+public:
+    bool m_complete = false;
+    QCORO_STD::coroutine_handle<> m_awaitingCoroutine;
+    QCoro::Expected<int> m_res;
+};
+
+class CloseOperationPrivate final : public IOUringOperation {
+public:
+    CloseOperationPrivate(struct io_uring *ring, int fd) {
+        auto *sqe = io_uring_get_sqe(ring);
+        io_uring_prep_close(sqe, fd);
+        io_uring_sqe_set_data(sqe, this);
+        io_uring_submit(ring);
+    }
+
+    void complete(int32_t result) override {
+        if (result < 0) {
+            m_res = QCoro::makeUnexpected(QCoro::ErrorCode(-result, std::system_category()));
+        } else {
+            m_res = {};
+        }
+
+        m_complete = true;
+        QTimer::singleShot(0, [coroutine = m_awaitingCoroutine]() mutable {
+            coroutine.resume();
+        });
+    }
+
+public:
+    bool m_complete = false;
+    QCORO_STD::coroutine_handle<> m_awaitingCoroutine;
+    QCoro::Expected<void> m_res;
+};
 
 class ReadOperationPrivate final : public IOUringOperation {
 public:
@@ -70,7 +143,7 @@ public:
 
     void complete(int32_t size) override {
         if (size < 0) {
-            m_res = QCoro::makeUnexpected(QCoro::ErrorCode(static_cast<std::errc>(-size)));
+            m_res = QCoro::makeUnexpected(QCoro::ErrorCode(-size, std::system_category()));
         } else if (size < m_res->size()) {
             m_res->resize(size);
         }
@@ -98,7 +171,7 @@ public:
 
     void complete(int32_t size) override {
         if (size < 0) {
-            m_res = QCoro::makeUnexpected(QCoro::ErrorCode(static_cast<std::errc>(-size)));
+            m_res = QCoro::makeUnexpected(QCoro::ErrorCode(-size, std::system_category()));
         } else {
             m_res = size;
         }
@@ -117,6 +190,43 @@ public:
 
 } // namespace QCoroIO
 
+
+OpenOperation::OpenOperation(std::unique_ptr<OpenOperationPrivate> dd)
+    : d(std::move(dd))
+{}
+
+OpenOperation::~OpenOperation() = default;
+
+bool OpenOperation::await_ready() const noexcept {
+    return d->m_complete;
+}
+
+void OpenOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+    d->m_awaitingCoroutine = awaitingCoroutine;
+}
+
+QCoro::Expected<int> OpenOperation::await_resume() const noexcept {
+    return d->m_res;
+}
+
+
+CloseOperation::CloseOperation(std::unique_ptr<CloseOperationPrivate> dd)
+    : d(std::move(dd))
+{}
+
+CloseOperation::~CloseOperation() = default;
+
+bool CloseOperation::await_ready() const noexcept {
+    return d->m_complete;
+}
+
+void CloseOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+    d->m_awaitingCoroutine = awaitingCoroutine;
+}
+
+QCoro::Expected<void> CloseOperation::await_resume() const noexcept {
+    return d->m_res;
+}
 
 
 ReadOperation::ReadOperation(std::unique_ptr<ReadOperationPrivate> dd)
@@ -175,7 +285,7 @@ IOEngine::~IOEngine() {
 bool IOEngine::init() {
     d->evfd = ::eventfd(0, 0);
     if (d->evfd < 0) {
-        const auto err = QCoro::ErrorCode(std::make_error_code(static_cast<std::errc>(errno)));
+        const auto err = QCoro::ErrorCode(errno, std::system_category());
         qWarning() << "Failed to create eventfd object: " << err;
         return false;
     }
@@ -186,7 +296,7 @@ bool IOEngine::init() {
 
 
     if (const int ret = io_uring_queue_init(ringEntryCount, &d->ring, /*flags=*/ 0); ret < 0) {
-        const auto err = QCoro::ErrorCode(std::make_error_code(static_cast<std::errc>(-ret)));
+        const auto err = QCoro::ErrorCode(-ret, std::system_category());
         qWarning() << "Failed to create io_uring queue: " << err;
         ::close(d->evfd);
         d->evfd = 0;
@@ -194,8 +304,8 @@ bool IOEngine::init() {
     }
 
     if (const int ret = io_uring_register_eventfd(&d->ring, d->evfd); ret < 0) {
-        const auto err = std::make_error_code(static_cast<std::errc>(-ret));
-        qWarning("Failed to register eventfd for io_uring queue: %s (%d)", err.message().c_str(), err.value());
+        const auto err = QCoro::ErrorCode(-ret, std::system_category());
+        qWarning() << "Failed to register eventfd for io_uring queue: " << err;
         ::close(d->evfd);
         d->evfd = 0;
         return false;
@@ -204,15 +314,13 @@ bool IOEngine::init() {
     return true;
 }
 
-/*
-QCoroIO::OpenOperation *IOUringEngine::open(int fd, FileMode mode) {
-
+QCoroIO::OpenOperation IOEngine::open(const QString &path, FileModes mode) {
+    return OpenOperation(std::make_unique<OpenOperationPrivate>(&(d->ring), path, mode));
 }
 
-QCoroIO::CloseOperation *IOUringEngine::close() {
-
+QCoroIO::CloseOperation IOEngine::close(int fd) {
+    return CloseOperation(std::make_unique<CloseOperationPrivate>(&(d->ring), fd));
 }
-*/
 
 QCoroIO::ReadOperation IOEngine::read(int fd, std::size_t size, std::size_t offset) {
     return ReadOperation(std::make_unique<ReadOperationPrivate>(&(d->ring), fd, size, offset));
