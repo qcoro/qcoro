@@ -4,13 +4,12 @@
 
 #include "config.h"
 
-#include "iodevice.h"
 #include "qcoroiodevice.h"
 #include "qcoroprocess.h"
 #include "qcorosignal.h"
-#include "timer.h"
+#include "qcorotimer.h"
 
 #ifdef QCORO_QT_HAS_COMPAT_ABI
-    #include "future.h"
+    #include "qcorofuture.h"
 #endif
 
