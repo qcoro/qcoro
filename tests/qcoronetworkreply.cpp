@@ -62,6 +62,7 @@ private:
 
     QCoro::Task<> testDoesntCoAwaitNullReply_coro(QCoro::TestContext test) {
         test.setShouldNotSuspend();
+        mServer.setExpectTimeout(true);
 
         QNetworkReply *reply = nullptr;
 
