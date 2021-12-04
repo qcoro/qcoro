@@ -104,7 +104,7 @@ if (NOT QCORO_QT_HAS_COMPAT_ABI)
 endif()
 
 configure_file(
-    ${CMAKE_SOURCE_DIR}/config.cmake.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
 
@@ -112,6 +112,7 @@ configure_file(
 # Sources
 #-----------------------------------------------------------#
 
+set(QCORO_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 add_subdirectory(qcoro)
 if (QCORO_BUILD_EXAMPLES)
     add_subdirectory(examples)
