@@ -67,10 +67,16 @@ public:
     void await_suspend(QCORO_STD::coroutine_handle<_Promise> finishedCoroutine) noexcept {
         auto &promise = finishedCoroutine.promise();
 
+        promise.mInFinalSuspend = true;
+
         if (promise.mResumeAwaiter.exchange(true, std::memory_order_acq_rel)) {
             promise.mAwaitingCoroutine.resume();
         }
-        finishedCoroutine.destroy();
+        if (promise.mDestroyOnFinalSuspend) {
+            finishedCoroutine.destroy();
+        } else {
+            promise.mInFinalSuspend = false;
+        }
     }
 
     //! Called by the compiler when the just-finished coroutine should be resumed.
@@ -228,6 +234,14 @@ public:
         return mAwaitingCoroutine != nullptr;
     }
 
+    bool isInFinalSuspend() const {
+        return mInFinalSuspend;
+    }
+
+    void setDestroyOnFinalSuspend() {
+        mDestroyOnFinalSuspend = true;
+    }
+
 private:
     friend class TaskFinalSuspend;
 
@@ -235,6 +249,8 @@ private:
     QCORO_STD::coroutine_handle<> mAwaitingCoroutine;
     //! Indicates whether the awaiter should be resumed when it tries to co_await on us.
     std::atomic<bool> mResumeAwaiter{false};
+    std::atomic<bool> mInFinalSuspend{false};
+    std::atomic<bool> mDestroyOnFinalSuspend{false};
 };
 
 //! The promise_type for Task<T>
@@ -469,7 +485,14 @@ public:
     }
 
     //! Destructor.
-    ~Task() = default;
+    ~Task() {
+        if (mCoroutine) {
+            if (mCoroutine.done() && !mCoroutine.promise().isInFinalSuspend())
+                mCoroutine.destroy();
+            else
+                mCoroutine.promise().setDestroyOnFinalSuspend();
+        }
+    }
 
     //! Returns whether the task has finished.
     /*!
