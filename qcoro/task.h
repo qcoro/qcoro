@@ -457,12 +457,14 @@ public:
 
     //! The task can be move-assigned.
     Task &operator=(Task &&other) noexcept {
-        if (mCoroutine) {
-            mCoroutine.destroy();
-        }
+        if (std::addressof(other) != this) {
+            if (mCoroutine) {
+                mCoroutine.destroy();
+            }
 
-        mCoroutine = other.mCoroutine;
-        other.mCoroutine = nullptr;
+            mCoroutine = other.mCoroutine;
+            other.mCoroutine = nullptr;
+        }
         return *this;
     }
 
