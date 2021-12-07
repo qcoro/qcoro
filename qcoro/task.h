@@ -487,7 +487,7 @@ public:
      * object, that is an object that the co_await keyword uses to suspend and
      * resume the coroutine.
      */
-    auto operator co_await() const &noexcept {
+    auto operator co_await() const noexcept {
         //! Specialization of the TaskAwaiterBase that returns the promise result by value
         class TaskAwaiter : public detail::TaskAwaiterBase<promise_type> {
         public:
@@ -500,31 +500,11 @@ public:
              * value co_returned by the coroutine. */
             auto await_resume() {
                 Q_ASSERT(this->mAwaitedCoroutine != nullptr);
-                return this->mAwaitedCoroutine.promise().result();
-            }
-        };
-
-        return TaskAwaiter{mCoroutine};
-    }
-
-    //! \copydoc QCoro::Task::operator co_await() const & noexcept
-    auto operator co_await() const &&noexcept {
-        //! Specialization of the TaskAwaiterBase that returns the promise result as an r-value reference.
-        class TaskAwaiter : public detail::TaskAwaiterBase<promise_type> {
-        public:
-            TaskAwaiter(QCORO_STD::coroutine_handle<promise_type> awaitedCoroutine)
-                : detail::TaskAwaiterBase<promise_type>{awaitedCoroutine} {}
-
-            //! Called when the co_awaited coroutine is resumed.
-            /*
-             * \return an r-value reference to the coroutine's promise result, factically
-             *  a value co_returned by the coroutine. */
-            auto await_resume() {
-                Q_ASSERT(this->mAwaitedCoroutine != nullptr);
-                if constexpr (std::is_void_v<T>) {
-                    this->mAwaitedCoroutine.promise().result();
-                } else {
+                if constexpr (!std::is_void_v<T>) {
                     return std::move(this->mAwaitedCoroutine.promise().result());
+                } else {
+                    // Wil re-throw exception, if any is stored
+                    this->mAwaitedCoroutine.promise().result();
                 }
             }
         };
