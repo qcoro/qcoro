@@ -1,4 +1,4 @@
-name: Build
+name: Build and Test
 
 on:
   push:
@@ -92,7 +92,15 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: ctest -C $BUILD_TYPE --output-on-failure --verbose
+      run: ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit qcoro-test-results.xml
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unit Tests Results (${{ matrix-os }}-${{ matrix.compiler }}-${{ matrix.qt_version }})
+        path: |
+          ${{ github.workspace }}/build/qcoro-test-results.xml
 
     - name: Upload build logs on failure
       if: failure()
@@ -100,3 +108,13 @@ jobs:
       with:
         name: build-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.qt_version }}
         path: build/**
+
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+	name: Event File
+	path: ${{ github.event_path }}
