@@ -101,3 +101,9 @@ protected:
         if (!QTest::qCompare(actual, expected, #actual, #expected, __FILE__, __LINE__))            \
             co_return;                                                                             \
     } while (false)
+
+#define QCORO_FAIL(message)                                                                        \
+    do {                                                                                           \
+        QTest::qFail(static_cast<const char *>(message), __FILE__, __LINE__);                      \
+        co_return;                                                                                 \
+    } while (false)
