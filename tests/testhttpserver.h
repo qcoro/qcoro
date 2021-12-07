@@ -38,8 +38,8 @@ class TestHttpServer {
 public:
     template<typename T>
     void start(const T &name) {
-        mStop.clear();
-        mExpectTimeout.clear();
+        mStop = false;
+        mExpectTimeout = false;
         // Can't use QThread::create, it's only available when Qt is built with C++17,
         // which some distros don't have :(
         mThread.reset(new Thread([this, name]() { run(name); }));
@@ -49,7 +49,7 @@ public:
     }
 
     void stop() {
-        mStop.test_and_set();
+        mStop = true;
         if (mThread->isRunning()) {
             mThread->wait();
         }
@@ -62,11 +62,7 @@ public:
     }
 
     void setExpectTimeout(bool expectTimeout) {
-        if (expectTimeout) {
-            mExpectTimeout.test_and_set();
-        } else {
-            mExpectTimeout.clear();
-        }
+        mExpectTimeout = expectTimeout;
     }
 
 private:
@@ -92,14 +88,14 @@ private:
 
         mServerReady.notify_all();
 
-        for (int i = 0; i < 10 && !mStop.test(); ++i) {
+        for (int i = 0; i < 10 && !mStop; ++i) {
             if (server.waitForNewConnection(1000)) {
                 break;
             }
         }
 
         if (!server.hasPendingConnections()) {
-            if (!mExpectTimeout.test()) {
+            if (!mExpectTimeout) {
                 QFAIL("No incoming connection within timeout!");
             }
             mPort = 0;
@@ -143,9 +139,9 @@ private:
             }
             conn->flush();
             conn->close();
-        } else if (!mStop.test()) {
+        } else if (!mStop) {
             if (conn->state() == std::remove_cvref_t<decltype(*conn)>::ConnectedState) {
-                if (!mExpectTimeout.test()) {
+                if (!mExpectTimeout) {
                     QFAIL("No request within 1 second");
                 }
             } else {
@@ -161,6 +157,6 @@ private:
     std::mutex mReadyMutex;
     std::condition_variable mServerReady;
     uint16_t mPort = 0;
-    std::atomic_flag mStop = ATOMIC_FLAG_INIT;
-    std::atomic_flag mExpectTimeout = ATOMIC_FLAG_INIT;
+    std::atomic_bool mStop = false;
+    std::atomic_bool mExpectTimeout = false;
 };
