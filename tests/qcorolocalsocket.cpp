@@ -53,6 +53,7 @@ private:
 
     QCoro::Task<> testDoesntCoAwaitDisconnectedSocket_coro(QCoro::TestContext context) {
         context.setShouldNotSuspend();
+        mServer.setExpectTimeout(true);
 
         QLocalSocket socket;
         QCORO_COMPARE(socket.state(), QLocalSocket::UnconnectedState);
@@ -82,10 +83,15 @@ private:
     }
 
     QCoro::Task<> testWaitForConnectedTimeout_coro(QCoro::TestContext) {
+        mServer.setExpectTimeout(true);
+
         QLocalSocket socket;
 
+        const auto start = std::chrono::steady_clock::now();
         const bool ok = co_await qCoro(socket).waitForConnected(10ms);
+        const auto end = std::chrono::steady_clock::now();
         QCORO_VERIFY(!ok);
+        QCORO_VERIFY(end - start < 500ms);
     }
 
     QCoro::Task<> testWaitForDisconnectedTimeout_coro(QCoro::TestContext) {
@@ -93,8 +99,11 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
+        const auto start = std::chrono::steady_clock::now();
         const bool ok = co_await qCoro(socket).waitForDisconnected(10ms);
+        const auto end = std::chrono::steady_clock::now();
         QCORO_VERIFY(!ok);
+        QCORO_VERIFY(end - start < 500ms);
     }
 
     QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext) {

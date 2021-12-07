@@ -6,9 +6,11 @@
 
 #include <QDebug>
 #include <QThread>
+#include <QTest>
 
 #include <condition_variable>
 #include <mutex>
+#include <atomic>
 
 class QTcpServer;
 class QLocalServer;
@@ -36,6 +38,8 @@ class TestHttpServer {
 public:
     template<typename T>
     void start(const T &name) {
+        mStop = false;
+        mExpectTimeout = false;
         // Can't use QThread::create, it's only available when Qt is built with C++17,
         // which some distros don't have :(
         mThread.reset(new Thread([this, name]() { run(name); }));
@@ -45,13 +49,20 @@ public:
     }
 
     void stop() {
-        mThread->wait();
+        mStop = true;
+        if (mThread->isRunning()) {
+            mThread->wait();
+        }
         mThread.reset();
         mPort = 0;
     }
 
     uint16_t port() const {
         return mPort;
+    }
+
+    void setExpectTimeout(bool expectTimeout) {
+        mExpectTimeout = expectTimeout;
     }
 
 private:
@@ -65,7 +76,7 @@ private:
             return;
         }
         assert(server.isListening());
-        
+
         {
             std::scoped_lock lock(mReadyMutex);
             if constexpr (std::is_same_v<ServerType, QTcpServer>) {
@@ -77,14 +88,16 @@ private:
 
         mServerReady.notify_all();
 
-        for (int i = 0; i < 10; ++i) {
+        for (int i = 0; i < 10 && !mStop; ++i) {
             if (server.waitForNewConnection(1000)) {
                 break;
             }
         }
 
         if (!server.hasPendingConnections()) {
-            qDebug() << "No incoming connection in 10 seconds, quitting";
+            if (!mExpectTimeout) {
+                QFAIL("No incoming connection within timeout!");
+            }
             mPort = 0;
             return;
         }
@@ -126,8 +139,14 @@ private:
             }
             conn->flush();
             conn->close();
-        } else {
-            qDebug() << "No request within 1 second, quitting!";
+        } else if (!mStop) {
+            if (conn->state() == std::remove_cvref_t<decltype(*conn)>::ConnectedState) {
+                if (!mExpectTimeout) {
+                    QFAIL("No request within 1 second");
+                }
+            } else {
+                qDebug() << "Client disconnected without sending request";
+            }
         }
 
         delete conn;
@@ -138,4 +157,6 @@ private:
     std::mutex mReadyMutex;
     std::condition_variable mServerReady;
     uint16_t mPort = 0;
+    std::atomic_bool mStop = false;
+    std::atomic_bool mExpectTimeout = false;
 };
