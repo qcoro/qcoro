@@ -2,7 +2,7 @@ name: Unit Test Results
 
 on:
   workflow_run:
-    workflows: ["Build and "]
+    workflows: ["Build and Test"]
     types:
       - completed
 
