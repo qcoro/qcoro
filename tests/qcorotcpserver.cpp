@@ -21,7 +21,8 @@ class QCoroTcpServerTest: public QCoro::TestObject<QCoroTcpServerTest> {
 private:
     QCoro::Task<> testWaitForNewConnectionTriggers_coro(QCoro::TestContext) {
         QTcpServer server;
-        QCORO_VERIFY(server.listen(QHostAddress::LocalHost, 45678));
+        QCORO_VERIFY(server.listen(QHostAddress::LocalHost));
+        const int serverPort = server.serverPort();
 
         std::mutex mutex;
         bool ok = false;
@@ -29,7 +30,7 @@ private:
             std::this_thread::sleep_for(500ms);
 
             QTcpSocket socket;
-            socket.connectToHost(QHostAddress::LocalHost, 45678);
+            socket.connectToHost(QHostAddress::LocalHost, serverPort);
             std::lock_guard lock{mutex};
             if (!socket.waitForConnected(10'000)) {
                 ok = false;
@@ -58,13 +59,14 @@ private:
         testContext.setShouldNotSuspend();
 
         QTcpServer server;
-        QCORO_VERIFY(server.listen(QHostAddress::LocalHost, 45678));
+        QCORO_VERIFY(server.listen(QHostAddress::LocalHost));
+        const int serverPort = server.serverPort();
 
         bool ok = false;
         std::mutex mutex;
         std::thread clientThread{[&]() mutable {
             QTcpSocket socket;
-            socket.connectToHost(QHostAddress::LocalHost, 45678);
+            socket.connectToHost(QHostAddress::LocalHost, serverPort);
             std::lock_guard lock{mutex};
             if (!socket.waitForConnected(10'000)) {
                 ok = false;
