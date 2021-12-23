@@ -1,7 +1,8 @@
 #include <QCoroProcess>
 
-QCoro::Task<QStringList> listDir(const QString &dirPath) {
-    QProcess process;
+QCoro::Task<QByteArray> listDir(const QString &dirPath) {
+    QProcess basicProcess;
+    auto process = qCoro(basicProcess);
     qDebug() << "Starting ls...";
     co_await process.start(QStringLiteral("/bin/ls"), {dirPath});
     qDebug() << "Ls started, reading directory...";
@@ -9,6 +10,6 @@ QCoro::Task<QStringList> listDir(const QString &dirPath) {
     co_await process.waitForFinished();
     qDebug() << "Done";
 
-    return process.readAll();
+    return basicProcess.readAll();
 }
 
