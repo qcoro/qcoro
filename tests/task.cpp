@@ -9,6 +9,7 @@
 #include <QTest>
 #include <QObject>
 #include <QScopeGuard>
+#include <QMetaObject>
 
 #include <chrono>
 
@@ -133,6 +134,43 @@ private Q_SLOTS:
     addTest(CoroutineWithException)
     addTest(VoidCoroutineWithException)
     addTest(CoroutineFrameDestroyed)
+
+    // See https://github.com/danvratil/qcoro/issues/24
+    void testEarlyReturn()
+    {
+        QEventLoop loop;
+
+        const auto testReturn = [](bool immediate) -> QCoro::Task<bool> {
+            if (immediate) {
+                co_return true;
+            } else {
+                co_await timer(100ms);
+                co_return true;
+            }
+        };
+
+        bool immediateResult = false;
+        bool delayedResult = false;
+
+        const auto testImmediate = [&]() -> QCoro::Task<> {
+            immediateResult = co_await testReturn(true);
+        };
+
+        const auto testDelayed = [&]() -> QCoro::Task<> {
+            delayedResult = co_await testReturn(false);
+            loop.quit();
+        };
+
+        QMetaObject::invokeMethod(
+            &loop, [&]() { testImmediate(); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(
+            &loop, [&]() { testDelayed(); }, Qt::QueuedConnection);
+
+        loop.exec();
+
+        QVERIFY(immediateResult);
+        QVERIFY(delayedResult);
+    }
 
     // TODO: Test timeout
     void testWaitFor() {
