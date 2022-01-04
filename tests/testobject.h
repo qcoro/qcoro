@@ -66,7 +66,7 @@ protected:
         QEventLoop el;
         QTimer::singleShot(5s, &el, [&el]() mutable { el.exit(1); });
 
-        [[maybe_unused]] const auto unused = (static_cast<TestClass *>(this)->*testFunction)(el);
+        (static_cast<TestClass *>(this)->*testFunction)(el);
 
         bool testFinished = el.property("testFinished").toBool();
         const bool shouldNotSuspend = el.property("shouldNotSuspend").toBool();
