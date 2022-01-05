@@ -1,6 +1,6 @@
 # QCoro
 
-C++ Coroutine library for Qt
+C++ Coroutine library for Qt5 and Qt6
 
 ---
 

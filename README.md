@@ -1,6 +1,6 @@
 [![Build](https://github.com/danvratil/qcoro/actions/workflows/build.yml/badge.svg)](https://github.com/danvratil/qcoro/actions/workflows/build.yml)
 
-# QCoro - Coroutines for Qt
+# QCoro - Coroutines for Qt5 and Qt6
 
 The QCoro library provides set of tools to make use of the C++20 coroutines in connection
 with certain asynchronous Qt actions.
