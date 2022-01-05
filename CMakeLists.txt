@@ -12,6 +12,7 @@ include(FeatureSummary)
 # Custom includes
 include(HasCompatibleStlAbi)
 include(GenerateHeaders)
+include(AddQCoroLibrary)
 
 #-----------------------------------------------------------#
 # Options
@@ -109,6 +110,16 @@ configure_file(
 )
 
 #-----------------------------------------------------------#
+# Definitions
+#-----------------------------------------------------------#
+
+set(QCORO_TARGET_PREFIX "QCoro${QT_VERSION_MAJOR}")
+set(QCORO_TARGETS "${QCORO_TARGET_PREFIX}Targets")
+set(QCORO_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/qcoro${QT_VERSION_MAJOR}")
+set(QCORO_INSTALL_INCLUDEDIR_CAMELCASE "${CMAKE_INSTALL_INCLUDEDIR}/QCoro${QT_VERSION_MAJOR}")
+set(QCORO_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/QCoro${QT_VERSION_MAJOR}")
+
+#-----------------------------------------------------------#
 # Sources
 #-----------------------------------------------------------#
 
@@ -129,31 +140,37 @@ include(CMakePackageConfigHelpers)
 
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
+    DESTINATION ${QCORO_INSTALL_INCLUDEDIR}
     COMPONENT Devel
 )
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/QCoroConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfig.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QCoro
-    PATH_VARS CMAKE_INSTALL_INCLUDEDIR)
+    "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}Config.cmake"
+    INSTALL_DESTINATION ${QCORO_INSTALL_CMAKE_DIR}
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR
+)
 
 write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfigVersion.cmake"
-        VERSION ${qcoro_VERSION}
-        COMPATIBILITY SameMajorVersion)
+    "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}ConfigVersion.cmake"
+    VERSION ${qcoro_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfig.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/QCoroConfigVersion.cmake"
-              "${CMAKE_CURRENT_SOURCE_DIR}/QCoroMacros.cmake"
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/QCoro
-        COMPONENT Devel)
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}Config.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}ConfigVersion.cmake"
+          "${CMAKE_CURRENT_SOURCE_DIR}/QCoroMacros.cmake"
+          DESTINATION "${QCORO_INSTALL_CMAKE_DIR}"
+    COMPONENT Devel
+)
 
-install(EXPORT QCoroTargets
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QCoro"
-        FILE QCoroTargets.cmake
-        NAMESPACE QCoro::)
+install(
+    EXPORT ${QCORO_TARGETS}
+    DESTINATION "${QCORO_INSTALL_CMAKE_DIR}"
+    FILE ${QCORO_TARGETS}.cmake
+    NAMESPACE ${QCORO_TARGET_PREFIX}::
+)
 
 #-----------------------------------------------------------#
 # Summary

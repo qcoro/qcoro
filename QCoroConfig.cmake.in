@@ -13,6 +13,6 @@ if (QCORO_WITH_QTNETWORK)
     find_dependency(Qt@QT_VERSION_MAJOR@Network)
 endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/QCoroTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/QCoro@QT_VERSION_MAJOR@Targets.cmake")
 # Custom macros
 include("${CMAKE_CURRENT_LIST_DIR}/QCoroMacros.cmake")

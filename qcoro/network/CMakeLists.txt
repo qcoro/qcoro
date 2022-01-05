@@ -2,50 +2,22 @@
 #
 # SPDX-License-Identifier: MIT
 
-set(qcoro_network_SRCS
-    qcoroabstractsocket.cpp
-    qcorolocalsocket.cpp
-    qcoronetworkreply.cpp
-    qcorotcpserver.cpp
-)
-add_library(QCoroNetwork ${qcoro_network_SRCS})
-add_library(QCoro::Network ALIAS QCoroNetwork)
-target_link_libraries(QCoroNetwork
-    PUBLIC
-    QCoroCore
-    Qt${QT_VERSION_MAJOR}::Network
-)
-target_include_directories(QCoroNetwork
-    INTERFACE $<BUILD_INTERFACE:${QCORO_SOURCE_DIR}>;$<BUILD_INTERFACE:${QCORO_SOURCE_DIR}/qcoro/network>
-    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qcoro>
-    PUBLIC $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QCoro>
-)
-set_target_properties(QCoroNetwork PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS 1)
-set_target_properties(QCoroNetwork PROPERTIES VERSION ${qcoro_VERSION} SOVERSION ${qcoro_SOVERSION})
-
-generate_headers(
-    qcoro_network_CamelCase_HEADERS
-    HEADER_NAMES
+add_qcoro_library(
+    NAME Network
+    SOURCES
+        qcoroabstractsocket.cpp
+        qcorolocalsocket.cpp
+        qcoronetworkreply.cpp
+        qcorotcpserver.cpp
+    CAMELCASE_HEADERS
         QCoroNetwork
         QCoroAbstractSocket
         QCoroLocalSocket
         QCoroNetworkReply
         QCoroTcpServer
-    OUTPUT_DIR QCoro/Network
-    ORIGINAL_HEADERS_VAR qcoro_network_HEADERS
+    QCORO_LINK_LIBRARIES
+        PUBLIC Core
+    QT_LINK_LIBRARIES
+        PUBLIC Network
 )
-
-install(
-    FILES ${qcoro_network_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
-    COMPONENT Devel
-)
-install(
-    FILES ${qcoro_network_CamelCase_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/QCoro
-    COMPONENT Devel
-)
-
-install(TARGETS QCoroNetwork EXPORT QCoroTargets)
 

@@ -2,14 +2,17 @@ include(CMakeParseArguments)
 
 add_library(qcoro_test STATIC testobject.cpp)
 target_link_libraries(qcoro_test PUBLIC
-    QCoroCore
+    QCoro${QT_VERSION_MAJOR}Core
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Test
 )
 
 if (QCORO_WITH_QTDBUS)
     add_executable(testdbusserver EXCLUDE_FROM_ALL testdbusserver.cpp)
-    target_link_libraries(testdbusserver Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::DBus)
+    target_link_libraries(testdbusserver
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::DBus
+    )
 
     set(qcoro_test_dbus_SRCS)
     if (${QT_VERSION_MAJOR} EQUAL 5)
@@ -30,10 +33,15 @@ function(qcoro_add_test _name)
     set(multiValueAgs LINK_LIBRARIES)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
     add_executable(test-${_name} ${_name}.cpp)
-    target_link_libraries(test-${_name} QCoroCore qcoro_test
-                          Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test
-                          ${TEST_LINK_LIBRARIES}
-                          Threads::Threads)
+    target_link_libraries(
+        test-${_name}
+        qcoro_test
+        QCoro${QT_VERSION_MAJOR}Core
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Test
+        ${TEST_LINK_LIBRARIES}
+        Threads::Threads
+    )
     add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
 
@@ -43,11 +51,16 @@ function(qcoro_add_network_test _name)
     set(multiValueAgs LINK_LIBRARIES)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
     add_executable(test-${_name} ${_name}.cpp)
-    target_link_libraries(test-${_name} QCoroNetwork qcoro_test
-                          Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test
-                          Qt${QT_VERSION_MAJOR}::Network
-                          Threads::Threads
-                          ${TEST_LINK_LIBRARIES})
+    target_link_libraries(
+        test-${_name}
+        QCoro${QT_VERSION_MAJOR}Network
+        qcoro_test
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Test
+        Qt${QT_VERSION_MAJOR}::Network
+        Threads::Threads
+        ${TEST_LINK_LIBRARIES}
+    )
     add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
 
@@ -59,7 +72,13 @@ function(qcoro_add_dbus_test _name)
     set(test_SRCS ${_name}.cpp)
     add_executable(test-${_name} ${test_SRCS})
     add_dependencies(test-${_name} testdbusserver qcoro_test_dbus)
-    target_link_libraries(test-${_name} QCoroDBus qcoro_test qcoro_test_dbus ${TEST_LINK_LIBRARIES})
+    target_link_libraries(
+        test-${_name}
+        QCoro${QT_VERSION_MAJOR}DBus
+        qcoro_test
+        qcoro_test_dbus
+        ${TEST_LINK_LIBRARIES}
+    )
     target_include_directories(test-${_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_compile_definitions(test-${_name} PRIVATE TESTDBUSSERVER_EXECUTABLE=\"$<TARGET_FILE:testdbusserver>\")
     if (APPLE)
