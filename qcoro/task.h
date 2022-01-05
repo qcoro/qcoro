@@ -70,7 +70,11 @@ public:
         if (promise.mResumeAwaiter.exchange(true, std::memory_order_acq_rel)) {
             promise.mAwaitingCoroutine.resume();
         }
-        finishedCoroutine.destroy();
+
+        // The handle will be destroyed here only if the associated Task has already been destroyed
+        if (promise.setDestroyHandle()) {
+            finishedCoroutine.destroy();
+        }
     }
 
     //! Called by the compiler when the just-finished coroutine should be resumed.
@@ -228,6 +232,10 @@ public:
         return mAwaitingCoroutine != nullptr;
     }
 
+    bool setDestroyHandle() noexcept {
+        return mDestroyHandle.exchange(true, std::memory_order_acq_rel);
+    }
+
 private:
     friend class TaskFinalSuspend;
 
@@ -235,6 +243,9 @@ private:
     QCORO_STD::coroutine_handle<> mAwaitingCoroutine;
     //! Indicates whether the awaiter should be resumed when it tries to co_await on us.
     std::atomic<bool> mResumeAwaiter{false};
+
+    //! Indicates whether we can destroy the coroutine handle
+    std::atomic<bool> mDestroyHandle{false};
 };
 
 //! The promise_type for Task<T>
@@ -459,7 +470,10 @@ public:
     Task &operator=(Task &&other) noexcept {
         if (std::addressof(other) != this) {
             if (mCoroutine) {
-                mCoroutine.destroy();
+                // The coroutine handle will be destroyed only after TaskFinalSuspend
+                if (mCoroutine.promise().setDestroyHandle()) {
+                    mCoroutine.destroy();
+                }
             }
 
             mCoroutine = other.mCoroutine;
@@ -469,7 +483,14 @@ public:
     }
 
     //! Destructor.
-    ~Task() = default;
+    ~Task() {
+        if (!mCoroutine) return;
+
+        // The coroutine handle will be destroyed only after TaskFinalSuspend
+        if (mCoroutine.promise().setDestroyHandle()) {
+            mCoroutine.destroy();
+        }
+    };
 
     //! Returns whether the task has finished.
     /*!
