@@ -24,7 +24,7 @@ class QCoroProcess : public QCoroIODevice {
     public:
         WaitForStartedOperation(QProcess *process, int timeout_msecs = 30'000);
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
     };
 
     //! An Awaitable that suspends the coroutine until the process is finished.
@@ -32,7 +32,7 @@ class QCoroProcess : public QCoroIODevice {
     public:
         WaitForFinishedOperation(QProcess *process, int timeout_msecs);
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine);
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
     };
 
 public:

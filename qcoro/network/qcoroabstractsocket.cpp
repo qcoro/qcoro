@@ -15,7 +15,7 @@ bool QCoroAbstractSocket::WaitForConnectedOperation::await_ready() const noexcep
     return !mObj || mObj->state() == QAbstractSocket::ConnectedState;
 }
 
-void QCoroAbstractSocket::WaitForConnectedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroAbstractSocket::WaitForConnectedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     mConn = QObject::connect(mObj, &QAbstractSocket::stateChanged,
                              [this, awaitingCoroutine](auto newState) mutable {
                                  switch (newState) {
@@ -46,7 +46,7 @@ bool QCoroAbstractSocket::WaitForDisconnectedOperation::await_ready() const noex
     return !mObj || mObj->state() == QAbstractSocket::UnconnectedState;
 }
 
-void QCoroAbstractSocket::WaitForDisconnectedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept{
+void QCoroAbstractSocket::WaitForDisconnectedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept{
     mConn = QObject::connect(
         mObj, &QAbstractSocket::disconnected,
         [this, awaitingCoroutine]() mutable { resume(awaitingCoroutine); });
@@ -59,7 +59,7 @@ bool QCoroAbstractSocket::ReadOperation::await_ready() const noexcept {
                QAbstractSocket::UnconnectedState;
 }
 
-void QCoroAbstractSocket::ReadOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroAbstractSocket::ReadOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
     mStateConn = QObject::connect(
         static_cast<QAbstractSocket *>(mDevice.data()), &QAbstractSocket::stateChanged,
@@ -71,7 +71,7 @@ void QCoroAbstractSocket::ReadOperation::await_suspend(QCORO_STD::coroutine_hand
         });
 }
 
-void QCoroAbstractSocket::ReadOperation::finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroAbstractSocket::ReadOperation::finish(std::coroutine_handle<> awaitingCoroutine) {
     QObject::disconnect(mStateConn);
     QCoroIODevice::ReadOperation::finish(awaitingCoroutine);
 }

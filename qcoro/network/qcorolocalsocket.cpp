@@ -19,7 +19,7 @@ bool QCoroLocalSocket::WaitForConnectedOperation::await_ready() const noexcept {
     return !mObj || mObj->state() == QLocalSocket::ConnectedState;
 }
 
-void QCoroLocalSocket::WaitForConnectedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroLocalSocket::WaitForConnectedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     mConn = QObject::connect(mObj, &QLocalSocket::stateChanged,
                              [this, awaitingCoroutine](auto newState) mutable {
                                  switch (newState) {
@@ -48,7 +48,7 @@ bool QCoroLocalSocket::WaitForDisconnectedOperation::await_ready() const noexcep
     return !mObj || mObj->state() == QLocalSocket::UnconnectedState;
 }
 
-void QCoroLocalSocket::WaitForDisconnectedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroLocalSocket::WaitForDisconnectedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) {
     mConn = QObject::connect(mObj, &QLocalSocket::disconnected,
                              std::bind(&WaitForDisconnectedOperation::resume, this, awaitingCoroutine));
     startTimeoutTimer(awaitingCoroutine);
@@ -59,7 +59,7 @@ bool QCoroLocalSocket::ReadOperation::await_ready() const noexcept {
            static_cast<const QLocalSocket *>(mDevice.data())->state() == QLocalSocket::UnconnectedState;
 }
 
-void QCoroLocalSocket::ReadOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroLocalSocket::ReadOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
     mStateConn = QObject::connect(
         static_cast<QLocalSocket *>(mDevice.data()), &QLocalSocket::stateChanged,
@@ -70,7 +70,7 @@ void QCoroLocalSocket::ReadOperation::await_suspend(QCORO_STD::coroutine_handle<
         });
 }
 
-void QCoroLocalSocket::ReadOperation::finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroLocalSocket::ReadOperation::finish(std::coroutine_handle<> awaitingCoroutine) {
     QObject::disconnect(mStateConn);
     QCoroIODevice::ReadOperation::finish(awaitingCoroutine);
 }

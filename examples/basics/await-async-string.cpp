@@ -73,7 +73,7 @@ public:
     // Called to tell us that the awaiting coroutine was suspended.
     // We use the awaitingCoroutine handle to resume the suspended coroutine once the
     // co_awaited coroutine is finished.
-    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
         std::cout << "FutureStringAwaiter::await_suspend() called." << std::endl;
         QObject::connect(mFuture.get(), &FutureString::ready,
                          [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
@@ -129,13 +129,13 @@ public:
 
         // Says whether the coroutine body should be executed immediately (`suspend_never`)
         // or whether it should be executed only once the coroutine is co_awaited.
-        QCORO_STD::suspend_never initial_suspend() const noexcept {
+        std::suspend_never initial_suspend() const noexcept {
             return {};
         }
         // Says whether the coroutine should be suspended after returning a result
         // (`suspend_always`) or whether it should just end and the frame pointer and everything
         // should be destroyed.
-        QCORO_STD::suspend_never final_suspend() const noexcept {
+        std::suspend_never final_suspend() const noexcept {
             return {};
         }
 

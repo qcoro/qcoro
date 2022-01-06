@@ -22,7 +22,7 @@ private:
         explicit WaitForFinishedOperation(const QDBusPendingCall &call);
 
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
         QDBusMessage await_resume() const;
     private:
         const QDBusPendingCall &mCall;

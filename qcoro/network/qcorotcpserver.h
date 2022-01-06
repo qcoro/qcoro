@@ -24,7 +24,7 @@ class QCoroTcpServer {
     public:
         WaitForNewConnectionOperation(QTcpServer *server, int timeout_msecs = 30'000);
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
         QTcpSocket *await_resume();
     };
 

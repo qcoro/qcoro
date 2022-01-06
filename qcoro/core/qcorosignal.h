@@ -51,7 +51,7 @@ public:
         return mObj.isNull();
     }
 
-    void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
         mConn = QObject::connect(
             mObj, mFuncPtr, mObj,
             [this, awaitingCoroutine](auto &&...args) mutable {

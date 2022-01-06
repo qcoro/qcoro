@@ -34,7 +34,7 @@ protected:
         }
     }
 
-    void startTimeoutTimer(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+    void startTimeoutTimer(std::coroutine_handle<> awaitingCoroutine) {
         if (!mTimeoutTimer) {
             return;
         }
@@ -47,7 +47,7 @@ protected:
         mTimeoutTimer->start();
     }
 
-    void resume(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+    void resume(std::coroutine_handle<> awaitingCoroutine) {
         if (mTimeoutTimer) {
             mTimeoutTimer->stop();
         }

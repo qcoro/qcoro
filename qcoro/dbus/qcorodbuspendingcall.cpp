@@ -16,7 +16,7 @@ bool QCoroDBusPendingCall::WaitForFinishedOperation::await_ready() const noexcep
     return mCall.isFinished();
 }
 
-void QCoroDBusPendingCall::WaitForFinishedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroDBusPendingCall::WaitForFinishedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
 auto *watcher = new QDBusPendingCallWatcher{mCall};
     QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                      [awaitingCoroutine](auto *watcher) mutable {

@@ -10,7 +10,6 @@ include(CTest)
 include(FeatureSummary)
 
 # Custom includes
-include(HasCompatibleStlAbi)
 include(GenerateHeaders)
 include(AddQCoroLibrary)
 
@@ -97,11 +96,6 @@ else()
     find_package(Qt${USE_QT_VERSION} ${MIN_REQUIRED_QT${USE_QT_VERSION}_VERSION}
                  COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
     set(QT_VERSION_MAJOR ${USE_QT_VERSION})
-endif()
-
-has_compatible_stl_abi(QCORO_QT_HAS_COMPAT_ABI)
-if (NOT QCORO_QT_HAS_COMPAT_ABI)
-    message(WARNING "Qt is built with an incompatible STL, some features will be disabled!")
 endif()
 
 configure_file(

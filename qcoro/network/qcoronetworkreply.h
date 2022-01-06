@@ -19,10 +19,10 @@ private:
         using QCoroIODevice::ReadOperation::ReadOperation;
 
         bool await_ready() const noexcept final;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept final;
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept final;
 
     private:
-        void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) final;
+        void finish(std::coroutine_handle<> awaitingCoroutine) final;
 
         QMetaObject::Connection mFinishedConn;
     };
@@ -32,7 +32,7 @@ private:
         explicit WaitForFinishedOperation(QPointer<QNetworkReply> reply);
 
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine);
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
         QNetworkReply *await_resume() const noexcept;
 
     private:

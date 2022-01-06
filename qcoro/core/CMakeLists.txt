@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-if (QCORO_QT_HAS_COMPAT_ABI)
-    set(QCOROFUTURE_HEADER "QCoroFuture")
-endif()
-
 add_qcoro_library(
     NAME Core
     INCLUDEDIR Core
@@ -19,7 +15,7 @@ add_qcoro_library(
         QCoroProcess
         QCoroSignal
         QCoroTimer
-        ${QCOROFUTURE_HEADER}
+        QCoroFuture
     QT_LINK_LIBRARIES
         PUBLIC Core
 )

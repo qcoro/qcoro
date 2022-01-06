@@ -19,7 +19,7 @@ bool QCoroTimer::WaitForTimeoutOperation::await_ready() const noexcept {
     return !mTimer || !mTimer->isActive();
 }
 
-void QCoroTimer::WaitForTimeoutOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroTimer::WaitForTimeoutOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) {
     if (mTimer && mTimer->isActive()) {
         mConn = QObject::connect(mTimer, &QTimer::timeout, [this, awaitingCoroutine]() mutable {
             QObject::disconnect(mConn);

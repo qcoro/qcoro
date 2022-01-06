@@ -11,7 +11,7 @@ bool QCoroNetworkReply::ReadOperation::await_ready() const noexcept {
            static_cast<const QNetworkReply *>(mDevice.data())->isFinished();
 }
 
-void QCoroNetworkReply::ReadOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroNetworkReply::ReadOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
 
     mFinishedConn = QObject::connect(
@@ -19,7 +19,7 @@ void QCoroNetworkReply::ReadOperation::await_suspend(QCORO_STD::coroutine_handle
         std::bind(&ReadOperation::finish, this, awaitingCoroutine));
 }
 
-void QCoroNetworkReply::ReadOperation::finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroNetworkReply::ReadOperation::finish(std::coroutine_handle<> awaitingCoroutine) {
     QObject::disconnect(mFinishedConn);
     QCoroIODevice::ReadOperation::finish(awaitingCoroutine);
 }
@@ -32,7 +32,7 @@ bool QCoroNetworkReply::WaitForFinishedOperation::await_ready() const noexcept {
     return !mReply || mReply->isFinished();
 }
 
-void QCoroNetworkReply::WaitForFinishedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroNetworkReply::WaitForFinishedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) {
     if (mReply) {
         QObject::connect(mReply, &QNetworkReply::finished,
                          [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });

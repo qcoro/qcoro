@@ -14,7 +14,7 @@ QCoroIODevice::OperationBase::OperationBase(QIODevice *device)
     : mDevice(device)
 {}
 
-void QCoroIODevice::OperationBase::finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroIODevice::OperationBase::finish(std::coroutine_handle<> awaitingCoroutine) {
     QObject::disconnect(mConn);
     QObject::disconnect(mCloseConn);
     // Delayed trigger
@@ -29,7 +29,7 @@ bool QCoroIODevice::ReadOperation::await_ready() const noexcept {
            mDevice->bytesAvailable() > 0;
 }
 
-void QCoroIODevice::ReadOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroIODevice::ReadOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     Q_ASSERT(mDevice);
     mConn = QObject::connect(mDevice, &QIODevice::readyRead,
                              std::bind(&ReadOperation::finish, this, awaitingCoroutine));
@@ -62,7 +62,7 @@ bool QCoroIODevice::WriteOperation::await_ready() const noexcept {
     return false;
 }
 
-void QCoroIODevice::WriteOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroIODevice::WriteOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     Q_ASSERT(mDevice);
     mConn = QObject::connect(mDevice, &QIODevice::bytesWritten,
                              [this, awaitingCoroutine](qint64 written) {

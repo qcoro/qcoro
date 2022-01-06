@@ -18,7 +18,7 @@ static constexpr bool is_awaitable_v = is_awaitable<T>::value;
 
 struct TestAwaitable {
     bool await_ready() const { return true; }
-    void await_suspend(QCORO_STD::coroutine_handle<>);
+    void await_suspend(std::coroutine_handle<>);
     void await_resume() const;
 };
 
