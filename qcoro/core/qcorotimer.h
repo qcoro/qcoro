@@ -22,7 +22,7 @@ private:
         explicit WaitForTimeoutOperation(QTimer &timer);
 
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine);
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
         void await_resume() const;
     private:
         QMetaObject::Connection mConn;

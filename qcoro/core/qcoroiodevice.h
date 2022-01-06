@@ -28,7 +28,7 @@ private:
     protected:
         explicit OperationBase(QIODevice *device);
 
-        virtual void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine);
+        virtual void finish(std::coroutine_handle<> awaitingCoroutine);
 
         QPointer<QIODevice> mDevice;
         QMetaObject::Connection mConn;
@@ -44,7 +44,7 @@ protected:
         QCORO_DEFAULT_MOVE(ReadOperation)
 
         virtual bool await_ready() const noexcept;
-        virtual void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        virtual void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
         QByteArray await_resume();
 
     private:
@@ -58,7 +58,7 @@ protected:
         QCORO_DEFAULT_MOVE(WriteOperation)
 
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
         qint64 await_resume() noexcept;
 
     private:

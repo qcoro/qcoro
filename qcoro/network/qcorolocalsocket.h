@@ -22,7 +22,7 @@ class QCoroLocalSocket : private QCoroIODevice {
     public:
         explicit WaitForConnectedOperation(QLocalSocket *socket, int timeout_msecs = 30'000);
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept;
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
     };
 
     //! An Awaitable that suspends the coroutine until the socket is disconnected
@@ -30,7 +30,7 @@ class QCoroLocalSocket : private QCoroIODevice {
     public:
         WaitForDisconnectedOperation(QLocalSocket *socket, int timeout_msecs);
         bool await_ready() const noexcept;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine);
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
     };
 
     class ReadOperation final : public QCoroIODevice::ReadOperation {
@@ -38,10 +38,10 @@ class QCoroLocalSocket : private QCoroIODevice {
         using QCoroIODevice::ReadOperation::ReadOperation;
 
         bool await_ready() const noexcept final;
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept final;
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept final;
 
     private:
-        void finish(QCORO_STD::coroutine_handle<> awaitingCoroutine) final;
+        void finish(std::coroutine_handle<> awaitingCoroutine) final;
 
         QMetaObject::Connection mStateConn;
     };

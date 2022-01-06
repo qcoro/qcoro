@@ -35,7 +35,7 @@ public:
         std::cout << "StringAwaiter::await_ready() called." << std::endl;
         return false;
     }
-    void await_suspend(QCORO_STD::coroutine_handle<>) noexcept {
+    void await_suspend(std::coroutine_handle<>) noexcept {
         std::cout << "StringAwaiter::await_suspend() called." << std::endl;
     }
     std::string await_resume() noexcept {
@@ -87,13 +87,13 @@ public:
 
         // Says whether the coroutine body should be executed immediately (`suspend_never`)
         // or whether it should be executed only once the coroutine is co_awaited.
-        QCORO_STD::suspend_never initial_suspend() const noexcept {
+        std::suspend_never initial_suspend() const noexcept {
             return {};
         }
         // Says whether the coroutine should be suspended after returning a result
         // (`suspend_always`) or whether it should just end and the frame pointer and everything
         // should be destroyed.
-        QCORO_STD::suspend_never final_suspend() const noexcept {
+        std::suspend_never final_suspend() const noexcept {
             return {};
         }
 

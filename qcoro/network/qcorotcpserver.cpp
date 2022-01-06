@@ -15,7 +15,7 @@ bool QCoroTcpServer::WaitForNewConnectionOperation::await_ready() const noexcept
     return !mObj || mObj->hasPendingConnections();
 }
 
-void QCoroTcpServer::WaitForNewConnectionOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroTcpServer::WaitForNewConnectionOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     mConn = QObject::connect(mObj, &QTcpServer::newConnection,
                              std::bind(&WaitForNewConnectionOperation::resume, this, awaitingCoroutine));
     startTimeoutTimer(awaitingCoroutine);

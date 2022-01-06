@@ -16,7 +16,7 @@ bool QCoroProcess::WaitForStartedOperation::await_ready() const noexcept {
     return !mObj || mObj->state() == QProcess::Running;
 }
 
-void QCoroProcess::WaitForStartedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) noexcept {
+void QCoroProcess::WaitForStartedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     mConn = QObject::connect(mObj, &QProcess::stateChanged,
                              [this, awaitingCoroutine](auto newState) mutable {
                                  switch (newState) {
@@ -44,7 +44,7 @@ bool QCoroProcess::WaitForFinishedOperation::await_ready() const noexcept {
     return !mObj || mObj->state() == QProcess::NotRunning;
 }
 
-void QCoroProcess::WaitForFinishedOperation::await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+void QCoroProcess::WaitForFinishedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) {
     mConn = QObject::connect(mObj, qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
                              std::bind(&WaitForFinishedOperation::resume, this, awaitingCoroutine));
     startTimeoutTimer(awaitingCoroutine);

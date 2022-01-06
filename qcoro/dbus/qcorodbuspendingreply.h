@@ -35,7 +35,7 @@ private:
             return mReply.isFinished();
         }
 
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
             auto *watcher = new QDBusPendingCallWatcher{mReply};
             QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                              [awaitingCoroutine](auto *watcher) mutable {

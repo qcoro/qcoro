@@ -31,7 +31,7 @@ private:
             return mFuture.isFinished() || mFuture.isCanceled();
         }
 
-        void await_suspend(QCORO_STD::coroutine_handle<> awaitingCoroutine) {
+        void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
             auto *watcher = new QFutureWatcher<T_>();
             auto cb = [watcher, awaitingCoroutine]() mutable {
                 watcher->deleteLater();
