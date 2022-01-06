@@ -6,6 +6,8 @@
 
 #include <version>
 
+// __cpp_lib_coroutine is not defined if the compiler doesn't support coroutines
+// (__cpp_impl_coroutine), e.g. clang as of 13.0.
 #if defined(__cpp_lib_coroutine)
 #include <coroutine>
 #elif defined(__clang__)
