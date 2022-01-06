@@ -1,5 +1,7 @@
 # QCoro::Task
 
+{{ doctable("Coro", "Task") }}
+
 ```cpp
 template<typename T> class QCoro::Task
 ```

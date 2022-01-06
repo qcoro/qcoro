@@ -25,18 +25,23 @@ sudo make install
 
 ## Add it to your CMake
 
+Depending on whether you want to use Qt5 or Qt6 build of QCoro, you should use `QCoro5` or QCoro6` in your
+CMake code, respectively. The example below is assuming Qt6:
+
 ```cmake
-find_package(QCoro REQUIRED)
+# Use QCoro5 if you are building for Qt5!
+find_package(QCoro6 REQUIRED COMPONENTS Core Network DBus)
 
 # Set necessary compiler flags to enable coroutine support
 qcoro_enable_coroutines()
 
 ...
 
-target_link_libraries(your-target QCoro::QCoroCore)
+target_link_libraries(your-target QCoro::Core QCoro::Network QCoro::DBus)
 ```
 
-If you also want to use coroutine support for types from QtNetwork or QtDBus modules, you have
-to also link against `QCoro::QCoroDBus` and `QCoro::QCoroNetwork` targets respectively.
+Note the missing Qt version number in the `QCoro` target namespace: QCoro provides both
+versioned (`QCoro5` and `QCoro6`) namespaces as well as version-less namespace, which is
+especially useful for transitioning codebase from Qt5 to Qt6.
 
 

@@ -4,7 +4,7 @@ set(dbustest_SRCS
 
 add_executable(dbustest-coro ${dbustest_SRCS})
 target_link_libraries(dbustest-coro
-    QCoroDBus
+    QCoro${QT_VERSION_MAJOR}DBus
     examples-dbus-common
     Threads::Threads
     Qt${QT_VERSION_MAJOR}::Core

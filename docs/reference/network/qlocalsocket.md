@@ -1,6 +1,6 @@
 # QLocalSocket
 
-{{ doctable("QCoroNetwork", "QCoroLocalSocket", ("qiodevice", "QCoroIODevice")) }}
+{{ doctable("Network", "QCoroLocalSocket", ("core/qiodevice", "QCoroIODevice")) }}
 
 [`QLocalSocket`][qtdoc-qlocalsocket] has several potentially asynchronous operations
 in addition to reading and writing, which are provided by [`QIODevice`][qtdoc-qiodevice]
@@ -88,5 +88,5 @@ QCoro::Task<QByteArray> requestDataFromServer(const QString &serverName) {
 [qtdoc-qlocalsocket-connectToServer]: https://doc.qt.io/qt-5/qlocalsocket.html#connectToServer
 [qtdoc-qlocalsocket-waitForConnected]: https://doc.qt.io/qt-5/qlocalsocket.html#waitForConnected
 [qtdoc-qlocalsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qlocalsocket.html#waitForDisconnected
-[qcoro-coro]: coro.md
-[qcoro-qcoroiodevice]: qiodevice.md
+[qcoro-coro]: ../coro/coro.md
+[qcoro-qcoroiodevice]: ../core/qiodevice.md

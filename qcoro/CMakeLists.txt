@@ -2,45 +2,28 @@
 #
 # SPDX-License-Identifier: MIT
 
-set(qcoro_HEADERS
-    concepts_p.h
-    coroutine.h
-    macros_p.h
-    task.h
-    waitoperationbase_p.h
-)
-
-
-generate_headers(
-    qcoro_CamelCase_HEADERS
-    HEADER_NAMES
+add_qcoro_library(
+    NAME Coro
+    INTERFACE
+    INCLUDEDIR Coro
+    CAMELCASE_HEADERS
         Task
         QCoro
-    OUTPUT_DIR QCoro
-    ORIGINAL_HEADERS_VAR qcoro_HEADERS
+    HEADERS
+        concepts_p.h
+        coroutine.h
+        macros_p.h
+        task.h
+        waitoperationbase_p.h
+    QT_LINK_LIBRARIES
+        INTERFACE Core
 )
 
-add_library(QCoro INTERFACE)
-
-target_include_directories(QCoro
-    INTERFACE $<BUILD_INTERFACE:${QCORO_SOURCE_DIR}>;$<BUILD_INTERFACE:${QCORO_SOURCE_DIR}/qcoro>
-    INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>;$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/qcoro>
-    INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/QCoro>
-)
-
+# Install the extra macros file
 install(
-    FILES ${qcoro_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/qcoro
-    COMPONENT Devel
+    FILES "QCoroMacros.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${QCORO_TARGET_PREFIX}Coro/"
 )
-
-install(
-    FILES ${qcoro_CamelCase_HEADERS}
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/QCoro
-    COMPONENT Devel
-)
-
-install(TARGETS QCoro EXPORT QCoroTargets)
 
 ############################
 

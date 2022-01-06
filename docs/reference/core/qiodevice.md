@@ -1,11 +1,11 @@
 # QIODevice
 
 {{
-    doctable("QCoroCore", "QCoroIODevice", None,
-            [('qabstractsocket', 'QCoroAbstractSocket'),
-             ('qlocalsocket', 'QCoroLocalSocket'),
-             ('qnetworkreply', 'QCoroNetworkReply'),
-             ('qprocess', 'QCoroProcess')])
+    doctable("Core", "QCoroIODevice", None,
+            [('network/qabstractsocket', 'QCoroAbstractSocket'),
+             ('network/qlocalsocket', 'QCoroLocalSocket'),
+             ('network/qnetworkreply', 'QCoroNetworkReply'),
+             ('core/qprocess', 'QCoroProcess')])
 }}
 ```cpp
 class QCoroIODevice
@@ -84,8 +84,8 @@ Awaitable auto QCoroIODevice::readLine(qint64 maxSize = 0)
 const QByteArray data = co_await qCoro(device).readAll();
 ```
 
-[qlocalsocket]: qlocalsocket.md
-[qcoro-coro]: coro.md
+[qlocalsocket]: ../network/qlocalsocket.md
+[qcoro-coro]: ../coro/coro.md
 [qtdoc-qiodevice]: https://doc.qt.io/qt-5/qiodevice.html
 [qtdoc-qiodevice-read]: https://doc.qt.io/qt-5/qiodevice.html#read
 [qtdoc-qiodevice-readyread]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
