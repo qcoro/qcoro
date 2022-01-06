@@ -56,7 +56,7 @@ if (QCORO_ENABLE_ASAN)
     endif()
 endif()
 
-include(QCoroMacros.cmake)
+include(qcoro/QCoroMacros.cmake)
 qcoro_enable_coroutines()
 
 #-----------------------------------------------------------#
@@ -114,10 +114,7 @@ configure_file(
 #-----------------------------------------------------------#
 
 set(QCORO_TARGET_PREFIX "QCoro${QT_VERSION_MAJOR}")
-set(QCORO_TARGETS "${QCORO_TARGET_PREFIX}Targets")
 set(QCORO_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/qcoro${QT_VERSION_MAJOR}")
-set(QCORO_INSTALL_INCLUDEDIR_CAMELCASE "${CMAKE_INSTALL_INCLUDEDIR}/QCoro${QT_VERSION_MAJOR}")
-set(QCORO_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/QCoro${QT_VERSION_MAJOR}")
 
 #-----------------------------------------------------------#
 # Sources
@@ -140,14 +137,14 @@ include(CMakePackageConfigHelpers)
 
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
-    DESTINATION ${QCORO_INSTALL_INCLUDEDIR}
+    DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/qcoro
     COMPONENT Devel
 )
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/QCoroConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}Config.cmake"
-    INSTALL_DESTINATION ${QCORO_INSTALL_CMAKE_DIR}
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QCoro${QT_VERSION_MAJOR}"
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 
@@ -160,16 +157,8 @@ write_basic_package_version_file(
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}Config.cmake"
           "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}ConfigVersion.cmake"
-          "${CMAKE_CURRENT_SOURCE_DIR}/QCoroMacros.cmake"
-          DESTINATION "${QCORO_INSTALL_CMAKE_DIR}"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/QCoro${QT_VERSION_MAJOR}"
     COMPONENT Devel
-)
-
-install(
-    EXPORT ${QCORO_TARGETS}
-    DESTINATION "${QCORO_INSTALL_CMAKE_DIR}"
-    FILE ${QCORO_TARGETS}.cmake
-    NAMESPACE ${QCORO_TARGET_PREFIX}::
 )
 
 #-----------------------------------------------------------#

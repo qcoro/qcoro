@@ -1,0 +1,16 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(Qt@QT_VERSION_MAJOR@Core)
+
+include("${CMAKE_CURRENT_LIST_DIR}/QCoro@QT_VERSION_MAJOR@CoroTargets.cmake")
+# Custom macros
+include("${CMAKE_CURRENT_LIST_DIR}/QCoroMacros.cmake")
+
+# Versionless target, for compatiblity with Qt6
+if (TARGET QCoro@QT_VERSION_MAJOR@::Coro AND NOT TARGET QCoro::Coro)
+    add_library(QCoro::Coro INTERFACE IMPORTED)
+    set_target_properties(QCoro::Coro PROPERTIES
+        INTERFACE_LINK_LIBRARIES "QCoro@QT_VERSION_MAJOR@::Coro"
+    )
+endif()

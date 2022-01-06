@@ -24,4 +24,3 @@ add_qcoro_library(
         PUBLIC Core
 )
 
-

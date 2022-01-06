@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 add_qcoro_library(
+    NAME Coro
+    INTERFACE
+    INCLUDEDIR Coro
     CAMELCASE_HEADERS
         Task
         QCoro
@@ -13,7 +16,13 @@ add_qcoro_library(
         task.h
         waitoperationbase_p.h
     QT_LINK_LIBRARIES
-        PUBLIC Core
+        INTERFACE Core
+)
+
+# Install the extra macros file
+install(
+    FILES "QCoroMacros.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${QCORO_TARGET_PREFIX}Coro/"
 )
 
 ############################
