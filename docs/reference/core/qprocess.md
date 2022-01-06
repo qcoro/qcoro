@@ -1,6 +1,6 @@
 # QProcess
 
-{{ doctable("QCoroCore", "QCoroProcess", ("qiodevice", "QCoroIODevice")) }}
+{{ doctable("Core", "QCoroProcess", ("core/qiodevice", "QCoroIODevice")) }}
 
 [`QProcess`][qtdoc-qprocess] normally has two features to wait for asynchronously: the process to start
 and to finish. Since `QProcess` itself doesn't provide the ability to `co_await` those operations,
@@ -59,7 +59,7 @@ Awaitable auto QCoroProcess::start(const QString &program, const QStringList &ar
 ## Examples
 
 ```cpp
-{% include "../examples/qprocess.cpp" %}
+{% include "../../examples/qprocess.cpp" %}
 ```
 
 
@@ -67,5 +67,5 @@ Awaitable auto QCoroProcess::start(const QString &program, const QStringList &ar
 [qtdoc-qprocess-start]: https://doc.qt.io/qt-5/qprocess.html#start
 [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
 [qtdoc-qprocess-waitForFiished]: https://doc.qt.io/qt-5/qprocess.html#waitForFinished
-[qcoro-coro]: coro.md
+[qcoro-coro]: ../coro/coro.md
 [qcoro-qcoroiodevice]: qiodevice.md

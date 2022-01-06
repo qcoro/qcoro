@@ -1,6 +1,6 @@
 # QNetworkReply
 
-{{ doctable("QCoroNetwork", "QCoroNetworkReply", ("qiodevice", "QCoroIODevice")) }}
+{{ doctable("Network", "QCoroNetworkReply", ("network/qiodevice", "QCoroIODevice")) }}
 
 [`QNetworkReply`][qdoc-qnetworkreply] has two asynchronous aspects: one is waiting for the
 reply to finish, and one for reading the response data as they arrive. QCoro supports both.
@@ -22,11 +22,11 @@ signal is emitted.
 To make it work, include `QCoroNetworkReply` in your implementation.
 
 ```cpp
-{% include "../examples/qnetworkreply.cpp" %}
+{% include "../../examples/qnetworkreply.cpp" %}
 ```
 
 [qdoc-qnetworkreply]: https://doc.qt.io/qt-5/qnetworkreply.html
 [qdoc-qnetworkreply-finished]: https://doc.qt.io/qt-5/qnetworkreply.html#finished
 [qdoc-qiodevice]: https://doc.qt.io/qt-5/qiodevice.html
-[qcoro-iodevice]: qiodevice.md
+[qcoro-iodevice]: ../core/qiodevice.md
 

@@ -1,6 +1,6 @@
 # QTcpServer
 
-{{ doctable("QCoroNetwork", "QCoroTcpServer") }}
+{{ doctable("Network", "QCoroTcpServer") }}
 
 [`QTcpServer`][qtdoc-qtcpserver] really only has one asynchronous operation worth `co_await`ing, and that's
 `waitForNewConnection()`.
@@ -30,10 +30,10 @@ Awaitable auto QCoroTcpServer::waitForNewConnection(std::chrono::milliseconds ti
 ## Examples
 
 ```cpp
-{% include "../examples/qtcpserver.cpp" %}
+{% include "../../examples/qtcpserver.cpp" %}
 ```
 
 
 [qtdoc-qtcpserver]: https://doc.qt.io/qt-5/qtcpserver.html
 [qtdoc-qtcpserver-waitForNewConnection]: https://doc.qt.io/qt-5/qtcpserver.html#waitForNewConnection
-[qcoro-coro]: coro.md
+[qcoro-coro]: ../coro/coro.md

@@ -1,6 +1,6 @@
 # QDBusPendingCall
 
-{{ doctable("QCoroDBus", "QCoroDBusPendingCall") }}
+{{ doctable("DBus", "QCoroDBusPendingCall") }}
 
 
 [`QDBusPendingCall`][qdoc-qdbuspendingcall] on its own doesn't have any operation that could
@@ -38,7 +38,7 @@ const QDBusReply<...> reply = co_await pendigCall;
 ## `waitForFinished()`
 
 {%
-    include-markdown "../../qcoro/dbus/qcorodbuspendingcall.h"
+    include-markdown "../../../qcoro/dbus/qcorodbuspendingcall.h"
         dedent=true
         rewrite-relative-urls=false
         start="<!-- doc-waitForFinished-start -->"
@@ -48,7 +48,7 @@ const QDBusReply<...> reply = co_await pendigCall;
 ## Example
 
 ```cpp
-{% include "../examples/qdbus.cpp" %}
+{% include "../../examples/qdbus.cpp" %}
 ```
 
 [qdoc-qdbuspendingcall]: https://doc.qt.io/qt-5/qdbuspendingcall.html
@@ -56,4 +56,4 @@ const QDBusReply<...> reply = co_await pendigCall;
 [qdoc-qdbuspendingcallwatcher]: https://doc.qt.io/qt-5/qdbuspendingcallwatcher.html
 [qdoc-qdbuspendingcallwatcher-finished]: https://doc.qt.io/qt-5/qdbuspendingcallwatcher.html#finished
 [qdoc-qdbusabstractinterface-asyncCall]: https://doc.qt.io/qt-5/qdbusabstractinterface.html#asyncCall-1
-[qcoro-coro]: coro.md
+[qcoro-coro]: ../coro/coro.md

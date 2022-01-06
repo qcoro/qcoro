@@ -1,6 +1,6 @@
 # QAbstractSocket
 
-{{ doctable("QCoroNetwork", "QCoroAbstractSocket", ("qiodevice", "QCoroIODevice")) }}
+{{ doctable("Network", "QCoroAbstractSocket", ("core/qiodevice", "QCoroIODevice")) }}
 
 [`QAbstractSocket`][qtdoc-qabstractsocket] is a base class for [`QTcpSocket`][qtdoc-qtcpsocket]
 and [`QUdpSocket`][qtdoc-qudpsocket] and has some potentially asynchronous operations.
@@ -68,7 +68,7 @@ Awaitable auto QCoroAbstractSocket::connectToHost(const QString &hostName, quint
 ## Examples
 
 ```cpp
-{% include "../examples/qtcpsocket.cpp" %}
+{% include "../../examples/qtcpsocket.cpp" %}
 ```
 
 
@@ -79,5 +79,5 @@ Awaitable auto QCoroAbstractSocket::connectToHost(const QString &hostName, quint
 [qtdoc-qabstractsocket-connectToServer]: https://doc.qt.io/qt-5/qabstractsocket.html#connectToServer
 [qtdoc-qabstractsocket-waitForConnected]: https://doc.qt.io/qt-5/qabstractsocket.html#waitForConnected
 [qtdoc-qabstractsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qabstractsocket.html#waitForDisconnected
-[qcoro-coro]: coro.md
-[qcoro-qcoroiodevice]: qiodevice.md
+[qcoro-coro]: ../coro/coro.md
+[qcoro-qcoroiodevice]: ../core/qiodevice.md

@@ -1,6 +1,6 @@
 # QTimer
 
-{{ doctable("QCoroCore", "QCoroTimer") }}
+{{ doctable("Core", "QCoroTimer") }}
 
 ```cpp
 QTimer timer;

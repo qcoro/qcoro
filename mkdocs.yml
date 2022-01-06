@@ -11,6 +11,11 @@ theme:
   custom_dir: docs/overrides
   features:
     - navigation.expand
+    - navigation.tracking
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
 
 markdown_extensions:
   - pymdownx.highlight
@@ -43,19 +48,26 @@ nav:
         - co_await Explained: coroutines/coawait.md
         - Further Reading: coroutines/reading.md
     - Reference:
-        - QCoro::Task<T>: reference/task.md
-        - QCoro::coro(): reference/coro.md
-        - Supported Types:
-          - QAbstractSocket: reference/qabstractsocket.md
-          - QDBusPendingCall: reference/qdbuspendingcall.md
-          - QDBusPendingReply: reference/qdbuspendingreply.md
-          - QFuture: reference/qfuture.md
-          - QIODevice: reference/qiodevice.md
-          - QLocalSocket: reference/qlocalsocket.md
-          - QNetworkReply: reference/qnetworkreply.md
-          - QProcess: reference/qprocess.md
-          - QTimer: reference/qtimer.md
-          - QTcpServer: reference/qtcpserver.md
+      - Coro:
+        - reference/coro/index.md
+        - QCoro::Task<T>: reference/coro/task.md
+        - QCoro::coro(): reference/coro/coro.md
+      - Core:
+        - reference/core/index.md
+        - QFuture: reference/core/qfuture.md
+        - QIODevice: reference/core/qiodevice.md
+        - QProcess: reference/core/qprocess.md
+        - QTimer: reference/core/qtimer.md
+      - Network:
+        - reference/network/index.md
+        - QAbstractSocket: reference/network/qabstractsocket.md
+        - QLocalSocket: reference/network/qlocalsocket.md
+        - QNetworkReply: reference/network/qnetworkreply.md
+        - QTcpServer: reference/network/qtcpserver.md
+      - DBus:
+        - reference/dbus/index.md
+        - QDBusPendingCall: reference/dbus/qdbuspendingcall.md
+        - QDBusPendingReply: reference/dbus/qdbuspendingreply.md
     - Changelog: changelog.md
     - About:
         - License: about/license.md

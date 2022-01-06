@@ -6,7 +6,7 @@ def define_env(env):
             return f"<tr><th>{ th }</th><td>{ td }</td></tr>"
 
         def inheritsLink(inherits):
-            return f"""<a href="../{inherits[0]}">{inherits[1]}</a>"""
+            return f"""<a href="../../{inherits[0]}">{inherits[1]}</a>"""
 
         out = """<div class="doctable"><table>"""
         out += row("Module", module)

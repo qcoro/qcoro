@@ -1,6 +1,6 @@
 # QDBusPendingReply
 
- {{ doctable("QCoroDBus", "QCoroDBusPendingReply") }}
+ {{ doctable("DBus", "QCoroDBusPendingReply") }}
 
 [`QDBusPendingReply`][qdoc-qdbuspendingreply] on its own doesn't have any operation that could
 be awaited asynchronously, this is usually done through a helper class called
@@ -33,7 +33,7 @@ co_await reply;
 ## `waitForFinished()`
 
 {%
-    include-markdown "../../qcoro/dbus/qcorodbuspendingreply.h"
+    include-markdown "../../../qcoro/dbus/qcorodbuspendingreply.h"
         dedent=true
         rewrite-relative-urls=false
         start="<!-- doc-waitForFinished-start -->"
@@ -43,7 +43,7 @@ co_await reply;
 ## Example
 
 ```cpp
-{% include "../examples/qdbus.cpp" %}
+{% include "../../examples/qdbus.cpp" %}
 ```
 
 [qdoc-qdbuspendingcall]: https://doc.qt.io/qt-5/qdbuspendingcall.html
@@ -51,4 +51,4 @@ co_await reply;
 [qdoc-qdbuspendingcallwatcher]: https://doc.qt.io/qt-5/qdbuspendingcallwatcher.html
 [qdoc-qdbuspendingcallwatcher-finished]: https://doc.qt.io/qt-5/qdbuspendingcallwatcher.html#finished
 [qdoc-qdbusabstractinterface-asyncCall]: https://doc.qt.io/qt-5/qdbusabstractinterface.html#asyncCall-1
-[qcoro-coro]: coro.md
+[qcoro-coro]: ../coro/coro.md

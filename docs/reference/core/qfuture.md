@@ -1,6 +1,6 @@
 # QFuture
 
-{{ doctable("QCoroCore", "QCoroFuture") }}
+{{ doctable("Core", "QCoroFuture") }}
 
 [`QFuture`][qdoc-qfuture], which represents an asynchronously executed call, doesn't have any
 operation on its own that could be awaited asynchronously, this is usually done through a helper
@@ -16,7 +16,7 @@ QCoroFuture qCoro(const QFuture<T> &future);
 ## `waitForFinished()`
 
 {%
-    include-markdown "../../qcoro/core/qcorofuture.h"
+    include-markdown "../../../qcoro/core/qcorofuture.h"
         dedent=true
         rewrite-relative-urls=false
         start="<!-- doc-waitForFinished-start -->"
@@ -27,9 +27,9 @@ QCoroFuture qCoro(const QFuture<T> &future);
 ## Example
 
 ```cpp
-{% include "../examples/qfuture.cpp" %}
+{% include "../../examples/qfuture.cpp" %}
 ```
 
 [qdoc-qfuture]: https://doc.qt.io/qt-5/qfuture.html
 [qdoc-qfuturewatcher]: https://doc.qt.io/qt-5/qfuturewatcher.html
-[qcoro-coro]: coro.md
+[qcoro-coro]: ../coro/coro.md
