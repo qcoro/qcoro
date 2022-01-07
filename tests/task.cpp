@@ -125,6 +125,36 @@ private:
         QCORO_VERIFY(destroyed);
     }
 
+    QCoro::Task<> testExceptionPropagation_coro(QCoro::TestContext) {
+        QCORO_VERIFY_EXCEPTION_THROWN(
+            co_await []() -> QCoro::Task<int> {
+                throw std::runtime_error("Test!");
+                co_return 42;
+            }(),
+            std::runtime_error);
+
+        QCORO_VERIFY_EXCEPTION_THROWN(
+            co_await []() -> QCoro::Task<> {
+                throw std::runtime_error("Test!");
+            }(),
+            std::runtime_error);
+
+        QCORO_VERIFY_EXCEPTION_THROWN(
+            co_await []() -> QCoro::Task<int> {
+                co_await timer();
+                throw std::runtime_error("Test!");
+                co_return 42;
+            }(),
+            std::runtime_error);
+
+        QCORO_VERIFY_EXCEPTION_THROWN(
+            co_await []() -> QCoro::Task<> {
+                co_await timer();
+                throw std::runtime_error("Test!");
+            }(),
+            std::runtime_error);
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -134,6 +164,7 @@ private Q_SLOTS:
     addTest(CoroutineWithException)
     addTest(VoidCoroutineWithException)
     addTest(CoroutineFrameDestroyed)
+    addTest(ExceptionPropagation)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
