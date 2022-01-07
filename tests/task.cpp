@@ -66,7 +66,9 @@ private:
         QCORO_COMPARE(*result.get(), value);
     }
 
-    QCoro::Task<> testSyncCoroutine_coro(QCoro::TestContext) {
+    QCoro::Task<> testSyncCoroutine_coro(QCoro::TestContext context) {
+        context.setShouldNotSuspend();
+
         const auto coro = []() -> QCoro::Task<int> {
             co_return 42;
         };
@@ -159,8 +161,7 @@ private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
     addTest(CoroutineMoveValue)
-    // FIXME: Crashes with ASAN due to use-after-free
-    //addTest(SyncCoroutine)
+    addTest(SyncCoroutine)
     addTest(CoroutineWithException)
     addTest(VoidCoroutineWithException)
     addTest(CoroutineFrameDestroyed)
