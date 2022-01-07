@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QScopeGuard>
 #include <QMetaObject>
+#include <QTimer>
 
 #include <chrono>
 
@@ -22,6 +23,25 @@ QCoro::Task<> timer(std::chrono::milliseconds timeout = 10ms) {
     timer.setSingleShot(true);
     timer.start(timeout);
     co_await timer;
+}
+
+template<typename T>
+QCoro::Task<T> timerWithValue(T value, std::chrono::milliseconds timeout = 10ms) {
+    co_await timer(timeout);
+    co_return value;
+}
+
+auto thenScopeTestFunc(QEventLoop *el) {
+    return timer().then([el]() {
+        el->quit();
+    });
+}
+
+template<typename T>
+QCoro::Task<T> thenScopeTestFuncWithValue(T value) {
+    return timer().then([value]() {
+        return value;
+    });
 }
 
 } // namespace
@@ -157,6 +177,92 @@ private:
             std::runtime_error);
     }
 
+    QCoro::Task<> testThenReturnValueNoArgument_coro(QCoro::TestContext) {
+        auto task = timer().then([]() {
+            return 42;
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 42);
+    }
+
+    QCoro::Task<> testThenReturnValueWithArgument_coro(QCoro::TestContext) {
+        auto task = timerWithValue(42).then([](int param) -> QCoro::Task<int> {
+            co_return param * 2;
+        });
+
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 84);
+    }
+
+    QCoro::Task<> testThenReturnTaskVoidNoArgument_coro(QCoro::TestContext) {
+        auto task = timer().then([]() -> QCoro::Task<void> {
+            co_await timer();
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<void>>);
+        co_await task;
+    }
+
+    QCoro::Task<> testThenReturnTaskVoidWithArgument_coro(QCoro::TestContext) {
+        auto task = timerWithValue(42).then([](int result) -> QCoro::Task<void> {
+            co_await timer();
+            Q_UNUSED(result);
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<void>>);
+        co_await task;
+    }
+
+    QCoro::Task<> testThenReturnTaskTNoArgument_coro(QCoro::TestContext) {
+        auto task = timer().then([]() -> QCoro::Task<int> {
+            co_await timer();
+            co_return 42;
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 42);
+    }
+
+    QCoro::Task<> testThenReturnTaskTWithArgument_coro(QCoro::TestContext) {
+        auto task = timerWithValue(42).then([](int val) -> QCoro::Task<int> {
+            co_await timer();
+            co_return val * 2;
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 84);
+    }
+
+    QCoro::Task<> testThenReturnValueSync_coro(QCoro::TestContext context) {
+        context.setShouldNotSuspend();
+
+        auto task = []() -> QCoro::Task<int> {
+            co_return 42;
+        }().then([](int param) {
+            return param * 2;
+        });
+        const int result = co_await task;
+        QCORO_COMPARE(result, 84);
+    }
+
+    QCoro::Task<> testThenScopeAwait_coro(QCoro::TestContext) {
+        const int result = co_await thenScopeTestFuncWithValue(42);
+        QCORO_COMPARE(result, 42);
+    }
+
+    QCoro::Task<> testThenExceptionPropagation_coro(QCoro::TestContext) {
+        //context.setShouldNotSuspend();
+
+        co_await []() -> QCoro::Task<int> {
+            co_await timer();
+            throw std::runtime_error("Test!");
+            co_return 42;
+        }().then([](int) -> QCoro::Task<> {
+            QCORO_FAIL("The then callback should never be called!");
+            co_return;
+        });
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -166,6 +272,15 @@ private Q_SLOTS:
     addTest(VoidCoroutineWithException)
     addTest(CoroutineFrameDestroyed)
     addTest(ExceptionPropagation)
+    addTest(ThenReturnValueNoArgument)
+    addTest(ThenReturnValueWithArgument)
+    addTest(ThenReturnTaskVoidNoArgument)
+    addTest(ThenReturnTaskVoidWithArgument)
+    addTest(ThenReturnTaskTNoArgument)
+    addTest(ThenReturnTaskTWithArgument)
+    addTest(ThenReturnValueSync)
+    addTest(ThenScopeAwait)
+    addTest(ThenExceptionPropagation)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
@@ -233,6 +348,49 @@ private Q_SLOTS:
             el.quit();
             co_return QStringLiteral("Result");
         });
+    }
+
+    void testThenVoidNoArgument() {
+        QEventLoop el;
+
+        {
+            timer().then([&el]() {
+                el.quit();
+            });
+        }
+
+        el.exec();
+    }
+
+    void testThenScope() {
+        QEventLoop el;
+        thenScopeTestFunc(&el);
+        el.exec();
+    }
+
+    void testThenVoidWithArgument() {
+        QEventLoop el;
+        int result = 0;
+
+        {
+            timerWithValue(42).then([&el, &result](int val) {
+                result = val;
+                el.quit();
+            });
+        }
+
+        el.exec();
+        QCOMPARE(result, 42);
+    }
+
+    void testThenVoidWithFunction() {
+        QEventLoop el;
+
+        timerWithValue(10ms).then(timer).then([&el]() {
+            el.quit();
+        });
+
+        el.exec();
     }
 };
 

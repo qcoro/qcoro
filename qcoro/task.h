@@ -10,6 +10,7 @@
 #include <atomic>
 #include <variant>
 #include <memory>
+#include <type_traits>
 
 #include <QDebug>
 #include <QEventLoop>
@@ -303,6 +304,7 @@ public:
      */
     T &result() & {
         if (std::holds_alternative<std::exception_ptr>(mValue)) {
+            Q_ASSERT(std::get<std::exception_ptr>(mValue) != nullptr);
             std::rethrow_exception(std::get<std::exception_ptr>(mValue));
         }
 
@@ -312,6 +314,7 @@ public:
     //! \copydoc T &QCoro::TaskPromise<T>::result() &
     T &&result() && {
         if (std::holds_alternative<std::exception_ptr>(mValue)) {
+            Q_ASSERT(std::get<std::exception_ptr>(mValue) != nullptr);
             std::rethrow_exception(std::get<std::exception_ptr>(mValue));
         }
 
@@ -531,6 +534,60 @@ public:
         };
 
         return TaskAwaiter{mCoroutine};
+    }
+
+    //! A callback to be invoked when the asynchronous task finishes.
+    /*!
+     * In some scenarios it is not possible to co_await a coroutine (for example from
+     * a third-party code that cannot be changed to be a coroutine). In that case,
+     * chaining a then() callback is a possible solution how to handle a result
+     * of a coroutine without co_awaiting it.
+     *
+     * @param callback A function or a function object that can be invoked with a single
+     * argument of type T (that is type matching the return type of the coroutine).
+     *
+     * @return Returns Task<R> where R is the return type of the callback, so that the
+     * result of the then() action can be co_awaited, if desired. If the callback
+     * returns an awaitable (Task<R>) then the result of then is the awaitable.
+     */
+    template<typename ThenCallback>
+    requires (std::is_void_v<T> && std::invocable<ThenCallback>) || std::invocable<ThenCallback, T>
+    auto then(ThenCallback &&callback) {
+        return thenImpl(std::forward<ThenCallback>(callback));
+    }
+
+private:
+    template<typename ThenCallback, typename Arg = T>
+    struct invoke_result: std::invoke_result<ThenCallback, T> {};
+    template<typename ThenCallback>
+    struct invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
+    template<typename ThenCallback, typename Arg>
+    using invoke_result_t = typename invoke_result<ThenCallback, Arg>::type;
+
+    // Implementation of then() for callbacks that return Task<R>
+    template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
+    requires QCoro::Awaitable<R>
+    auto thenImpl(ThenCallback &&callback) -> R {
+        const auto cb = std::move(callback);
+        if constexpr (std::is_void_v<value_type>) {
+            co_await *this;
+            co_return co_await cb();
+        } else {
+            co_return co_await cb(co_await *this);
+        }
+    }
+
+    // Implementation of then() for callbacks that return R
+    template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
+    requires (!QCoro::Awaitable<R>)
+    auto thenImpl(ThenCallback &&callback) -> Task<R> {
+        const auto cb = std::move(callback);
+        if constexpr (std::is_void_v<value_type>) {
+            co_await *this;
+            co_return cb();
+        } else {
+            co_return cb(co_await *this);
+        }
     }
 
 private:
