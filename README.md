@@ -1,9 +1,13 @@
-[![Build](https://github.com/danvratil/qcoro/actions/workflows/build.yml/badge.svg)](https://github.com/danvratil/qcoro/actions/workflows/build.yml)
+[![CI status](https://github.com/danvratil/qcoro/actions/workflows/build.yml/badge.svg)](https://github.com/danvratil/qcoro/actions/workflows/build.yml)
+[![CI status](https://github.com/danvratil/qcoro/actions/workflows/update-docs.yml/badge.svg)](https://github.com/danvratil/qcoro/actions/workflows/pdate-docs.yml)
+[![Latest release](https://img.shields.io/github/v/release/danvratil/qcoro?label=%F0%9F%93%A6%20Release)](https://github.com/danvratil/qcoro/releases)
+![License: MIT](https://img.shields.io/badge/%E2%9A%96%EF%B8%8F%20License-MIT-brightgreen)
+![C++20](https://img.shields.io/badge/C%2B%2B-20-%2300599C?logo=cplusplus)
+![Supported Compilers](https://img.shields.io/badge/%E2%9A%99%EF%B8%8F%20Compilers-GCC%2C%20clang%2C%20MSVC-informational)
 
 # QCoro - Coroutines for Qt5 and Qt6
 
-The QCoro library provides set of tools to make use of the C++20 coroutines in connection
-with certain asynchronous Qt actions.
+The QCoro library provides set of tools to make use of C++20 coroutines with Qt.
 
 Take a look at the example below to see what an amazing thing coroutines are:
 ```cpp
@@ -18,7 +22,7 @@ const auto data = reply->readAll();
 This is a rather experimental library that helps me to understand coroutines
 in C++.
 
-It requires compiler with support for the couroutines TS.
+It requires a compiler with support for the couroutines TS.
 
 ## Documentation
 
@@ -26,7 +30,12 @@ It requires compiler with support for the couroutines TS.
 
 ## Supported Qt Types
 
-QCoro supports using the `co_await` keyword with several Qt types:
+QCoro provides `QCoro::Task<T>` which can be used as a coroutine return type and allows the coroutine
+to be awaited by its caller. Additionally, it provides `qCoro()` wrapper function, which wraps an
+object of a supported Qt type to a thin, coroutine-friendly wrapper that allows `co_await`ing asynchronous
+operations on this type. Finally, it allows to directly `co_await` default asynchronous operations on
+certain Qt types. Below is a list of a few supported types, you can find the full list in the
+[documentation](https://qcoro.dvratil.cz/reference).
 
 ### `QDBusPendingCall`
 
