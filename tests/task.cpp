@@ -17,7 +17,7 @@ using namespace std::chrono_literals;
 
 namespace {
 
-QCoro::Task<> timer(std::chrono::milliseconds timeout) {
+QCoro::Task<> timer(std::chrono::milliseconds timeout = 10ms) {
     QTimer timer;
     timer.setSingleShot(true);
     timer.start(timeout);
@@ -41,12 +41,12 @@ private:
     }
 
     QCoro::Task<> testSimpleCoroutine_coro(QCoro::TestContext) {
-        co_await timer(100ms);
+        co_await timer();
     }
 
     QCoro::Task<> testCoroutineValue_coro(QCoro::TestContext) {
         const auto coro = [](const QString &result) -> QCoro::Task<QString> {
-            co_await timer(100ms);
+            co_await timer();
             co_return result;
         };
 
@@ -57,7 +57,7 @@ private:
 
     QCoro::Task<> testCoroutineMoveValue_coro(QCoro::TestContext) {
         const auto coro = [](const QString &result) -> QCoro::Task<std::unique_ptr<QString>> {
-            co_await timer(100ms);
+            co_await timer();
             co_return std::make_unique<QString>(result);
         };
 
@@ -77,7 +77,7 @@ private:
 
     QCoro::Task<> testCoroutineWithException_coro(QCoro::TestContext) {
         const auto coro = []() -> QCoro::Task<int> {
-            co_await timer(100ms);
+            co_await timer();
             throw std::runtime_error("Invalid result");
             co_return 42;
         };
@@ -95,7 +95,7 @@ private:
 
     QCoro::Task<> testVoidCoroutineWithException_coro(QCoro::TestContext) {
         const auto coro = []() -> QCoro::Task<> {
-            co_await timer(100ms);
+            co_await timer();
             throw std::runtime_error("Error");
         };
 
@@ -117,7 +117,7 @@ private:
             });
 
             QCORO_VERIFY(!destroyed);
-            co_await timer(100ms);
+            co_await timer();
             QCORO_VERIFY(!destroyed);
         };
 
@@ -144,7 +144,7 @@ private Q_SLOTS:
             if (immediate) {
                 co_return true;
             } else {
-                co_await timer(100ms);
+                co_await timer();
                 co_return true;
             }
         };
@@ -174,13 +174,13 @@ private Q_SLOTS:
 
     // TODO: Test timeout
     void testWaitFor() {
-        QCoro::waitFor(timer(500ms));
+        QCoro::waitFor(timer());
     }
 
     // TODO: Test timeout
     void testWaitForWithValue() {
         const auto result = QCoro::waitFor([]() -> QCoro::Task<int> {
-            co_await timer(100ms);
+            co_await timer();
             co_return 42;
         }());
         QCOMPARE(result, 42);
@@ -189,7 +189,7 @@ private Q_SLOTS:
     void testIgnoredVoidTaskResult() {
         QEventLoop el;
         ignoreCoroutineResult(el, [&el]() -> QCoro::Task<> {
-            co_await timer(300ms);
+            co_await timer();
             el.quit();
         });
     }
@@ -197,7 +197,7 @@ private Q_SLOTS:
     void testIgnoredValueTaskResult() {
         QEventLoop el;
         ignoreCoroutineResult(el, [&el]() -> QCoro::Task<QString> {
-            co_await timer(300ms);
+            co_await timer();
             el.quit();
             co_return QStringLiteral("Result");
         });
