@@ -38,7 +38,7 @@ QDBusInterface remoteServiceInterface{serviceName, objectPath, interface};
 const QDBusReply<bool> isReady = co_await remoteServiceInterface.asyncCall(QStringLiteral("isReady"));
 ```
 
-[Full documentation here](https://qcoro.dvratil.cz/reference/qdbuspendingcall).
+📘 [Full documentation here](https://qcoro.dvratil.cz/reference/dbus/qdbuspendingcall).
 
 ### `QFuture`
 
@@ -55,7 +55,7 @@ const int b = co_await task2;
 co_return a + b;
 ```
 
-[Full documentation here](https://qcoro.dvratil.cz/reference/qfuture).
+📘 [Full documentation here](https://qcoro.dvratil.cz/reference/core/qfuture).
 
 ### `QNetworkReply`
 
@@ -83,7 +83,7 @@ if (reply->error() != QNetworkReply::NoError) {
  ...
  ```
 
-[Full documentation here](https://qcoro.dvratil.cz/reference/qnetworkreply).
+📘 [Full documentation here](https://qcoro.dvratil.cz/reference/network/qnetworkreply).
 
 ### `QTimer`
 
@@ -103,7 +103,7 @@ for (int i = 1; i <= 100; ++i) {
 qDebug() << "Done!";
 ```
 
-[Full documentation here](https://qcoro.dvratil.cz/reference/qtimer).
+📘 [Full documentation here](https://qcoro.dvratil.cz/reference/core/qtimer).
 
 ### `QIODevice`
 
@@ -118,7 +118,7 @@ const auto data = co_await socket;
 co_return calculateLatency(data);
 ```
 
-[Full documentation here](https://qcoro.dvratil.cz/reference/qiodevice).
+📘 [Full documentation here](https://qcoro.dvratil.cz/reference/core/qiodevice).
 
 ### ...and more!
 
