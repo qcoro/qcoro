@@ -48,6 +48,81 @@ QCoro::Task<void> getUserDetails(UserID userId) {
     When coroutines throws an unhandled exception, the exception is stored in the `Task` object and
     is re-thrown from the `co_await` call in the awaiting coroutine.
 
+## `then()` continuation
+
+Sometimes it's not possible to `co_await` a coroutine, for example when calling a coroutine from a
+reimplementation of a virtual function from a 3rd party library, where we cannot change the signature
+of that function to be a coroutine (e.g. a reimplementation of `QAbstractItemModel::data()`).
+
+Even in this case, we want to process the result of the coroutine asynchronously, though. For such
+cases, `Task<T>` provides a `then()` member function that allows the caller to provide a custom
+callback to be invoked when the coroutine finishes.
+
+---
+
+```cpp
+template<typename ThenCallback>
+requires (std::is_void_t<T> && std::invocable<ThenCallback>) || std::invocable<ThenCallback, T>
+Task<R> Task<T>::then(ThenCallback callback);
+```
+
+The `Task<T>::then()` member function takes a callback, which must be a callable. If `T` is `void`, the `ThenCallback` 
+must be a callable that has no arguments. Otherwise, `ThenCallback` must have exactly one argument, which is either of
+type `T` or a type implicitly convertible to `T`.
+
+If the return type of the `ThenCallback` is `void`, then the return type of the `then()` functon is `Task<void>`.
+If the return type of the `ThenCallback` is `R` or `Task<R>`, the return type of the `then()` function is
+`Task<R>`. This means that the `ThenCallback` can be a coroutine as well. Thanks to the return type always being
+of type `Task<R>`, it is possible to chain multiple `.then()` calls, or `co_await` the result of the entire chain.
+
+If the coroutine throws an exception, the exception is re-thrown when the result of the entire continuation is
+`co_await`ed. If the result of the continuation is not `co_await`ed, the exception is silently ignored.
+
+If an exception is thrown from the `ThenCallback`, then the exception is either propagated to the next chained
+`then()` continuation or re-thrown if directly `co_await`ed. If the result is not `co_await`ed and no futher
+`then()` continuation is chained after the one that has thrown, then the exception is silently ignored.
+
+---
+
+```cpp
+template<typename ThenCallback, typename ErrorCallback>
+requires (((std::is_void_t<T> && std::invocable<ThenCallback>) || std::invocable<ThenCallback, T>)
+            && std::invocable<ErrorCallback, const std::exception &>)
+Task<R> Task<T>::then(ThenCallback thenCallback, ErrorCallback errorCallback);
+```
+
+An overload of the `then()` member function which takes an additional callback to be invoked when an exception
+is thrown from the coroutine. The `ErrorCallback` must be a callable that takes exactly one argument, which is
+`const std::exception &`, holding reference to the exception thrown. An exception thrown from the `ErrorCallback`
+will be re-thrown if the entire continuation is `co_await`ed. If another `.then()` continuation is chained
+after the current continuation and has an `ErrorCallback`, then the `ErrorCallback` will be invoked. Otherwise,
+the exception is silently ignored.
+
+If an exception is thrown by the non-void coroutine and is handled by the `ErrorCallback`, then if the resulting
+continuation is `co_await`ed, the result will be a default-constructed instance of type `R` (since the `ThenCallback`
+was unable to provide a proper instance of type `R`). If `R` is not default-constructible, the program will not
+compile. Thus, if returning a non-default-constructible type from a coroutine that may throw an exception, we
+recommend to wrap the type in `std::optional`.
+
+Examples:
+
+```cpp
+QString User::name() {
+    if (mName.isNull()) {
+        mApi.fetchUserName().then(
+            [this](const QString &name) {
+                mName = name;
+                Q_EMIT nameChanged();
+            }, [](const std::exception &e) {
+                mName = QStringLiteral("Failed to fetch name: %1").arg(e.what());
+                Q_EMIT nameChanged();
+            });
+        return QStringLiteral("Loading...");
+    } else {
+        return mName;
+    }
+}
+```
 
 ## Blocking wait
 

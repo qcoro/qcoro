@@ -92,7 +92,7 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit qcoro-test-results.xml
+      run: QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit qcoro-test-results.xml
 
     - name: Upload Test Results
       if: always()

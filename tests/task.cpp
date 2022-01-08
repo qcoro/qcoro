@@ -10,6 +10,7 @@
 #include <QObject>
 #include <QScopeGuard>
 #include <QMetaObject>
+#include <QTimer>
 
 #include <chrono>
 
@@ -22,6 +23,25 @@ QCoro::Task<> timer(std::chrono::milliseconds timeout = 10ms) {
     timer.setSingleShot(true);
     timer.start(timeout);
     co_await timer;
+}
+
+template<typename T>
+QCoro::Task<T> timerWithValue(T value, std::chrono::milliseconds timeout = 10ms) {
+    co_await timer(timeout);
+    co_return value;
+}
+
+auto thenScopeTestFunc(QEventLoop *el) {
+    return timer().then([el]() {
+        el->quit();
+    });
+}
+
+template<typename T>
+QCoro::Task<T> thenScopeTestFuncWithValue(T value) {
+    return timer().then([value]() {
+        return value;
+    });
 }
 
 } // namespace
@@ -157,6 +177,133 @@ private:
             std::runtime_error);
     }
 
+    QCoro::Task<> testThenReturnValueNoArgument_coro(QCoro::TestContext) {
+        auto task = timer().then([]() {
+            return 42;
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 42);
+    }
+
+    QCoro::Task<> testThenReturnValueWithArgument_coro(QCoro::TestContext) {
+        auto task = timerWithValue(42).then([](int param) -> QCoro::Task<int> {
+            co_return param * 2;
+        });
+
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 84);
+    }
+
+    QCoro::Task<> testThenReturnTaskVoidNoArgument_coro(QCoro::TestContext) {
+        auto task = timer().then([]() -> QCoro::Task<void> {
+            co_await timer();
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<void>>);
+        co_await task;
+    }
+
+    QCoro::Task<> testThenReturnTaskVoidWithArgument_coro(QCoro::TestContext) {
+        auto task = timerWithValue(42).then([](int result) -> QCoro::Task<void> {
+            co_await timer();
+            Q_UNUSED(result);
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<void>>);
+        co_await task;
+    }
+
+    QCoro::Task<> testThenReturnTaskTNoArgument_coro(QCoro::TestContext) {
+        auto task = timer().then([]() -> QCoro::Task<int> {
+            co_await timer();
+            co_return 42;
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 42);
+    }
+
+    QCoro::Task<> testThenReturnTaskTWithArgument_coro(QCoro::TestContext) {
+        auto task = timerWithValue(42).then([](int val) -> QCoro::Task<int> {
+            co_await timer();
+            co_return val * 2;
+        });
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<int>>);
+        const auto result = co_await task;
+        QCORO_COMPARE(result, 84);
+    }
+
+    QCoro::Task<> testThenReturnValueSync_coro(QCoro::TestContext context) {
+        context.setShouldNotSuspend();
+
+        auto task = []() -> QCoro::Task<int> {
+            co_return 42;
+        }().then([](int param) {
+            return param * 2;
+        });
+        const int result = co_await task;
+        QCORO_COMPARE(result, 84);
+    }
+
+    QCoro::Task<> testThenScopeAwait_coro(QCoro::TestContext) {
+        const int result = co_await thenScopeTestFuncWithValue(42);
+        QCORO_COMPARE(result, 42);
+    }
+
+    QCoro::Task<> testThenExceptionPropagation_coro(QCoro::TestContext) {
+        QCORO_VERIFY_EXCEPTION_THROWN(
+            co_await []() -> QCoro::Task<int> {
+                co_await timer();
+                throw std::runtime_error("Test!");
+                co_return 42;
+            }().then([](int) -> QCoro::Task<> {
+                QCORO_FAIL("The then() callback should never be called");
+                co_return;
+            }),
+            std::runtime_error);
+    }
+
+    QCoro::Task<> testThenError_coro(QCoro::TestContext) {
+        bool exceptionThrown = false;
+
+        co_await []() -> QCoro::Task<int> {
+            co_await timer();
+            throw std::runtime_error("Test!");
+            co_return 42;
+        }().then([](int) -> QCoro::Task<> {
+                QCORO_FAIL("The then() callback should not be called");
+            },
+            [&exceptionThrown](const std::exception &) {
+                exceptionThrown = true;
+            }
+        );
+
+        QCORO_VERIFY(exceptionThrown);
+    }
+
+    QCoro::Task<> testThenErrorWithValue_coro(QCoro::TestContext) {
+        bool exceptionThrown = false;
+        bool thenCalled = false;
+
+        const int result = co_await []() -> QCoro::Task<> {
+            co_await timer();
+            throw std::runtime_error("Test!");
+        }().then([&thenCalled]() -> QCoro::Task<int> {
+                thenCalled = true;
+                co_return 42;
+            },
+            [&exceptionThrown](const std::exception &) {
+                exceptionThrown = true;
+            }
+        );
+
+        // We handled an exception, so there's no error and it should
+        // be default-constructed.
+        QCORO_COMPARE(result, 0);
+        QCORO_VERIFY(!thenCalled);
+        QCORO_VERIFY(exceptionThrown);
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -166,6 +313,17 @@ private Q_SLOTS:
     addTest(VoidCoroutineWithException)
     addTest(CoroutineFrameDestroyed)
     addTest(ExceptionPropagation)
+    addTest(ThenReturnValueNoArgument)
+    addTest(ThenReturnValueWithArgument)
+    addTest(ThenReturnTaskVoidNoArgument)
+    addTest(ThenReturnTaskVoidWithArgument)
+    addTest(ThenReturnTaskTNoArgument)
+    addTest(ThenReturnTaskTWithArgument)
+    addTest(ThenReturnValueSync)
+    addTest(ThenScopeAwait)
+    addTest(ThenExceptionPropagation)
+    addTest(ThenError)
+    addTest(ThenErrorWithValue)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
@@ -233,6 +391,94 @@ private Q_SLOTS:
             el.quit();
             co_return QStringLiteral("Result");
         });
+    }
+
+    void testThenVoidNoArgument() {
+        QEventLoop el;
+
+        {
+            timer().then([&el]() {
+                el.quit();
+            });
+        }
+
+        el.exec();
+    }
+
+    void testThenScope() {
+        QEventLoop el;
+        thenScopeTestFunc(&el);
+        el.exec();
+    }
+
+    void testThenVoidWithArgument() {
+        QEventLoop el;
+        int result = 0;
+
+        {
+            timerWithValue(42).then([&el, &result](int val) {
+                result = val;
+                el.quit();
+            });
+        }
+
+        el.exec();
+        QCOMPARE(result, 42);
+    }
+
+    void testThenVoidWithFunction() {
+        QEventLoop el;
+
+        timerWithValue(10ms).then(timer).then([&el]() {
+            el.quit();
+        });
+
+        el.exec();
+    }
+
+    void testThenErrorInCallback() {
+        QEventLoop el;
+        QTimer::singleShot(5s, &el, [&el]() {
+            el.quit();
+            QFAIL("Timeout waiting for coroutine");
+        });
+
+        []() -> QCoro::Task<> {
+            co_await timer();
+        }().then([]() {
+            throw std::runtime_error("Test!");
+        }, [](const std::exception &) {
+            QFAIL("Continuation exception should not be handled by the same error handled");
+        }).then([]() {
+            QFAIL("Second then continuation should not be called.");
+        }, [&el](const std::exception &) {
+            el.quit();
+        });
+
+        el.exec();
+    }
+
+    void testThenExceptionInError() {
+        QEventLoop el;
+        QTimer::singleShot(5s, &el, [&el]() {
+            el.quit();
+            QFAIL("Timeout waiting for coroutine");
+        });
+
+        []() -> QCoro::Task<> {
+            co_await timer();
+            throw std::runtime_error("Test!");
+        }().then([]() {
+            QFAIL("The then() continuation should not be called");
+        }, [](const std::exception &) {
+            throw std::runtime_error("Another test!");
+        }).then([]() {
+            QFAIL("Second then() continuation should not be called");
+        }, [&el](const std::exception &) {
+            el.quit();
+        });
+
+        el.exec();
     }
 };
 
