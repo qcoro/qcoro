@@ -50,6 +50,8 @@ QCoro::Task<void> getUserDetails(UserID userId) {
 
 ## `then()` continuation
 
+!!! note "This feature is available since QCoro 0.5.0"
+
 Sometimes it's not possible to `co_await` a coroutine, for example when calling a coroutine from a
 reimplementation of a virtual function from a 3rd party library, where we cannot change the signature
 of that function to be a coroutine (e.g. a reimplementation of `QAbstractItemModel::data()`).
