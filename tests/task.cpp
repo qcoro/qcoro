@@ -251,16 +251,57 @@ private:
     }
 
     QCoro::Task<> testThenExceptionPropagation_coro(QCoro::TestContext) {
-        //context.setShouldNotSuspend();
+        QCORO_VERIFY_EXCEPTION_THROWN(
+            co_await []() -> QCoro::Task<int> {
+                co_await timer();
+                throw std::runtime_error("Test!");
+                co_return 42;
+            }().then([](int) -> QCoro::Task<> {
+                QCORO_FAIL("The then() callback should never be called");
+                co_return;
+            }),
+            std::runtime_error);
+    }
+
+    QCoro::Task<> testThenError_coro(QCoro::TestContext) {
+        bool exceptionThrown = false;
 
         co_await []() -> QCoro::Task<int> {
             co_await timer();
             throw std::runtime_error("Test!");
             co_return 42;
         }().then([](int) -> QCoro::Task<> {
-            QCORO_FAIL("The then callback should never be called!");
-            co_return;
-        });
+                QCORO_FAIL("The then() callback should not be called");
+            },
+            [&exceptionThrown](const std::exception &) {
+                exceptionThrown = true;
+            }
+        );
+
+        QCORO_VERIFY(exceptionThrown);
+    }
+
+    QCoro::Task<> testThenErrorWithValue_coro(QCoro::TestContext) {
+        bool exceptionThrown = false;
+        bool thenCalled = false;
+
+        const int result = co_await []() -> QCoro::Task<> {
+            co_await timer();
+            throw std::runtime_error("Test!");
+        }().then([&thenCalled]() -> QCoro::Task<int> {
+                thenCalled = true;
+                co_return 42;
+            },
+            [&exceptionThrown](const std::exception &) {
+                exceptionThrown = true;
+            }
+        );
+
+        // We handled an exception, so there's no error and it should
+        // be default-constructed.
+        QCORO_COMPARE(result, 0);
+        QCORO_VERIFY(!thenCalled);
+        QCORO_VERIFY(exceptionThrown);
     }
 
 private Q_SLOTS:
@@ -281,6 +322,8 @@ private Q_SLOTS:
     addTest(ThenReturnValueSync)
     addTest(ThenScopeAwait)
     addTest(ThenExceptionPropagation)
+    addTest(ThenError)
+    addTest(ThenErrorWithValue)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
@@ -387,6 +430,51 @@ private Q_SLOTS:
         QEventLoop el;
 
         timerWithValue(10ms).then(timer).then([&el]() {
+            el.quit();
+        });
+
+        el.exec();
+    }
+
+    void testThenErrorInCallback() {
+        QEventLoop el;
+        QTimer::singleShot(5s, &el, [&el]() {
+            el.quit();
+            QFAIL("Timeout waiting for coroutine");
+        });
+
+        []() -> QCoro::Task<> {
+            co_await timer();
+        }().then([]() {
+            throw std::runtime_error("Test!");
+        }, [](const std::exception &) {
+            QFAIL("Continuation exception should not be handled by the same error handled");
+        }).then([]() {
+            QFAIL("Second then continuation should not be called.");
+        }, [&el](const std::exception &) {
+            el.quit();
+        });
+
+        el.exec();
+    }
+
+    void testThenExceptionInError() {
+        QEventLoop el;
+        QTimer::singleShot(5s, &el, [&el]() {
+            el.quit();
+            QFAIL("Timeout waiting for coroutine");
+        });
+
+        []() -> QCoro::Task<> {
+            co_await timer();
+            throw std::runtime_error("Test!");
+        }().then([]() {
+            QFAIL("The then() continuation should not be called");
+        }, [](const std::exception &) {
+            throw std::runtime_error("Another test!");
+        }).then([]() {
+            QFAIL("Second then() continuation should not be called");
+        }, [&el](const std::exception &) {
             el.quit();
         });
 
