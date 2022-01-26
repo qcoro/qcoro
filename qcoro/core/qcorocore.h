@@ -3,9 +3,12 @@
 // SPDX-License-Identifier: MIT
 
 #include "config.h"
+#include <qglobal.h>
 
 #include "qcoroiodevice.h"
-#include "qcoroprocess.h"
+#if !QT_CONFIG(process)
+#  include "qcoroprocess.h"
+#endif
 #include "qcorosignal.h"
 #include "qcorotimer.h"
 

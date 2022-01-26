@@ -4,7 +4,11 @@
 
 #pragma once
 
+#include <qglobal.h>
+
 #include "task.h"
 #include "qcorocore.h"
-#include "qcorodbus.h"
+#if defined(QT_DBUS_LIB)
+#  include "qcorodbus.h"
+#endif
 #include "qcoronetwork.h"
