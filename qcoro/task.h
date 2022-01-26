@@ -288,12 +288,12 @@ public:
         mValue = value;
     }
 
-    template<typename U> requires concepts::constructible_from<T, U>
+    template<typename U> requires QCoro::concepts::constructible_from<T, U>
     void return_value(U &&value) noexcept {
         mValue = std::move(value);
     }
 
-    template<typename U> requires concepts::constructible_from<T, U>
+    template<typename U> requires QCoro::concepts::constructible_from<T, U>
     void return_value(const U &value) noexcept {
         mValue = value;
     }
