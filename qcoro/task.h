@@ -700,27 +700,34 @@ namespace detail {
  * QFunctorSlotObjectWithNoArgs until after the event loop quits.
  */
 template<typename Coroutine>
-Task<> runCoroutine(QEventLoop &loop, Coroutine &&coroutine) {
+Task<> runCoroutine(QEventLoop &loop, bool &startLoop, Coroutine &&coroutine) {
     co_await coroutine;
+    startLoop = false;
     loop.quit();
 }
 
 template<typename T, typename Coroutine>
-Task<> runCoroutine(QEventLoop &loop, T &result, Coroutine &&coroutine) {
+Task<> runCoroutine(QEventLoop &loop, bool &startLoop, T &result, Coroutine &&coroutine) {
     result = co_await coroutine;
+    startLoop = false;
     loop.quit();
 }
 
 template<typename T, typename Coroutine>
 T waitFor(Coroutine &&coro) {
     QEventLoop loop;
+    bool startLoop = true; // for early returns: calling quit() before exec() still starts the loop
     if constexpr (std::is_void_v<T>) {
-        runCoroutine(loop, std::forward<Coroutine>(coro));
-        loop.exec();
+        runCoroutine(loop, startLoop, std::forward<Coroutine>(coro));
+        if (startLoop) {
+            loop.exec();
+        }
     } else {
         T result;
-        runCoroutine(loop, result, std::forward<Coroutine>(coro));
-        loop.exec();
+        runCoroutine(loop, startLoop, result, std::forward<Coroutine>(coro));
+        if (startLoop) {
+            loop.exec();
+        }
         return result;
     }
 }

@@ -376,6 +376,17 @@ private Q_SLOTS:
         QCOMPARE(result, 42);
     }
 
+    void testEarlyReturnWaitFor() {
+        QCoro::waitFor([]() -> QCoro::Task<> { co_return; }());
+    }
+
+    void testEarlyReturnWaitForWithValue() {
+        const auto result = QCoro::waitFor([]() -> QCoro::Task<int> {
+            co_return 42;
+        }());
+        QCOMPARE(result, 42);
+    }
+
     void testIgnoredVoidTaskResult() {
         QEventLoop el;
         ignoreCoroutineResult(el, [&el]() -> QCoro::Task<> {
