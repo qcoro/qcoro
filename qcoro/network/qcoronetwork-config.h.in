@@ -1,0 +1,4 @@
+#pragma once
+
+// whether QtNetwork is built with localserver feature
+#cmakedefine QCORONETWORK_WITH_LOCALSERVER

@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/qcoro-config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/qcoro-config.h
+)
+
 add_qcoro_library(
     NAME Coro
     INTERFACE
@@ -23,6 +28,13 @@ add_qcoro_library(
 install(
     FILES "QCoroMacros.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${QCORO_TARGET_PREFIX}Coro/"
+    COMPONENT Devel
+)
+
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/qcoro-config.h
+    DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/qcoro
+    COMPONENT Devel
 )
 
 ############################

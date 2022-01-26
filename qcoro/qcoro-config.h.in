@@ -1,0 +1,6 @@
+#pragma once
+
+// Whether QCoro is built with QtDBus support
+#cmakedefine QCORO_WITH_QTDBUS
+// Whether QCoro is built with QtNetwork support
+#cmakedefine QCORO_WITH_QTNETWORK

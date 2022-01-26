@@ -2,14 +2,15 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "config.h"
+#include "qcorocore-config.h"
 
 #include "qcoroiodevice.h"
+#ifdef QCOROCORE_WITH_PROCESS
 #include "qcoroprocess.h"
+#endif
 #include "qcorosignal.h"
 #include "qcorotimer.h"
-
-#ifdef QCORO_QT_HAS_COMPAT_ABI
-    #include "qcorofuture.h"
+#ifdef QCOROCORE_WITH_FUTURE
+#include "qcorofuture.h"
 #endif
 

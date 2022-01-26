@@ -1,0 +1,6 @@
+#pragma once
+
+// Whether QtCore is built with the "process" feature
+#cmakedefine QCOROCORE_WITH_PROCESS
+// Whether QtCore is built with the "future" feature
+#cmakedefine QCOROCORE_WITH_FUTURE

@@ -12,6 +12,7 @@ include(FeatureSummary)
 # Custom includes
 include(GenerateHeaders)
 include(AddQCoroLibrary)
+include(CheckQtFeature)
 
 #-----------------------------------------------------------#
 # Options
@@ -22,11 +23,7 @@ add_feature_info(Examples QCORO_BUILD_EXAMPLES "Build examples")
 option(QCORO_ENABLE_ASAN "Build with AddressSanitizer" OFF)
 add_feature_info(Asan QCORO_ENABLE_ASAN "Build with AddressSanitizer")
 
-if(WIN32 OR APPLE OR ANDROID)
-    option(QCORO_WITH_QTDBUS "Build QtDBus support" OFF)
-else()
-    option(QCORO_WITH_QTDBUS "Build QtDBus support" ON)
-endif()
+option(QCORO_WITH_QTDBUS "Build QtDBus support" ON)
 add_feature_info(QtDBus QCORO_WITH_QTDBUS "Build QtDBus support")
 option(QCORO_WITH_QTNETWORK "Build QtNetwork support" ON)
 add_feature_info(QtNetwork QCORO_WITH_QTNETWORK "Build QtNetwork support")
@@ -99,11 +96,6 @@ else()
     set(QT_VERSION_MAJOR ${USE_QT_VERSION})
 endif()
 
-configure_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/config.h
-)
-
 #-----------------------------------------------------------#
 # Definitions
 #-----------------------------------------------------------#
@@ -131,7 +123,7 @@ endif()
 include(CMakePackageConfigHelpers)
 
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/config.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/config.h
     DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/qcoro
     COMPONENT Devel
 )
