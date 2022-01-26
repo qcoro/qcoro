@@ -62,6 +62,7 @@ qcoro_enable_coroutines()
 # Dependencies
 #-----------------------------------------------------------#
 
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
 set(REQUIRED_QT_COMPONENTS Core)
