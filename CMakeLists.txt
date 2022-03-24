@@ -32,33 +32,6 @@ option(QCORO_WITH_QTNETWORK "Build QtNetwork support" ON)
 add_feature_info(QtNetwork QCORO_WITH_QTNETWORK "Build QtNetwork support")
 
 #-----------------------------------------------------------#
-# Compiler Settings
-#-----------------------------------------------------------#
-
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_AUTOMOC ON)
-
-if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
-    # Disable warning C5054: "operator '&': deprecated between enumerations of different types" caused by QtWidgets/qsizepolicy.h
-    # Disable warning C4127: "conditional expression is constant" caused by QtCore/qiterable.h
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5054 /wd4127")
-else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -pedantic")
-endif()
-
-if (QCORO_ENABLE_ASAN)
-    if (MSVC)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
-    endif()
-endif()
-
-include(qcoro/QCoroMacros.cmake)
-qcoro_enable_coroutines()
-
-#-----------------------------------------------------------#
 # Dependencies
 #-----------------------------------------------------------#
 
@@ -103,6 +76,33 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
 )
+
+#-----------------------------------------------------------#
+# Compiler Settings
+#-----------------------------------------------------------#
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_AUTOMOC ON)
+
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
+    # Disable warning C5054: "operator '&': deprecated between enumerations of different types" caused by QtWidgets/qsizepolicy.h
+    # Disable warning C4127: "conditional expression is constant" caused by QtCore/qiterable.h
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5054 /wd4127")
+else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -pedantic")
+endif()
+
+if (QCORO_ENABLE_ASAN)
+    if (MSVC)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fsanitize=address")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    endif()
+endif()
+
+include(qcoro/QCoroMacros.cmake)
+qcoro_enable_coroutines()
 
 #-----------------------------------------------------------#
 # Definitions
