@@ -9,10 +9,6 @@ include(GNUInstallDirs)
 include(CTest)
 include(FeatureSummary)
 
-# Custom includes
-include(GenerateHeaders)
-include(AddQCoroLibrary)
-
 #-----------------------------------------------------------#
 # Options
 #-----------------------------------------------------------#

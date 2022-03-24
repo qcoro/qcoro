@@ -4,6 +4,7 @@
 
 include(GenerateHeaders)
 include(GenerateModuleConfigFile)
+include(ECMGeneratePriFile)
 
 function(add_qcoro_library)
     function(prefix_libraries)
@@ -21,6 +22,28 @@ function(add_qcoro_library)
         endforeach()
 
         set(${prf_OUTPUT} ${_libs} PARENT_SCOPE)
+    endfunction()
+
+    function(process_qmake_deps)
+        set(oneValueArgs PREFIX OUTPUT)
+        set(multiValueArgs LIBRARIES)
+        cmake_parse_arguments(pqd "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+        set(_libs_priv FALSE)
+        set(_deps)
+        foreach (dep ${pqd_LIBRARIES})
+            if ("${dep}" MATCHES "PUBLIC|INTERFACE|public|interface")
+                set(_libs_priv FALSE)
+                continue()
+            elseif ("${dep}" MATCHES "PRIVATE|private")
+                set(_libs_priv TRUE)
+                continue()
+            endif()
+            if (NOT _libs_priv)
+                set(_deps "${_deps} ${pqd_PREFIX}${dep}")
+            endif()
+        endforeach()
+        set(${pqd_OUTPUT} ${_deps} PARENT_SCOPE)
     endfunction()
 
     set(params INTERFACE NO_CMAKE_CONFIG)
@@ -90,13 +113,39 @@ function(add_qcoro_library)
     )
 
     if (NOT LIB_NO_CMAKE_CONFIG)
-        generate_module_config_file(
+        generate_cmake_module_config_file(
+            NAME ${LIB_NAME}
             TARGET_NAME ${target_name}
-            LIB_NAME ${LIB_NAME}
             QT_DEPENDENCIES ${LIB_QT_LINK_LIBRARIES}
             QCORO_DEPENDENCIES ${LIB_QCORO_LINK_LIBRARIES}
         )
     endif()
+
+    string(TOLOWER "${LIB_QT_LINK_LIBRARIES}" lc_qt_link_libraries)
+    process_qmake_deps(
+        OUTPUT qmake_qt_deps
+        LIBRARIES ${lc_qt_link_libraries}
+    )
+
+    process_qmake_deps(
+        PREFIX QCoro
+        OUTPUT qmake_qcoro_deps
+        LIBRARIES ${LIB_QCORO_LINK_LIBRARIES}
+    )
+
+    set(egp_INTERFACE)
+    if (LIB_INTERFACE)
+        set(egp_INTERFACE "INTERFACE")
+    endif()
+
+    ecm_generate_pri_file(
+        ${egp_INTERFACE}
+        BASE_NAME QCoro${LIB_NAME}
+        LIB_NAME ${target_name}
+        VERSION ${qcoro_VERSION}
+        INCLUDE_INSTALL_DIRS ${QCORO_INSTALL_INCLUDEDIR}/qcoro;${QCORO_INSTALL_INCLUDEDIR}/QCoro
+        DEPS "${qmake_qt_deps} ${qmake_qcoro_deps}"
+    )
 
     install(
         TARGETS ${target_name}
@@ -123,6 +172,11 @@ function(add_qcoro_library)
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${target_name}"
         FILE "${target_name}Targets.cmake"
         NAMESPACE ${QCORO_TARGET_PREFIX}::
+        COMPONENT Devel
+    )
+    install(
+        FILES "${CMAKE_CURRENT_BINARY_DIR}/qt_QCoro${LIB_NAME}.pri"
+        DESTINATION "${ECM_MKSPECS_INSTALL_DIR}"
         COMPONENT Devel
     )
 endfunction()

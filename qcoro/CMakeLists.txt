@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
+# Custom includes
+include(GenerateHeaders)
+include(AddQCoroLibrary)
+
 include(CMakePackageConfigHelpers)
 
 add_qcoro_library(
@@ -32,7 +36,7 @@ configure_package_config_file(
 )
 
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}ConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/QCoro${QT_VERSION_MAJOR}CoroConfigVersion.cmake"
     VERSION ${qcoro_VERSION}
     COMPATIBILITY SameMajorVersion
 )
