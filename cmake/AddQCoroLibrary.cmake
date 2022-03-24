@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 include(GenerateHeaders)
-include(CMakePackageConfigHelpers)
+include(GenerateModuleConfigFile)
 
 function(add_qcoro_library)
     function(prefix_libraries)
@@ -23,7 +23,7 @@ function(add_qcoro_library)
         set(${prf_OUTPUT} ${_libs} PARENT_SCOPE)
     endfunction()
 
-    set(params INTERFACE)
+    set(params INTERFACE NO_CMAKE_CONFIG)
     set(oneValueArgs NAME)
     set(multiValueArgs SOURCES CAMELCASE_HEADERS HEADERS QCORO_LINK_LIBRARIES QT_LINK_LIBRARIES)
 
@@ -89,18 +89,14 @@ function(add_qcoro_library)
         ORIGINAL_HEADERS_VAR source_HEADERS
     )
 
-    configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/QCoro${LIB_NAME}Config.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/${target_name}Config.cmake"
-        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${target_name}
-        PATH_VARS CMAKE_INSTALL_INCLUDEDIR
-    )
-
-    write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/${target_name}ConfigVersion.cmake"
-        VERSION ${qcoro_VERSION}
-        COMPATIBILITY SameMajorVersion
-    )
+    if (NOT LIB_NO_CMAKE_CONFIG)
+        generate_module_config_file(
+            TARGET_NAME ${target_name}
+            LIB_NAME ${LIB_NAME}
+            QT_DEPENDENCIES ${LIB_QT_LINK_LIBRARIES}
+            QCORO_DEPENDENCIES ${LIB_QCORO_LINK_LIBRARIES}
+        )
+    endif()
 
     install(
         TARGETS ${target_name}

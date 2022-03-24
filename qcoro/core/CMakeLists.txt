@@ -18,5 +18,7 @@ add_qcoro_library(
         QCoroFuture
     QT_LINK_LIBRARIES
         PUBLIC Core
+    QCORO_LINK_LIBRARIES
+        PUBLIC Coro
 )
 

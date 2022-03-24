@@ -16,8 +16,8 @@ add_qcoro_library(
         QCoroNetworkReply
         QCoroTcpServer
     QCORO_LINK_LIBRARIES
-        PUBLIC Core
+        PUBLIC Coro Core
     QT_LINK_LIBRARIES
-        PUBLIC Network
+        PUBLIC Core Network
 )
 

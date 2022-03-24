@@ -11,8 +11,8 @@ add_qcoro_library(
         QCoroDBusPendingCall
         QCoroDBusPendingReply
     QCORO_LINK_LIBRARIES
-        PUBLIC Core
+        PUBLIC Coro Core
     QT_LINK_LIBRARIES
-        PUBLIC DBus
+        PUBLIC Core DBus
 )
 
