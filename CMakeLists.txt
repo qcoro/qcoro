@@ -49,8 +49,7 @@ if (BUILD_TESTING)
 endif()
 
 set(MIN_REQUIRED_QT5_VERSION "5.12")
-# 6.1.2 fixes QTBUG-93270 which prevents compiling against Qt6 with C++20 enabled
-set(MIN_REQUIRED_QT6_VERSION "6.1.2")
+set(MIN_REQUIRED_QT6_VERSION "6.2.0")
 
 
 if (NOT USE_QT_VERSION)

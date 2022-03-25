@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest ]
-        qt_version: [ 5.12.1, 6.1.2 ]
+        qt_version: [ 5.12.1, 6.2.0 ]
         compiler: [ gcc-10, clang-11, msvc ]
         exclude:
           - os: ubuntu-latest
@@ -87,7 +87,7 @@ jobs:
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake --build . --config $BUILD_TYPE --parallel 4
+      run: cmake --build . --config $BUILD_TYPE --parallel 4 --verbose
 
     - name: Test
       working-directory: ${{github.workspace}}/build
