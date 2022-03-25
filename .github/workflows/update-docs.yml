@@ -36,9 +36,11 @@ jobs:
                 var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
                 g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
               })();</script><!-- End Matomo Code -->{% endblock %}" > docs/overrides/main.html
-          mkdocs build -d /tmp/site
+          mkdocs build /tmp/site
       - name: Deploy Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: /tmp/site
+          cname: qcoro.dvratil.cz
+
