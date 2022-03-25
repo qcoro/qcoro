@@ -20,6 +20,11 @@ def define_env(env):
 target_link_libraries(myapp QCoro::{module})
 ```
 """)
+        out += row("QMake", f"""
+```cpp
+QT += QCoro{module}
+```
+""")
         if inherits:
             out += row("Inherits", inheritsLink(inherits))
 

@@ -23,7 +23,7 @@ make
 sudo make install
 ```
 
-## Add it to your CMake
+## CMake
 
 Depending on whether you want to use Qt5 or Qt6 build of QCoro, you should use `QCoro5` or QCoro6` in your
 CMake code, respectively. The example below is assuming Qt6:
@@ -44,4 +44,22 @@ Note the missing Qt version number in the `QCoro` target namespace: QCoro provid
 versioned (`QCoro5` and `QCoro6`) namespaces as well as version-less namespace, which is
 especially useful for transitioning codebase from Qt5 to Qt6.
 
+## QMake
+
+Using QCoro with QMake projects (`.pro`) is simple: just add the required QCoro modules to the `QT`
+variable:
+
+```
+QT += QCoroCore QCoroNetwork QCoroDBus
+# Enable C++20
+CONFIG += c+=20
+# Enable coroutine support in the compiler
+QMAKE_CXXFLAGS += -fcoroutines
+```
+
+You don't need to worry about Qt5 vs Qt6, qmake will pick up the correct build of QCoro depending
+on whether you are using QMake for Qt5 or Qt6.
+
+Currently it's necessary to manually enable C++20 and coroutine support (unless that's already
+default in your system/compiler settings).
 
