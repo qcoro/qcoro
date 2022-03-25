@@ -6,7 +6,7 @@ inputs:
     required: true
   qt_modules:
     description: 'List of Qt modules to intall'
-    default: qtbase icu
+    default: qtbase icu qttools
   compiler:
     description: 'Name of the compiler to use'
     required: true
