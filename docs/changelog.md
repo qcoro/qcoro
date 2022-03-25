@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 Daniel Vrátil <dvratil@kde.org>
+
+SPDX-License-Identifier: GFDL-1.3-or-later
+-->
+
 # Changelog
 
 ## 0.4.0 (2022-01-06)

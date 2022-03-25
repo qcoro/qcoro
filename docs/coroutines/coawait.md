@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2022 Daniel Vrátil <dvratil@kde.org>
+
+SPDX-License-Identifier: GFDL-1.3-or-later
+-->
+
 # `co_await` Explained
 
 The following paragraphs try to explain what is a coroutine and what `co_await` does in some
