@@ -26,10 +26,7 @@ runs:
           echo "CMAKE_PREFIX_PATH=$QT_BASE_DIR\\lib\\cmake" >> $GITHUB_ENV
         else
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential dbus dbus-x11 libgl-dev libegl-dev
-          if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
-            sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
-          fi
+          sudo apt-get install -y --no-install-recommends build-essential dbus dbus-x11 libgl-dev libegl-dev libxcb-xkb-dev libstdc++-10-dev
           aqt install -O /opt/qt -m ${{ inputs.qt_modules }} --noarchives ${{ inputs.qt_version }} linux desktop gcc_64
 
           QT_BASE_DIR="/opt/qt/${{ inputs.qt_version }}/gcc_64/"
