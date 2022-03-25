@@ -43,4 +43,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           cname: qcoro.dvratil.cz
+          exclude_assets: '__pycache__'
 
