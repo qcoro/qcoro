@@ -37,19 +37,8 @@ jobs:
                 g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
               })();</script><!-- End Matomo Code -->{% endblock %}" > docs/overrides/main.html
           mkdocs build -d /tmp/site
-      - name: Commit files
-        run: |
-          git fetch origin gh-pages
-          git checkout gh-pages
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git rm -r assets
-          cp -r /tmp/site/* ./
-          git add -A
-          git commit -m "Update docs from main branch ${{ github.sha }}" -a
-      - name: Publish
-        if: success()
-        uses: ad-m/github-push-action@master
+      - name: Deploy Github Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
+          publish_dir: /tmp/site
