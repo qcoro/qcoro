@@ -34,6 +34,8 @@ add_feature_info(QtNetwork QCORO_WITH_QTNETWORK "Build QtNetwork support")
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 
+include(cmake/CheckAtomic.cmake)
+
 set(REQUIRED_QT_COMPONENTS Core)
 if (QCORO_WITH_QTDBUS)
     list(APPEND REQUIRED_QT_COMPONENTS DBus)
