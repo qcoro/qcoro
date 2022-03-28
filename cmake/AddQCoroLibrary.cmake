@@ -96,6 +96,10 @@ function(add_qcoro_library)
     target_link_libraries(${target_name} ${qcoro_LIBS})
     target_link_libraries(${target_name} ${qt_LIBS})
 
+    if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB AND NOT LIB_INTERFACE)
+        target_link_libraries(${target_name} PUBLIC atomic)
+    endif()
+
     set_target_properties(
         ${target_name}
         PROPERTIES

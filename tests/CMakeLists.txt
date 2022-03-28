@@ -61,6 +61,9 @@ function(qcoro_add_network_test _name)
         Threads::Threads
         ${TEST_LINK_LIBRARIES}
     )
+    if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB)
+        target_link_libraries(test-${_name} atomic)
+    endif()
     add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
 
