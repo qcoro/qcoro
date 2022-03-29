@@ -53,8 +53,9 @@ private Q_SLOTS:
         QNetworkAccessManager nam;
         QEventLoop el;
 
-        auto *reply = nam.get(QNetworkRequest{url.arg(mServer.port())});
-        connect(reply, &QNetworkReply::finished, &el, &QEventLoop::quit);
+        auto reply = std::unique_ptr<QNetworkReply>(
+            nam.get(QNetworkRequest{url.arg(mServer.port())}));
+        connect(reply.get(), &QNetworkReply::finished, &el, &QEventLoop::quit);
 
         QTimer::singleShot(timeout, &el, [&el]() mutable { el.exit(1); });
 

@@ -447,6 +447,20 @@ private Q_SLOTS:
         el.exec();
     }
 
+    void testThenDiscardsReturnValue() {
+        QEventLoop el;
+        bool called = false;
+
+        timerWithValue(42).then([&]() {
+            el.quit();
+            called = true;
+        });
+
+        el.exec();
+
+        QVERIFY(called);
+    }
+
     void testThenScope() {
         QEventLoop el;
         thenScopeTestFunc(&el);

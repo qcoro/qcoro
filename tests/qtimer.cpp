@@ -56,12 +56,26 @@ private:
         co_await timer;
     }
 
+    void testThenTriggers_coro(TestLoop &el) {
+        QTimer timer;
+        bool triggered = false;
+        timer.start(10ms);
+        qCoro(timer).waitForTimeout().then([&el, &triggered]() {
+            triggered = true;
+            el.quit();
+        });
+        el.exec();
+        QVERIFY(triggered);
+    }
+
 private Q_SLOTS:
     addTest(Triggers)
     addTest(QCoroWrapperTriggers)
     addTest(DoesntBlockEventLoop)
     addTest(DoesntCoAwaitInactiveTimer)
     addTest(DoesntCoAwaitNullTimer)
+
+    addThenTest(Triggers)
 };
 
 QTEST_GUILESS_MAIN(QCoroTimerTest)

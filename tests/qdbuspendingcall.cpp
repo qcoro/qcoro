@@ -36,6 +36,23 @@ private:
         QCORO_COMPARE(reply.value(), QStringLiteral("Hello there!"));
     }
 
+    void testThenReturnsResult_coro(TestLoop &el) {
+        QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
+                             DBusServer::interfaceName);
+        QVERIFY(iface.isValid());
+
+        const QDBusPendingCall call =
+            iface.asyncCall(QStringLiteral("ping"), QStringLiteral("Hello there!"));
+        bool called = false;
+        qCoro(call).waitForFinished().then([&](const QDBusMessage &msg) {
+            called = true;
+            el.quit();
+            QCOMPARE(QDBusReply<QString>(msg).value(), QStringLiteral("Hello there!"));
+        });
+        el.exec();
+        QVERIFY(called);
+    }
+
     QCoro::Task<> testDoesntBlockEventLoop_coro(QCoro::TestContext) {
         QCoro::EventLoopChecker eventLoopResponsive;
         QDBusInterface iface(DBusServer::serviceName, DBusServer::objectPath,
@@ -85,7 +102,7 @@ private Q_SLOTS:
     }
 
     addTest(Triggers)
-    addTest(ReturnsResult)
+    addCoroAndThenTests(ReturnsResult)
     addTest(DoesntBlockEventLoop)
     addTest(DoesntCoAwaitFinishedCall)
 };

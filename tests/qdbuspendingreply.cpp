@@ -39,6 +39,21 @@ private:
         QCORO_VERIFY(resp.isFinished());
     }
 
+    void testThenQCoroWrapperTriggers_coro(TestLoop &el) {
+        cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
+                                         QDBusConnection::sessionBus());
+        QVERIFY(iface.isValid());
+
+        bool called = false;
+        qCoro(iface.foo()).waitForFinished().then([&](QDBusPendingReply<> reply) {
+            called = true;
+            el.quit();
+            QVERIFY(reply.isFinished());
+        });
+        el.exec();
+        QVERIFY(called);
+    }
+
     QCoro::Task<> testReturnsResult_coro(QCoro::TestContext) {
         cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
                                          QDBusConnection::sessionBus());
@@ -47,6 +62,22 @@ private:
         const QString reply = co_await iface.ping("Hello there!");
 
         QCORO_COMPARE(reply, QStringLiteral("Hello there!"));
+    }
+
+    void testThenReturnsResult_coro(TestLoop &el) {
+        cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
+                                         QDBusConnection::sessionBus());
+        QVERIFY(iface.isValid());
+
+        bool called = false;
+        qCoro(iface.ping("Hello there!")).waitForFinished().then(
+            [&](const QDBusPendingReply<QString> &reply) {
+                called = true;
+                el.quit();
+                QCOMPARE(reply.value(), QStringLiteral("Hello there!"));
+            });
+        el.exec();
+        QVERIFY(called);
     }
 
     QCoro::Task<> testReturnsBlockingResult_coro(QCoro::TestContext) {
@@ -87,6 +118,23 @@ private:
         QCORO_VERIFY(reply.isValid());
     }
 
+    void testThenDoesntCoAwaitFinishedCall_coro(TestLoop &el) {
+        cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
+                                         QDBusConnection::sessionBus());
+        QVERIFY(iface.isValid());
+
+        auto call = iface.foo();
+        call.waitForFinished();
+
+        bool called = false;
+        qCoro(call).waitForFinished().then([&](QDBusPendingReply<>) {
+            called = true;
+            el.quit();
+        });
+        el.exec();
+        QVERIFY(called);
+    }
+
     QCoro::Task<> testHandlesMultipleArguments_coro(QCoro::TestContext) {
         cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
                                          QDBusConnection::sessionBus());
@@ -98,6 +146,23 @@ private:
         QCORO_VERIFY(reply.isFinished());
         QCORO_COMPARE(reply.argumentAt<0>(), QStringLiteral("Hello World!"));
         QCORO_COMPARE(reply.argumentAt<1>(), true);
+    }
+
+    void testThenHandlesMultipleArguments_coro(TestLoop &el) {
+        cz::dvratil::qcorodbustest iface(DBusServer::serviceName, DBusServer::objectPath,
+                                         QDBusConnection::sessionBus());
+        QVERIFY(iface.isValid());
+
+        QDBusPendingReply<QString, bool> reply = iface.asyncCall("blockAndReturnMultipleArguments", 1);
+        bool called = false;
+        qCoro(reply).waitForFinished().then([&](const QDBusPendingReply<QString, bool> &reply) {
+            called = true;
+            el.quit();
+            QCOMPARE(reply.argumentAt<0>(), QStringLiteral("Hello World!"));
+            QCOMPARE(reply.argumentAt<1>(), true);
+        });
+        el.exec();
+        QVERIFY(called);
     }
 
 private Q_SLOTS:
@@ -121,12 +186,12 @@ private Q_SLOTS:
     }
 
     addTest(Triggers)
-    addTest(QCoroWrapperTriggers)
-    addTest(ReturnsResult)
+    addCoroAndThenTests(QCoroWrapperTriggers)
+    addCoroAndThenTests(ReturnsResult)
     addTest(ReturnsBlockingResult)
     addTest(DoesntBlockEventLoop)
-    addTest(DoesntCoAwaitFinishedCall)
-    addTest(HandlesMultipleArguments)
+    addCoroAndThenTests(DoesntCoAwaitFinishedCall)
+    addCoroAndThenTests(HandlesMultipleArguments)
 };
 
 DBUS_TEST_MAIN(QCoroDBusPendingCallTest)
