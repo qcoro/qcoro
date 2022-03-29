@@ -44,6 +44,19 @@ QCoro::Task<T> thenScopeTestFuncWithValue(T value) {
     });
 }
 
+class ImplicitConversionBar {
+public:
+    int number;
+};
+class ImplicitConversionFoo {
+public:
+    ImplicitConversionFoo();
+    ImplicitConversionFoo(ImplicitConversionBar bar)
+        : string(QString::number(bar.number)) {}
+
+    QString string;
+};
+
 } // namespace
 
 class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
@@ -304,6 +317,23 @@ private:
         QCORO_VERIFY(exceptionThrown);
     }
 
+    void testThenImplicitArgumentConversion_coro(TestLoop &el) {
+        QTimer test;
+        QString result;
+        qCoro(test).waitForTimeout().then([]() -> QCoro::Task<ImplicitConversionBar> {
+            ImplicitConversionBar bar{42};
+            co_await timer(10ms);
+            co_return bar;
+        }).then([&](ImplicitConversionFoo foo) {
+            result = foo.string;
+            el.quit();
+        });
+        test.start(10ms);
+        el.exec();
+
+        QCOMPARE(result, QStringLiteral("42"));
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -324,6 +354,7 @@ private Q_SLOTS:
     addTest(ThenExceptionPropagation)
     addTest(ThenError)
     addTest(ThenErrorWithValue)
+    addThenTest(ImplicitArgumentConversion)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
