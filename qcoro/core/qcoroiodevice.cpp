@@ -85,23 +85,80 @@ QCoroIODevice::ReadAllOperation::ReadAllOperation(QIODevice *device)
 QCoroIODevice::ReadAllOperation::ReadAllOperation(QIODevice &device)
     : ReadAllOperation(&device) {}
 
+
+QCoroIODevice::WaitForReadyReadOperation::WaitForReadyReadOperation(QIODevice *device, int timeout_msecs)
+    : WaitOperationBase(device, timeout_msecs) {}
+
+bool QCoroIODevice::WaitForReadyReadOperation::await_ready() const noexcept {
+    return mObj->waitForReadyRead(0);
+}
+
+void QCoroIODevice::WaitForReadyReadOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) {
+    mConn = QObject::connect(mObj, &QIODevice::readyRead,
+                             [this, awaitingCoroutine]() {
+                                resume(awaitingCoroutine);
+                             });
+}
+
+QCoroIODevice::WaitForBytesWrittenOperation::WaitForBytesWrittenOperation(QIODevice *device, int timeout_msecs)
+    : WaitOperationBase(device, timeout_msecs) {}
+
+bool QCoroIODevice::WaitForBytesWrittenOperation::await_ready() const noexcept {
+    return mObj->waitForBytesWritten(0);
+}
+
+void QCoroIODevice::WaitForBytesWrittenOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) {
+    mConn = QObject::connect(mObj, &QIODevice::bytesWritten,
+                             [this, awaitingCoroutine]() {
+                                resume(awaitingCoroutine);
+                            });
+}
+
 QCoroIODevice::QCoroIODevice(QIODevice *device)
     : mDevice{device}
 {}
 
-QCoroIODevice::ReadOperation QCoroIODevice::readAll() {
-    return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
+QCoro::Task<QByteArray> QCoroIODevice::readAll(std::chrono::milliseconds timeout) {
+    if (!co_await waitForReadyRead(timeout)) {
+        co_return QByteArray{};
+    }
+
+    co_return mDevice->readAll();
 }
 
-QCoroIODevice::ReadOperation QCoroIODevice::read(qint64 maxSize) {
-    return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->read(maxSize); });
+QCoro::Task<QByteArray> QCoroIODevice::read(qint64 maxSize, std::chrono::milliseconds timeout) {
+    if (!co_await waitForReadyRead(timeout)) {
+        co_return QByteArray{};
+    }
+
+    co_return mDevice->read(maxSize);
 }
 
-QCoroIODevice::ReadOperation QCoroIODevice::readLine(qint64 maxSize) {
-    return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
+QCoro::Task<QByteArray> QCoroIODevice::readLine(qint64 maxSize, std::chrono::milliseconds timeout) {
+    if (!co_await waitForReadyRead(timeout)) {
+        co_return QByteArray{};
+    }
+
+    co_return mDevice->readLine(maxSize);
 }
 
 QCoroIODevice::WriteOperation QCoroIODevice::write(const QByteArray &buffer) {
     return WriteOperation(mDevice, buffer);
+}
+
+QCoroIODevice::WaitForReadyReadOperation QCoroIODevice::waitForReadyRead(int timeout_msecs) {
+    return WaitForReadyReadOperation(mDevice, timeout_msecs);
+}
+
+QCoroIODevice::WaitForReadyReadOperation QCoroIODevice::waitForReadyRead(std::chrono::milliseconds timeout) {
+    return waitForReadyRead(timeout.count());
+}
+
+QCoroIODevice::WaitForBytesWrittenOperation QCoroIODevice::waitForBytesWritten(int timeout_msecs) {
+    return WaitForBytesWrittenOperation(mDevice, timeout_msecs);
+}
+
+QCoroIODevice::WaitForBytesWrittenOperation QCoroIODevice::waitForBytesWritten(std::chrono::milliseconds timeout) {
+    return waitForBytesWritten(timeout.count());
 }
 
