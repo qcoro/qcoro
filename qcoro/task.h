@@ -211,7 +211,7 @@ public:
 
     //! \copydoc template<Awaitable T> QCoro::TaskPromiseBase::await_transform(T &&)
     template<Awaitable T>
-    auto await_transform(T &awaitable) {
+    auto &await_transform(T &awaitable) {
         return awaitable;
     }
 
@@ -280,7 +280,7 @@ public:
      *            promise, later can be retrieved by the calling coroutine.
      */
     void return_value(T &&value) noexcept {
-        mValue = std::forward<T>(value);
+        mValue.template emplace<T>(std::forward<T>(value));
     }
 
     //! \copydoc template<typename T> TaskPromise::return_value(T &&value) noexcept
