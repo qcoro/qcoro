@@ -52,39 +52,10 @@ protected:
         std::function<QByteArray(QIODevice *)> mResultCb;
     };
 
-    class WriteOperation : public OperationBase {
-    public:
-        WriteOperation(QIODevice *device, const QByteArray &data);
-        Q_DISABLE_COPY(WriteOperation)
-        QCORO_DEFAULT_MOVE(WriteOperation)
-
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
-        qint64 await_resume() noexcept;
-
-    private:
-        qint64 mBytesToBeWritten = 0;
-        qint64 mBytesWritten = 0;
-    };
-
     class ReadAllOperation final : public ReadOperation {
     public:
         explicit ReadAllOperation(QIODevice *device);
         explicit ReadAllOperation(QIODevice &device);
-    };
-
-    class WaitForReadyReadOperation final : public WaitOperationBase<QIODevice> {
-    public:
-        explicit WaitForReadyReadOperation(QIODevice *device, int timeout_msecs);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
-    };
-
-    class WaitForBytesWrittenOperation final : public WaitOperationBase<QIODevice> {
-    public:
-        explicit WaitForBytesWrittenOperation(QIODevice *device, int timeout_msecs);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
     };
 
     template<typename T>
@@ -178,7 +149,7 @@ public:
      * [qdoc-qiodevice-write]: https://doc.qt.io/qt-5/qiodevice.html#write-2
      * [qdoc-qiodevice-bytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#bytesWritten
      */
-    WriteOperation write(const QByteArray &buffer);
+    Task<qint64> write(const QByteArray &buffer);
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::waitForReadyRead`][qdoc-qiodevice-waitForReadyRead].
@@ -188,14 +159,14 @@ public:
      *
      * [qdoc-qiodevice-waitForReadyRead]: https://doc.qt.io/qt-5/qiodevice.html#waitForReadyRead
      */
-    WaitForReadyReadOperation waitForReadyRead(std::chrono::milliseconds timeout);
+    Task<bool> waitForReadyRead(std::chrono::milliseconds timeout);
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::waitForReadyRead`][qdoc-qiodevice-waitForReadyRead].
      *
      * [qdoc-qiodevice-waitForReadyRead]: https://doc.qt.io/qt-5/qiodevice.html#waitForReadyRead
      */
-    WaitForReadyReadOperation waitForReadyRead(int timeout_msecs);
+    Task<bool> waitForReadyRead(int timeout_msecs);
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::waitForBytesWritten`][qdoc-qiodevice-waitForBytesWritten].
@@ -205,14 +176,14 @@ public:
      *
      * [qdoc-qiodevice-waitForBytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#waitForBytesWritten
      */
-    WaitForBytesWrittenOperation waitForBytesWritten(std::chrono::milliseconds timeout);
+    Task<std::optional<qint64>> waitForBytesWritten(std::chrono::milliseconds timeout);
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::waitForBytesWritten`][qdoc-qiodevice-waitForBytesWritten].
      *
      * [qdoc-qiodevice-waitForBytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#waitForBytesWritten
      */
-    WaitForBytesWrittenOperation waitForBytesWritten(int timeout_msecs);
+    Task<std::optional<qint64>> waitForBytesWritten(int timeout_msecs);
 
 protected:
     QPointer<QIODevice> mDevice = {};
