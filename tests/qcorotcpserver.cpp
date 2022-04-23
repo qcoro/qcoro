@@ -5,7 +5,7 @@
 #include "testobject.h"
 
 #include "qcoro/network/qcorotcpserver.h"
-#include "qcoro/core/qcoroiodevice.h"
+#include "qcoro/network/qcoroabstractsocket.h"
 
 #include <QTcpServer>
 #include <QTcpSocket>
@@ -36,7 +36,6 @@ private:
                 ok = false;
                 return;
             }
-
             socket.write("Hello World!");
             socket.flush();
             socket.close();
@@ -45,7 +44,6 @@ private:
 
         auto *connection = co_await qCoro(server).waitForNewConnection(10s);
         QCORO_VERIFY(connection != nullptr);
-
         const auto data = co_await qCoro(connection).readAll();
         QCORO_COMPARE(data, QByteArray{"Hello World!"});
 

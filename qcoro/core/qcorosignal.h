@@ -23,7 +23,7 @@ namespace concepts {
 //! Simplistic QObject concept.
 template<typename T>
 concept QObject = requires(T *obj) {
-    requires std::is_base_of_v<QObject, T>;
+    requires std::is_base_of_v<::QObject, T>;
     requires std::is_same_v<decltype(T::staticMetaObject), const QMetaObject>;
 };
 
@@ -60,7 +60,7 @@ public:
 
     QCoroSignal(T *obj, FuncPtr &&funcPtr, std::chrono::milliseconds timeout)
         : mObj(obj), mFuncPtr(std::forward<FuncPtr>(funcPtr)) {
-        if (timeout.count() > 0) {
+        if (timeout.count() > -1) {
             mTimeoutTimer = std::make_unique<QTimer>();
             mTimeoutTimer->setInterval(timeout);
             mTimeoutTimer->setSingleShot(true);
@@ -121,7 +121,8 @@ QCoroSignal(T *, FuncPtr &&, std::chrono::milliseconds) -> QCoroSignal<T, FuncPt
  * arguments, then the result of the coroutine is an empty tuple.
  *
  * If the timeout occurs before the signal is emitted, the result of the
- * coroutine is an empty optional.
+ * coroutine is an empty optional. If the \c timeout is -1 the operation
+ * will never time out.
  */
 template<QCoro::detail::concepts::QObject T, typename FuncPtr>
 inline auto qCoro(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
@@ -145,7 +146,7 @@ inline auto qCoro(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
 template<QCoro::detail::concepts::QObject T, typename FuncPtr>
 inline auto qCoro(T *obj, FuncPtr &&ptr)
     -> QCoro::Task<typename QCoro::detail::QCoroSignal<T, FuncPtr>::result_type::value_type> {
-    auto result = co_await qCoro<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), std::chrono::milliseconds{0});
+    auto result = co_await qCoro<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), std::chrono::milliseconds{-1});
     co_return std::move(*result);
 }
 

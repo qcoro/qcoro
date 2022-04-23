@@ -36,7 +36,7 @@ private:
 public:
     explicit QCoroTimer(QTimer *timer);
 
-    WaitForTimeoutOperation waitForTimeout() const;
+    Task<void> waitForTimeout() const;
 };
 
 template<>

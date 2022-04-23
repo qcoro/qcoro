@@ -43,8 +43,9 @@ private:
 #endif
 
         QProcess process;
-        co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
+        const bool ok = co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
 
+        QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::Running);
 
         process.waitForFinished();
@@ -61,8 +62,9 @@ private:
         process.setProgram(DUMMY_EXEC);
         process.setArguments(DUMMY_ARGS);
 
-        co_await qCoro(process).start();
+        const bool ok = co_await qCoro(process).start();
 
+        QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::Running);
 
         process.waitForFinished();
@@ -72,8 +74,9 @@ private:
         QCoro::EventLoopChecker eventLoopResponsive{1, 0ms};
 
         QProcess process;
-        co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
+        const bool ok = co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
 
+        QCORO_VERIFY(ok);
         QCORO_VERIFY(eventLoopResponsive);
 
         process.waitForFinished();
@@ -88,7 +91,8 @@ private:
         process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 #else
-        co_await qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1));
+        const bool ok = co_await qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1));
+        QCORO_VERIFY(ok);
 #endif
 
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -122,7 +126,7 @@ private:
         ctx.setShouldNotSuspend();
 
         const auto ok = co_await qCoro(process).waitForFinished();
-        QCORO_VERIFY(ok);
+        QCORO_VERIFY(!ok);
     }
 
     QCoro::Task<> testFinishCoAwaitTimeout_coro(QCoro::TestContext) {

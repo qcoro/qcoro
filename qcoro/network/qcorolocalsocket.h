@@ -16,91 +16,100 @@ namespace QCoro::detail {
 using namespace std::chrono_literals;
 
 //! QLocalSocket wrapper with co_awaitable-friendly API.
-class QCoroLocalSocket : private QCoroIODevice {
-    //! An Awaitable that suspends the coroutine until the socket is connected
-    class WaitForConnectedOperation final : public WaitOperationBase<QLocalSocket> {
-    public:
-        explicit WaitForConnectedOperation(QLocalSocket *socket, int timeout_msecs = 30'000);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
-    };
-
-    //! An Awaitable that suspends the coroutine until the socket is disconnected
-    class WaitForDisconnectedOperation final : public WaitOperationBase<QLocalSocket> {
-    public:
-        WaitForDisconnectedOperation(QLocalSocket *socket, int timeout_msecs);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
-    };
-
-    class ReadOperation final : public QCoroIODevice::ReadOperation {
-    public:
-        using QCoroIODevice::ReadOperation::ReadOperation;
-
-        bool await_ready() const noexcept final;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept final;
-
-    private:
-        void finish(std::coroutine_handle<> awaitingCoroutine) final;
-
-        QMetaObject::Connection mStateConn;
-    };
-
+class QCoroLocalSocket : public QCoroIODevice {
 public:
     explicit QCoroLocalSocket(QLocalSocket *socket);
 
-    //! Co_awaitable equivalent  to [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected].
-    WaitForConnectedOperation waitForConnected(int timeout_msecs = 30'000);
-
-    //! Co_awaitable equivalent to [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected].
-    /*!
-     * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
-     * timeout rather than plain `int`.
+    /**
+     * \brief Co_awaitable equivalent  to [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected].
+     *
+     * Waits for at most \c timeout_msecs milliseconds. If the timeout is -1, the call will never timeout.
+     *
+     * \return Returns `true` when successfully connected, `false` is an error occured or the connection
+     * wasn't established within the given timeout.
+     *
+     * [qtdoc-qlocalsocket-waitForConnected]: https://doc.qt.io/qt-5/qlocalsocket.html#waitForConnected
      */
-    WaitForConnectedOperation waitForConnected(std::chrono::milliseconds timeout);
+    Task<bool> waitForConnected(int timeout_msecs = 30'000);
 
-    //! Co_awaitable equivalent to [`QLocalSocket::waitForDisconnected()`][qtdoc-qlocalsocket-waitForDisconnected].
-    WaitForDisconnectedOperation waitForDisconnected(int timeout_msecs = 30'000);
-
-    //! Co_awaitable equivalent to [`QLocalSocket::waitForDisconnected()`][qtdoc-qlocalsocket-waitForDisconnected].
-    /*!
+    /**
+     * \brief Co_awaitable equivalent to [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected].
+     *
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
-     * timeout rather than plain `int`.
+     * timeout rather than plain `int`. If the \c timeout is -1, the call will never time out.
+     *
+     * \return Returns `true` when successfully connected, `false` is an error occured or the connection
+     * wasn't established within the given timeout.
+     *
+     * [qtdoc-qlocalsocket-waitForConnected]: https://doc.qt.io/qt-5/qlocalsocket.html#waitForConnected
      */
-    WaitForDisconnectedOperation waitForDisconnected(std::chrono::milliseconds timeout);
+    Task<bool> waitForConnected(std::chrono::milliseconds timeout);
 
-    //! Connects to server and waits until the connection is established.
-    /*!
+    /**
+     * \brief Co_awaitable equivalent to [`QLocalSocket::waitForDisconnected()`][qtdoc-qlocalsocket-waitForDisconnected].
+     *
+     * Waits for at most \c timeout_msecds milliseconds. If the timeout is -1, the call will never time out.
+     *
+     * \returns Returns `true` when the socket has been disconnected successfully. If the socket
+     * wasn't connected, or doesn't disconnected within the specified timeout, the coroutine returns
+     * `false`.
+     *
+     * [qtdoc-qlocalsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qlocalsocket.hmtl#waitForDisconnected
+     */
+    Task<bool> waitForDisconnected(int timeout_msecs = 30'000);
+
+    /**
+     * \brief Co_awaitable equivalent to [`QLocalSocket::waitForDisconnected()`][qtdoc-qlocalsocket-waitForDisconnected].
+     *
+     * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
+     * timeout rather than plain `int`. If the \c timeout is -1, the call will never time out.
+     *
+     * \returns Returns `true` when the socket has been disconnected successfully. If the socket
+     * wasn't connected, or doesn't disconnected within the specified timeout, the coroutine returns
+     * `false`.
+     *
+     * [qtdoc-qlocalsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qlocalsocket.hmtl#waitForDisconnected
+     */
+    Task<bool> waitForDisconnected(std::chrono::milliseconds timeout);
+
+    /**
+     * \brief Connects to server and waits until the connection is established.
+     *
      * Equivalent to calling [`QLocalSocket::connecToServer`][qdoc-qlocalsocket-connecToServer]
      * followed by [`QLocalSocket::waitForConnected`][qdoc-qlocalsocket-waitForConnected].
+     *
+     * Waits for at most \c timeout milliseconds. If the \c timeout is -1, the call will never time out.
+     *
+     * \return Returns `true` when connection is successfully established, `false` otherwise.
+     *
+     * [qtdoc-qlocalsocket-connectToServer]: https://doc.qt.io/qt-5/qlocalsocket.html#connectToServer
+     * [qtdoc-qlocalsocket-waitForConnected]: https://doc.qt.io/qt-5/qlocalsocket.html#waitForConnected
      */
-    WaitForConnectedOperation connectToServer(QIODevice::OpenMode openMode = QIODevice::ReadWrite);
+    Task<bool> connectToServer(QIODevice::OpenMode openMode = QIODevice::ReadWrite,
+                               std::chrono::milliseconds timeout = std::chrono::seconds{30});
 
-    //! Connects to server and waits until the connection is established.
-    /*!
+    /**
+     * \brief Connects to server and waits until the connection is established.
+     *
      * Equivalent to calling [`QLocalSocket::connecToServer`][qdoc-qlocalsocket-connecToServer]
      * followed by [`QLocalSocket::waitForConnected`][qdoc-qlocalsocket-waitForConnected].
+     *
+     * Waits for at most \c timeout milliseconds. If the \c timeout is -1, the call will never time out.
+     *
+     * \returns Returns `true` when connection is successfully established, `false` otherwise.
+     *
+     * [qtdoc-qlocalsocket-connectToServer-1]: https://doc.qt.io/qt-5/qlocalsocket.html#connectToServer-1
+     * [qtdoc-qlocalsocket-waitForConnected]: https://doc.qt.io/qt-5/qlocalsocket.html#waitForConnected
      */
-    WaitForConnectedOperation connectToServer(const QString &name, QIODevice::OpenMode openMode = QIODevice::ReadWrite);
+    Task<bool> connectToServer(const QString &name, QIODevice::OpenMode openMode = QIODevice::ReadWrite,
+                               std::chrono::milliseconds timeout = std::chrono::seconds{30});
 
-    //! \copydoc QIODevice::readAll
-    ReadOperation readAll();
-
-    //! \copydoc QIODevice::read
-    ReadOperation read(qint64 maxSize);
-
-    //! \copydoc QIODevice::readLine
-    ReadOperation readLine(qint64 maxSize = 0);
+private:
+    Task<std::optional<bool>> waitForReadyReadImpl(std::chrono::milliseconds timeout) override;
+    Task<std::optional<qint64>> waitForBytesWrittenImpl(std::chrono::milliseconds timeout) override;
 };
 
 } // namespace QCoro::detail
-
-/*!
- * [qtdoc-qlocalsocket-waitForConnected]: https://doc.qt.io/qt-5/qlocalsocket.html#waitForConnected
- * [qtdoc-qlocalsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qlocalsocket.hmtl#waitForDisconnected
- * [qtdoc-qlocalsocket-connectToServer]: https://doc.qt.io/qt-5/qlocalsocket.html#connectToServer
- * [qtdoc-qlocalsocket-connectToServer-1]: https://doc.qt.io/qt-5/qlocalsocket.html#connectToServer-1
- */
 
 //! Returns a coroutine-friendly wrapper for QLocalSocket object.
 /*!

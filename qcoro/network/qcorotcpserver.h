@@ -13,6 +13,10 @@
 class QTcpServer;
 class QTcpSocket;
 
+namespace QCoro {
+template<typename T> class Task;
+}
+
 namespace QCoro::detail {
 
 using namespace std::chrono_literals;
@@ -32,25 +36,35 @@ public:
     ///! Constructor.
     explicit QCoroTcpServer(QTcpServer *server);
 
-    //! Co_awaitable equivalent to [`QTcpServer::waitForNewConnection()`][qtdoc-qtcpserver-waitForNewConnection].
-    WaitForNewConnectionOperation waitForNewConnection(int timeout_msecs = 30'000);
+    /**
+     * \brief co_awaitable equivalent to [`QTcpServer::waitForNewConnection()`][qtdoc-qtcpserver-waitForNewConnection].
+     *
+     * Waits for at most \c timeout_msecs milliseconds. If the timeout is -1, the call will never time out.
+     *
+     * \return Returns \c QTcpSocket of the pending connection. Returns `nullptr` if the server is not in
+     * the listening state or if the call times out.
+     *
+     * [qtdoc-qtcpserver-waitForNewConnection]: https://doc.qt.io/qt-5/qtcpserver.html#waitForNewConnection
+     */
+    Task<QTcpSocket *> waitForNewConnection(int timeout_msecs = 30'000);
 
     //! Co_awaitable equivalent to [`QTcpServer::waitForNewConnection()`][qtdoc-qtcpserver-waitForNewConnection].
     /*!
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
-     * timeout rather than plain `int`.
+     * timeout rather than plain `int`. If the \c timeout is -1, the call will never time out.
+     *
+     * \return Returns \c QTcpSocket of the pending connection. Returns `nullptr` if the server is not in
+     * the listening state or if the call times out.
+     *
+     * [qtdoc-qtcpserver-waitForNewConnection]: https://doc.qt.io/qt-5/qtcpserver.html#waitForNewConnection
      */
-    WaitForNewConnectionOperation waitForNewConnection(std::chrono::milliseconds timeout);
+    Task<QTcpSocket *> waitForNewConnection(std::chrono::milliseconds timeout);
 
 private:
     QPointer<QTcpServer> mServer;
 };
 
 } // namespace QCoro::detail
-
-/*!
- * [qtdoc-qtcpserver-waitForNewConnection]: https://doc.qt.io/qt-5/qtcpserver.html#waitForNewConnection
- */
 
 //! Returns a coroutine-friendly wrapper for QTcpServer object.
 /*!

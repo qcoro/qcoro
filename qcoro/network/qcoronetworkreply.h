@@ -6,27 +6,13 @@
 
 #include "task.h"
 #include "qcoroiodevice.h"
-#include "waitoperationbase_p.h"
 
 #include <QNetworkReply>
 
 namespace QCoro::detail {
 
-class QCoroNetworkReply final : private QCoroIODevice {
+class QCoroNetworkReply final : public QCoroIODevice {
 private:
-    class ReadOperation final : public QCoroIODevice::ReadOperation {
-    public:
-        using QCoroIODevice::ReadOperation::ReadOperation;
-
-        bool await_ready() const noexcept final;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept final;
-
-    private:
-        void finish(std::coroutine_handle<> awaitingCoroutine) final;
-
-        QMetaObject::Connection mFinishedConn;
-    };
-
     class WaitForFinishedOperation final {
     public:
         explicit WaitForFinishedOperation(QPointer<QNetworkReply> reply);
@@ -43,10 +29,20 @@ private:
 public:
     using QCoroIODevice::QCoroIODevice;
 
-    ReadOperation readAll();
-    ReadOperation read(qint64 maxSize);
-    ReadOperation readLine(qint64 maxSize = 0);
-    WaitForFinishedOperation waitForFinished();
+    /**
+     * \brief Waits for the reply to finish.
+     *
+     * Waits for at most \c timeout milliseconds. If the \c timeout is -1, the call will never
+     * time out.
+     *
+     * \return Returns `true` if the reply has finished (with or without an error), `false` if
+     * the wait has timed out.
+     */
+    Task<bool> waitForFinished(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+
+private:
+    Task<std::optional<bool>> waitForReadyReadImpl(std::chrono::milliseconds timeout) override;
+    Task<std::optional<qint64>> waitForBytesWrittenImpl(std::chrono::milliseconds timeout) override;
 };
 
 } // namespace QCoro::detail

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorotimer.h"
+#include "qcorosignal.h"
 
 #include <QMetaObject>
 #include <QPointer>
@@ -35,7 +36,7 @@ void QCoroTimer::WaitForTimeoutOperation::await_resume() const {}
 QCoroTimer::QCoroTimer(QTimer *timer)
     : mTimer(timer) {}
 
-QCoroTimer::WaitForTimeoutOperation QCoroTimer::waitForTimeout() const {
-    return WaitForTimeoutOperation{*mTimer};
+QCoro::Task<> QCoroTimer::waitForTimeout() const {
+    co_await qCoro(mTimer.get(), &QTimer::timeout);
 }
 

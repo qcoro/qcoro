@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorotcpserver.h"
+#include "task.h"
+#include "qcorosignal.h"
 
 #include <QTcpServer>
 
@@ -29,11 +31,23 @@ QCoroTcpServer::QCoroTcpServer(QTcpServer *server)
     : mServer(server)
 {}
 
-QCoroTcpServer::WaitForNewConnectionOperation QCoroTcpServer::waitForNewConnection(int timeout_msecs) {
-    return WaitForNewConnectionOperation{mServer.data(), timeout_msecs};
+QCoro::Task<QTcpSocket *> QCoroTcpServer::waitForNewConnection(int timeout_msecs) {
+    return waitForNewConnection(std::chrono::milliseconds(timeout_msecs));
 }
 
-QCoroTcpServer::WaitForNewConnectionOperation QCoroTcpServer::waitForNewConnection(std::chrono::milliseconds timeout) {
-    return WaitForNewConnectionOperation{mServer.data(), static_cast<int>(timeout.count())};
+QCoro::Task<QTcpSocket *> QCoroTcpServer::waitForNewConnection(std::chrono::milliseconds timeout) {
+    const auto server = mServer;
+    if (!server->isListening()) {
+        co_return nullptr;
+    }
+    if (server->hasPendingConnections()) {
+        co_return server->nextPendingConnection();
+    }
+
+    const auto result = co_await qCoro(server.data(), &QTcpServer::newConnection, timeout);
+    if (result.has_value()) {
+        co_return server->nextPendingConnection();
+    }
+    co_return nullptr;
 }
 

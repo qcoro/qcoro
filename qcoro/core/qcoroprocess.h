@@ -19,58 +19,58 @@ using namespace std::chrono_literals;
 
 //! QProcess wrapper with co_awaitable-friendly API.
 class QCoroProcess : public QCoroIODevice {
-    //! An Awaitable that suspends the coroutine until the process is started.
-    class WaitForStartedOperation : public WaitOperationBase<QProcess> {
-    public:
-        WaitForStartedOperation(QProcess *process, int timeout_msecs = 30'000);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
-    };
-
-    //! An Awaitable that suspends the coroutine until the process is finished.
-    class WaitForFinishedOperation : public WaitOperationBase<QProcess> {
-    public:
-        WaitForFinishedOperation(QProcess *process, int timeout_msecs);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine);
-    };
-
 public:
     explicit QCoroProcess(QProcess *process);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
      *
+     * Returns true if the process has started successfully, otherwise returns false (if the
+     * operation timed out or if an error occured).
+     *
+     * If \c timeout_msecs is -1 the operation will never time out.
+     *
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      */
-    WaitForStartedOperation waitForStarted(int timeout_msecs = 30'000);
+    Task<bool> waitForStarted(int timeout_msecs = 30'000);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
      *
+     * Returns true if the process has started successfully, otherwise returns false (if the
+     * operation timed out or if an error occured).
+     *
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
-     * timeout rather than plain `int`.
+     * timeout rather than plain `int`. If the \c timeout is -1 the operation will never time out.
      *
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      */
-    WaitForStartedOperation waitForStarted(std::chrono::milliseconds timeout);
+    Task<bool> waitForStarted(std::chrono::milliseconds timeout);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
+     *
+     * Returns true if the process has finished, otherwise returns false (if the operation timed
+     * out, if an error occured or if this `QProcess` is already finished.
+     *
+     * If \c timeout_msecs is -1 the operation will never time out.
      *
      * [qtdoc-qprocess-waitForFinished]: https://doc.qt.io/qt-5/qprocess.html#waitForFinished
      */
-    WaitForFinishedOperation waitForFinished(int timeout_msecs = 30'000);
+    Task<bool> waitForFinished(int timeout_msecs = 30'000);
 
     /*!
      * \brief Co_awaitable equivalent to [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished].
      *
+     * Returns true if the process has finished, otherwise returns false (if the operation timed
+     * out, if an error occured or if this `QProcess` is already finished.
+     *
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
-     * timeout rather than plain `int`.
+     * timeout rather than plain `int`. If the \c timeout is -1 the operation will never time out.
      *
      * [qtdoc-qprocess-waitForFinished]: https://doc.qt.io/qt-4/qprocess.html#waitForFinished
      */
-    WaitForFinishedOperation waitForFinished(std::chrono::milliseconds timeout);
+    Task<bool> waitForFinished(std::chrono::milliseconds timeout);
 
     /*!
      * \brief Executes a new process and waits for it to start
@@ -78,10 +78,16 @@ public:
      * Co_awaitable equivalent to calling [`QProcess::start()`][qtdoc-qprocess-start-2]
      * followed by [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
      *
+     * Returns true if the process has started successfully, otherwise returns false (if the
+     * operation timed out or if an error occurred).
+     *
+     * If the \c timeout is -1 the operation will never time out.
+     *
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      * [qtdoc-qprocess-start-2]: https://doc.qt.io/qt-5/qprocess.html#start-2
      */
-    WaitForStartedOperation start(QIODevice::OpenMode mode = QIODevice::ReadWrite);
+    Task<bool> start(QIODevice::OpenMode mode = QIODevice::ReadWrite,
+                     std::chrono::milliseconds timeout = std::chrono::seconds(30));
 
     /*!
      * \brief Executes a new process and waits for it to start
@@ -89,11 +95,17 @@ public:
      * Co_awaitable equivalent to calling [`QProcess::start()`][qtdoc-qprocess-start]
      * followed by [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted].
      *
+     * Returns true if the process has started successfully, otherwise returns false (if the
+     * operation timed out or if an error occurred).
+     *
+     * If the \c timeout is -1 the operation will never time out.
+     *
      * [qtdoc-qprocess-waitForStarted]: https://doc.qt.io/qt-5/qprocess.html#waitForStarted
      * [qtdoc-qprocess-start]: https://doc.qt.io/qt-5/qprocess.html#start-2
      */
-    WaitForStartedOperation start(const QString &program, const QStringList &arguments,
-                                  QIODevice::OpenMode mode = QIODevice::ReadWrite);
+    Task<bool> start(const QString &program, const QStringList &arguments,
+                     QIODevice::OpenMode mode = QIODevice::ReadWrite,
+                     std::chrono::milliseconds timeout = std::chrono::seconds(30));
 };
 
 } // namespace QCoro::detail

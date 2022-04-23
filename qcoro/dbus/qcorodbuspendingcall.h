@@ -80,7 +80,7 @@ public:
 
      @see docs/reference/qdbuspendingcall.md
      */
-    WaitForFinishedOperation waitForFinished();
+    Task<QDBusMessage> waitForFinished();
 };
 
 template<>
