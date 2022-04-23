@@ -124,11 +124,11 @@ QCoro::Task<std::optional<qint64>> QCoroIODevice::waitForBytesWritten(std::chron
 }
 
 QCoro::Task<std::optional<bool>> QCoroIODevice::waitForReadyReadImpl(std::chrono::milliseconds timeout) {
-    WaitSignalHelper helper(mDevice.get(), &QIODevice::readyRead);
+    WaitSignalHelper helper(mDevice.data(), &QIODevice::readyRead);
     co_return co_await qCoro(&helper, qOverload<bool>(&WaitSignalHelper::ready), timeout);
 }
 
 QCoro::Task<std::optional<qint64>> QCoroIODevice::waitForBytesWrittenImpl(std::chrono::milliseconds timeout) {
-    WaitSignalHelper helper(mDevice.get(), &QIODevice::bytesWritten);
+    WaitSignalHelper helper(mDevice.data(), &QIODevice::bytesWritten);
     co_return co_await qCoro(&helper, qOverload<qint64>(&WaitSignalHelper::ready), timeout);
 }

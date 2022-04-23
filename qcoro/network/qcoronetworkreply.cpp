@@ -77,7 +77,7 @@ QCoro::Task<std::optional<qint64>> QCoroNetworkReply::waitForBytesWrittenImpl(st
 }
 
 QCoro::Task<bool> QCoroNetworkReply::waitForFinished(std::chrono::milliseconds timeout) {
-    const auto *reply = static_cast<QNetworkReply *>(mDevice.get());
+    const auto *reply = static_cast<QNetworkReply *>(mDevice.data());
     if (reply->isFinished()) {
         co_return true;
     }

@@ -46,7 +46,7 @@ QCoroAbstractSocket::QCoroAbstractSocket(QAbstractSocket *socket)
     : QCoroIODevice(socket) {}
 
 QCoro::Task<std::optional<bool>> QCoroAbstractSocket::waitForReadyReadImpl(std::chrono::milliseconds timeout) {
-    const auto *socket = static_cast<QAbstractSocket *>(mDevice.get());
+    const auto *socket = static_cast<QAbstractSocket *>(mDevice.data());
     if (socket->state() != QAbstractSocket::ConnectedState) {
         co_return false;
     }
@@ -56,7 +56,7 @@ QCoro::Task<std::optional<bool>> QCoroAbstractSocket::waitForReadyReadImpl(std::
 }
 
 QCoro::Task<std::optional<qint64>> QCoroAbstractSocket::waitForBytesWrittenImpl(std::chrono::milliseconds timeout) {
-    const auto *socket = static_cast<QAbstractSocket *>(mDevice.get());
+    const auto *socket = static_cast<QAbstractSocket *>(mDevice.data());
     if (socket->state() != QAbstractSocket::ConnectedState) {
         co_return std::nullopt;
     }
@@ -70,7 +70,7 @@ QCoro::Task<bool> QCoroAbstractSocket::waitForConnected(int timeout_msecs) {
 }
 
 QCoro::Task<bool> QCoroAbstractSocket::waitForConnected(std::chrono::milliseconds timeout) {
-    const auto *socket = static_cast<QAbstractSocket *>(mDevice.get());
+    const auto *socket = static_cast<QAbstractSocket *>(mDevice.data());
     if (socket->state() == QAbstractSocket::ConnectedState) {
         co_return true;
     }
@@ -84,7 +84,7 @@ QCoro::Task<bool> QCoroAbstractSocket::waitForDisconnected(int timeout_msecs) {
 }
 
 QCoro::Task<bool> QCoroAbstractSocket::waitForDisconnected(std::chrono::milliseconds timeout) {
-    const auto *socket = static_cast<QAbstractSocket *>(mDevice.get());
+    const auto *socket = static_cast<QAbstractSocket *>(mDevice.data());
     if (socket->state() == QAbstractSocket::UnconnectedState) {
         co_return false;
     }

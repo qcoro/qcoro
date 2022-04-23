@@ -18,7 +18,7 @@ QCoro::Task<bool> QCoroProcess::waitForStarted(int timeout_msecs) {
 }
 
 QCoro::Task<bool> QCoroProcess::waitForStarted(std::chrono::milliseconds timeout) {
-    auto *process = qobject_cast<QProcess *>(mDevice.get());
+    const auto *process = qobject_cast<QProcess *>(mDevice.data());
     if (process->state() == QProcess::Starting) {
         const auto started = co_await qCoro(process, &QProcess::started, timeout);
         co_return started.has_value();
@@ -32,12 +32,12 @@ QCoro::Task<bool> QCoroProcess::waitForFinished(int timeout_msecs) {
 }
 
 QCoro::Task<bool> QCoroProcess::waitForFinished(std::chrono::milliseconds timeout) {
-    auto *process = qobject_cast<QProcess *>(mDevice.get());
+    const auto *process = qobject_cast<QProcess *>(mDevice.data());
     if (process->state() == QProcess::NotRunning) {
         co_return false;
     }
 
-    const auto finished = co_await qCoro(process, &QProcess::finished, timeout);
+    const auto finished = co_await qCoro(process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), timeout);
     co_return finished.has_value();
 }
 
