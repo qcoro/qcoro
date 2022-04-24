@@ -18,9 +18,7 @@ class QCoroAbstractSocketTest : public QCoro::TestObject<QCoroAbstractSocketTest
 private:
     QCoro::Task<> testWaitForConnectedTriggers_coro(QCoro::TestContext) {
         QTcpSocket socket;
-        QTimer::singleShot(10ms, [this, &socket]() mutable {
-            socket.connectToHost(QHostAddress::LocalHost, mServer.port());
-        });
+        QCORO_DELAY(socket.connectToHost(QHostAddress::LocalHost, mServer.port()));
 
         co_await qCoro(socket).waitForConnected();
 
@@ -32,7 +30,7 @@ private:
         co_await qCoro(socket).connectToHost(QHostAddress::LocalHost, mServer.port());
         QCORO_COMPARE(socket.state(), QAbstractSocket::ConnectedState);
 
-        QTimer::singleShot(10ms, [&socket]() mutable { socket.disconnectFromHost(); });
+        QCORO_DELAY(socket.disconnectFromHost());
 
         co_await qCoro(socket).waitForDisconnected();
 

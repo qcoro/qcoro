@@ -18,9 +18,7 @@ class QCoroLocalSocketTest : public QCoro::TestObject<QCoroLocalSocketTest> {
 private:
     QCoro::Task<> testWaitForConnectedTriggers_coro(QCoro::TestContext) {
         QLocalSocket socket;
-        QTimer::singleShot(10ms, [&socket]() mutable {
-            socket.connectToServer(QCoroLocalSocketTest::getSocketName());
-        });
+        QCORO_DELAY(socket.connectToServer(QCoroLocalSocketTest::getSocketName()));
 
         co_await qCoro(socket).waitForConnected();
 
@@ -32,7 +30,7 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        QTimer::singleShot(10ms, [&socket]() mutable { socket.disconnectFromServer(); });
+        QCORO_DELAY(socket.disconnectFromServer());
 
         co_await qCoro(socket).waitForDisconnected();
 
