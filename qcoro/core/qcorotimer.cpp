@@ -37,6 +37,8 @@ QCoroTimer::QCoroTimer(QTimer *timer)
     : mTimer(timer) {}
 
 QCoro::Task<> QCoroTimer::waitForTimeout() const {
-    co_await qCoro(mTimer.data(), &QTimer::timeout);
+    if (mTimer->isActive()) {
+        co_await qCoro(mTimer.data(), &QTimer::timeout);
+    }
 }
 
