@@ -15,23 +15,31 @@ class ReplyWaitSignalHelper : public WaitSignalHelper {
 public:
     ReplyWaitSignalHelper(const QNetworkReply *reply, void(QIODevice::*signal)())
         : WaitSignalHelper(reply, signal)
+        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
         , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(false); }))
+        #endif
         , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(true); }))
     {}
     ReplyWaitSignalHelper(const QNetworkReply *reply, void(QIODevice::*signal)(qint64))
         : WaitSignalHelper(reply, signal)
+        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
         , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(0LL); }))
+        #endif
         , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(0LL); }))
     {}
 
 private:
     void cleanup() override {
+        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
         disconnect(mError);
+        #endif
         disconnect(mFinished);
         WaitSignalHelper::cleanup();
     }
 
+    #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
     QMetaObject::Connection mError;
+    #endif
     QMetaObject::Connection mFinished;
 };
 
