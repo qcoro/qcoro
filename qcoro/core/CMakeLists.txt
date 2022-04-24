@@ -9,12 +9,14 @@ add_qcoro_library(
         qcoroiodevice.cpp
         qcoroiodevice_p.cpp
         qcoroprocess.cpp
+        qcorothread.cpp
         qcorotimer.cpp
     CAMELCASE_HEADERS
         QCoroCore
         QCoroIODevice
         QCoroProcess
         QCoroSignal
+        QCoroThread
         QCoroTimer
         QCoroFuture
     QT_LINK_LIBRARIES
@@ -22,4 +24,3 @@ add_qcoro_library(
     QCORO_LINK_LIBRARIES
         PUBLIC Coro
 )
-

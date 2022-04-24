@@ -57,6 +57,7 @@ nav:
         - QFuture: reference/core/qfuture.md
         - QIODevice: reference/core/qiodevice.md
         - QProcess: reference/core/qprocess.md
+        - QThread: reference/core/qthread.md
         - QTimer: reference/core/qtimer.md
       - Network:
         - reference/network/index.md
