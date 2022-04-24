@@ -15,9 +15,9 @@ runs:
   steps:
     - shell: bash
       run: |
-        pip3 install aqtinstall~=1.2.5
+        pip3 install aqtinstall~=2.1
         if [[ "${{ inputs.compiler }}" == "msvc" ]]; then
-          aqt install -O C:\Qt -m ${{ inputs.qt_modules }} --noarchives ${{ inputs.qt_version }} windows desktop win64_msvc2019_64
+          aqt install-qt -O C:\Qt windows desktop ${{ inputs.qt_version }} win64_msvc2019_64 --archives ${{ inputs.qt_modules }} w
           QT_BASE_DIR="C:\Qt\${{ inputs.qt_version }}\msvc2019_64"
 
           powershell "./.github/actions/install-qt/install-dbus.ps1" "$QT_BASE_DIR"
@@ -30,7 +30,7 @@ runs:
           if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
             sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
           fi
-          aqt install -O /opt/qt -m ${{ inputs.qt_modules }} --noarchives ${{ inputs.qt_version }} linux desktop gcc_64
+          aqt install-qt -O /opt/qt linux desktop ${{ inputs.qt_version }} gcc_64 --archives ${{ inputs.qt_modules }}
 
           QT_BASE_DIR="/opt/qt/${{ inputs.qt_version }}/gcc_64/"
           echo "$QT_BASE_DIR/bin" >> $GITHUB_PATH
