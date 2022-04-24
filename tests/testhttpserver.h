@@ -13,7 +13,9 @@
 #include <atomic>
 
 class QTcpServer;
+class QTcpSocket;
 class QLocalServer;
+class QLocalSocket;
 
 template<typename Func>
 class Thread : public QThread {
@@ -34,7 +36,19 @@ template<typename Func>
 Thread(Func &&) -> Thread<Func>;
 
 template<typename ServerType>
+struct socket_for_server {};
+
+template<> struct socket_for_server<QTcpServer> {
+    using type = QTcpSocket;
+};
+template<> struct socket_for_server<QLocalServer> {
+    using type = QLocalSocket;
+};
+
+template<typename ServerType>
 class TestHttpServer {
+    using SocketType = typename socket_for_server<ServerType>::type;
+
 public:
     template<typename T>
     void start(const T &name) {
@@ -86,15 +100,16 @@ private:
             }
         }
 
+        SocketType *conn = nullptr;
         mServerReady.notify_all();
-
         for (int i = 0; i < 10 && !mStop; ++i) {
             if (server.waitForNewConnection(1000)) {
+                conn = server.nextPendingConnection();
                 break;
             }
         }
 
-        if (!server.hasPendingConnections()) {
+        if (!conn) {
             if (!mExpectTimeout) {
                 QFAIL("No incoming connection within timeout!");
             }
@@ -102,7 +117,6 @@ private:
             return;
         }
 
-        auto *conn = server.nextPendingConnection();
         if (conn->waitForReadyRead(1000)) {
             const auto request = conn->readLine();
             qDebug() << request;

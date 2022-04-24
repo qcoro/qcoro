@@ -21,7 +21,7 @@
 #define SLEEP_EXEC QStringLiteral("ping")
 #define SLEEP_ARGS(timeout)                                                                        \
     { QStringLiteral("127.0.0.1"), QStringLiteral("-n"), QString::number(timeout) }
-   
+
 #else
 #define DUMMY_EXEC QStringLiteral("true")
 #define DUMMY_ARGS {}
@@ -43,9 +43,25 @@ private:
 #endif
 
         QProcess process;
-        co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
+        const bool ok = co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
 
+        QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::Running);
+
+        process.waitForFinished();
+    }
+
+    void testThenStartTriggers_coro(TestLoop &el) {
+        QProcess process;
+        bool called = false;
+        qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS).then([&](bool started) {
+            called = true;
+            el.quit();
+            QVERIFY(started);
+            QCOMPARE(process.state(), QProcess::Running);
+        });
+        el.exec();
+        QVERIFY(called);
 
         process.waitForFinished();
     }
@@ -61,9 +77,28 @@ private:
         process.setProgram(DUMMY_EXEC);
         process.setArguments(DUMMY_ARGS);
 
-        co_await qCoro(process).start();
+        const bool ok = co_await qCoro(process).start();
 
+        QCORO_VERIFY(ok);
         QCORO_COMPARE(process.state(), QProcess::Running);
+
+        process.waitForFinished();
+    }
+
+    void testThenStartNoArgsTriggers_coro(TestLoop &el) {
+        QProcess process;
+        process.setProgram(DUMMY_EXEC);
+        process.setArguments(DUMMY_ARGS);
+
+        bool called = false;
+        qCoro(process).start().then([&](bool started) {
+            called = true;
+            el.quit();
+            QVERIFY(started);
+            QCOMPARE(process.state(), QProcess::Running);
+        });
+        el.exec();
+        QVERIFY(called);
 
         process.waitForFinished();
     }
@@ -72,8 +107,9 @@ private:
         QCoro::EventLoopChecker eventLoopResponsive{1, 0ms};
 
         QProcess process;
-        co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
+        const bool ok = co_await qCoro(process).start(DUMMY_EXEC, DUMMY_ARGS);
 
+        QCORO_VERIFY(ok);
         QCORO_VERIFY(eventLoopResponsive);
 
         process.waitForFinished();
@@ -88,7 +124,8 @@ private:
         process.start(SLEEP_EXEC, SLEEP_ARGS(1));
         process.waitForStarted();
 #else
-        co_await qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1));
+        const bool ok = co_await qCoro(process).start(SLEEP_EXEC, SLEEP_ARGS(1));
+        QCORO_VERIFY(ok);
 #endif
 
         QCORO_COMPARE(process.state(), QProcess::Running);
@@ -114,6 +151,26 @@ private:
         QCORO_COMPARE(process.state(), QProcess::NotRunning);
     }
 
+    void testThenFinishTriggers_coro(TestLoop &el) {
+        QProcess process;
+        process.start(SLEEP_EXEC, SLEEP_ARGS(1));
+        process.waitForStarted();
+
+        QCOMPARE(process.state(), QProcess::Running);
+
+        bool called = false;
+        qCoro(process).waitForFinished().then([&](bool finished) {
+            called = true;
+            el.quit();
+            QVERIFY(finished);
+
+            QCOMPARE(process.state(), QProcess::NotRunning);
+            QCOMPARE(process.exitStatus(), QProcess::NormalExit);
+        });
+        el.exec();
+        QVERIFY(called);
+    }
+
     QCoro::Task<> testFinishDoesntCoAwaitFinishedProcess_coro(QCoro::TestContext ctx) {
         QProcess process;
         process.start(DUMMY_EXEC, QStringList DUMMY_ARGS);
@@ -122,7 +179,7 @@ private:
         ctx.setShouldNotSuspend();
 
         const auto ok = co_await qCoro(process).waitForFinished();
-        QCORO_VERIFY(ok);
+        QCORO_VERIFY(!ok);
     }
 
     QCoro::Task<> testFinishCoAwaitTimeout_coro(QCoro::TestContext) {
@@ -141,16 +198,34 @@ private:
         process.waitForFinished();
     }
 
+    void testThenFinishCoAwaitTimeout_coro(TestLoop &el) {
+        QProcess process;
+        process.start(SLEEP_EXEC, SLEEP_ARGS(2));
+        process.waitForStarted();
+
+        QCOMPARE(process.state(), QProcess::Running);
+        bool called = false;
+        qCoro(process).waitForFinished(1s).then([&](bool finished) {
+            called = true;
+            el.quit();
+            QVERIFY(!finished);
+        });
+        el.exec();
+        QVERIFY(called);
+
+        process.waitForFinished();
+    }
+
 private Q_SLOTS:
-    addTest(StartTriggers)
-    addTest(StartNoArgsTriggers)
+    addCoroAndThenTests(StartTriggers)
+    addCoroAndThenTests(StartNoArgsTriggers)
 #ifndef Q_OS_WIN // start always blocks on Windows
     addTest(StartDoesntBlock)
 #endif
     addTest(StartDoesntCoAwaitRunningProcess)
-    addTest(FinishTriggers)
+    addCoroAndThenTests(FinishTriggers)
     addTest(FinishDoesntCoAwaitFinishedProcess)
-    addTest(FinishCoAwaitTimeout)
+    addCoroAndThenTests(FinishCoAwaitTimeout)
 };
 
 QTEST_GUILESS_MAIN(QCoroProcessTest)

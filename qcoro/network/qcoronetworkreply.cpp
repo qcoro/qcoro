@@ -3,26 +3,47 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcoronetworkreply.h"
+#include "qcoroiodevice_p.h"
+#include "qcorosignal.h"
 
 using namespace QCoro::detail;
 
-bool QCoroNetworkReply::ReadOperation::await_ready() const noexcept {
-    return QCoroIODevice::ReadOperation::await_ready() ||
-           static_cast<const QNetworkReply *>(mDevice.data())->isFinished();
-}
+namespace {
 
-void QCoroNetworkReply::ReadOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
-    QCoroIODevice::ReadOperation::await_suspend(awaitingCoroutine);
+class ReplyWaitSignalHelper : public WaitSignalHelper {
+    Q_OBJECT
+public:
+    ReplyWaitSignalHelper(const QNetworkReply *reply, void(QIODevice::*signal)())
+        : WaitSignalHelper(reply, signal)
+        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+        , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(false); }))
+        #endif
+        , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(true); }))
+    {}
+    ReplyWaitSignalHelper(const QNetworkReply *reply, void(QIODevice::*signal)(qint64))
+        : WaitSignalHelper(reply, signal)
+        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+        , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(0LL); }))
+        #endif
+        , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(0LL); }))
+    {}
 
-    mFinishedConn = QObject::connect(
-        static_cast<QNetworkReply *>(mDevice.data()), &QNetworkReply::finished,
-        std::bind(&ReadOperation::finish, this, awaitingCoroutine));
-}
+private:
+    void cleanup() override {
+        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+        disconnect(mError);
+        #endif
+        disconnect(mFinished);
+        WaitSignalHelper::cleanup();
+    }
 
-void QCoroNetworkReply::ReadOperation::finish(std::coroutine_handle<> awaitingCoroutine) {
-    QObject::disconnect(mFinishedConn);
-    QCoroIODevice::ReadOperation::finish(awaitingCoroutine);
-}
+    #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
+    QMetaObject::Connection mError;
+    #endif
+    QMetaObject::Connection mFinished;
+};
+
+} // namespace
 
 QCoroNetworkReply::WaitForFinishedOperation::WaitForFinishedOperation(QPointer<QNetworkReply> reply)
     : mReply(reply)
@@ -45,18 +66,32 @@ QNetworkReply *QCoroNetworkReply::WaitForFinishedOperation::await_resume() const
     return mReply;
 }
 
-QCoroNetworkReply::ReadOperation QCoroNetworkReply::readAll() {
-    return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
+QCoro::Task<std::optional<bool>> QCoroNetworkReply::waitForReadyReadImpl(std::chrono::milliseconds timeout) {
+    const auto *reply = static_cast<QNetworkReply *>(mDevice.data());
+    if (reply->isFinished()) {
+        co_return true;
+    }
+    ReplyWaitSignalHelper helper(reply, &QNetworkReply::readyRead);
+    co_return co_await qCoro(&helper, qOverload<bool>(&ReplyWaitSignalHelper::ready), timeout);
 }
 
-QCoroNetworkReply::ReadOperation QCoroNetworkReply::read(qint64 maxSize) {
-    return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->read(maxSize); });
+QCoro::Task<std::optional<qint64>> QCoroNetworkReply::waitForBytesWrittenImpl(std::chrono::milliseconds timeout) {
+    const auto *reply = static_cast<QNetworkReply *>(mDevice.data());
+    if (reply->isFinished()) {
+        co_return false;
+    }
+    ReplyWaitSignalHelper helper(reply, &QNetworkReply::bytesWritten);
+    co_return co_await qCoro(&helper, qOverload<qint64>(&ReplyWaitSignalHelper::ready), timeout);
 }
 
-QCoroNetworkReply::ReadOperation QCoroNetworkReply::readLine(qint64 maxSize) {
-    return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
+QCoro::Task<bool> QCoroNetworkReply::waitForFinished(std::chrono::milliseconds timeout) {
+    const auto *reply = static_cast<QNetworkReply *>(mDevice.data());
+    if (reply->isFinished()) {
+        co_return true;
+    }
+
+    const auto result = co_await qCoro(reply, &QNetworkReply::finished, timeout);
+    co_return result.has_value();
 }
 
-QCoroNetworkReply::WaitForFinishedOperation QCoroNetworkReply::waitForFinished() {
-    return WaitForFinishedOperation(static_cast<QNetworkReply *>(mDevice.data()));
-}
+#include "qcoronetworkreply.moc"

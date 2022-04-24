@@ -13,6 +13,7 @@
 #include <QVariant>
 
 #include "qcoro/task.h"
+#include "testloop.h"
 
 #include <chrono>
 
@@ -90,4 +91,16 @@ protected:
     void test##name() {                                                                            \
         coroWrapper(&std::remove_cvref_t<decltype(*this)>::test##name##_coro);                     \
     }
+
+
+#define addThenTest(name)                                                                          \
+    void testThen##name() {                                                                        \
+        TestLoop loop;                                                                             \
+        testThen##name##_coro(loop);                                                               \
+    }
+
+#define addCoroAndThenTests(name) \
+    addTest(name) \
+    addThenTest(name)
+
 } // namespace QCoro

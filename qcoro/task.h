@@ -211,7 +211,7 @@ public:
 
     //! \copydoc template<Awaitable T> QCoro::TaskPromiseBase::await_transform(T &&)
     template<Awaitable T>
-    auto await_transform(T &awaitable) {
+    auto &await_transform(T &awaitable) {
         return awaitable;
     }
 
@@ -280,7 +280,7 @@ public:
      *            promise, later can be retrieved by the calling coroutine.
      */
     void return_value(T &&value) noexcept {
-        mValue = std::forward<T>(value);
+        mValue.template emplace<T>(std::forward<T>(value));
     }
 
     //! \copydoc template<typename T> TaskPromise::return_value(T &&value) noexcept
@@ -544,32 +544,53 @@ public:
      * chaining a then() callback is a possible solution how to handle a result
      * of a coroutine without co_awaiting it.
      *
-     * @param callback A function or a function object that can be invoked with a single
-     * argument of type T (that is type matching the return type of the coroutine).
+     * @param callback A function or a function object that can be invoked without arguments
+     * (discarding the result of the coroutine) or with a single argument of type T that is
+     * type matching the return type of the coroutine or is implicitly constructible from
+     * the return type returned by the coroutine.
      *
      * @return Returns Task<R> where R is the return type of the callback, so that the
      * result of the then() action can be co_awaited, if desired. If the callback
      * returns an awaitable (Task<R>) then the result of then is the awaitable.
      */
     template<typename ThenCallback>
-    requires (std::is_void_v<T> && std::invocable<ThenCallback>) || std::invocable<ThenCallback, T>
+    requires (std::invocable<ThenCallback> || (!std::is_void_v<T> && std::invocable<ThenCallback, T>))
     auto then(ThenCallback &&callback) {
         return thenImpl(std::forward<ThenCallback>(callback));
     }
 
     template<typename ThenCallback, typename ErrorCallback>
-    requires (((std::is_void_v<T> && std::invocable<ThenCallback>) || std::invocable<ThenCallback, T>) &&
-            std::invocable<ErrorCallback, const std::exception &>)
+    requires ((std::invocable<ThenCallback> || (!std::is_void_v<T> && std::invocable<ThenCallback, T>)) &&
+               std::invocable<ErrorCallback, const std::exception &>)
     auto then(ThenCallback &&callback, ErrorCallback &&errorCallback) {
         return thenImpl(std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback));
     }
 
 private:
-    template<typename ThenCallback, typename Arg = T>
-    struct invoke_result: std::invoke_result<ThenCallback, T> {};
+    template<typename ThenCallback, typename ... Args>
+    requires (std::invocable<ThenCallback>)
+    auto invoke(ThenCallback &&callback, Args && ...) {
+        return callback();
+    }
+
+    template<typename ThenCallback, typename Arg>
+    requires (std::invocable<ThenCallback, Arg>)
+    auto invoke(ThenCallback &&callback, Arg && arg) {
+        return callback(std::forward<Arg>(arg));
+    }
+
+    template<typename ThenCallback, typename Arg>
+    struct invoke_result: std::conditional_t<
+        std::is_invocable_v<ThenCallback>,
+            std::invoke_result<ThenCallback>,
+            std::invoke_result<ThenCallback, Arg>
+        > {};
+
     template<typename ThenCallback>
     struct invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
+
     template<typename ThenCallback, typename Arg>
+
     using invoke_result_t = typename invoke_result<ThenCallback, Arg>::type;
 
     // Implementation of then() for callbacks that return Task<R>
@@ -579,9 +600,9 @@ private:
         const auto cb = std::move(callback);
         if constexpr (std::is_void_v<value_type>) {
             co_await *this;
-            co_return co_await cb();
+            co_return co_await invoke(cb);
         } else {
-            co_return co_await cb(co_await *this);
+            co_return co_await invoke(cb, co_await *this);
         }
     }
 
@@ -601,7 +622,7 @@ private:
                     co_return;
                 }
             }
-            co_return co_await thenCb();
+            co_return co_await invoke(thenCb);
         } else {
             std::optional<T> v;
             try {
@@ -614,7 +635,7 @@ private:
                     co_return;
                 }
             }
-            co_return co_await thenCb(std::move(*v));
+            co_return co_await invoke(thenCb, std::move(*v));
         }
     }
 
@@ -626,9 +647,9 @@ private:
         const auto cb = std::move(callback);
         if constexpr (std::is_void_v<value_type>) {
             co_await *this;
-            co_return cb();
+            co_return invoke(cb);
         } else {
-            co_return cb(co_await *this);
+            co_return invoke(cb, co_await *this);
         }
     }
 
@@ -648,7 +669,7 @@ private:
                     co_return;
                 }
             }
-            co_return thenCb();
+            co_return invoke(thenCb);
         } else {
             std::optional<T> v;
             try {
@@ -661,7 +682,7 @@ private:
                     co_return;
                 }
             }
-            co_return thenCb(std::move(*v));
+            co_return invoke(thenCb, std::move(*v));
         }
     }
 

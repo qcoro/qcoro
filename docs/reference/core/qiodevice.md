@@ -56,8 +56,13 @@ const QByteArray content = qCoro(device).readAll();
 
 See documentation for [`QIODevice::readAll()`][qtdoc-qiodevice-readall] for details.
 
+`QCoroIODevice::readAll()` additionally accepts an optional timeout parameter. If no data
+become available within the timeout, the coroutine returns an empty `QByteArray`. If no
+timeout is specified or if it is set to `-1`, the operation will never time out.
+
 ```cpp
-Awaitable auto QCoroIODevice::readAll();
+QCoro::Task<QByteArray> QCoroIODevice::readAll();
+QCoro::Task<QByteArray> QCoroIODevice::readAll(std::chrono::milliseconds timeout);
 ```
 
 ## `read()`
@@ -69,8 +74,13 @@ available in the `QIODevice` or if the device is not opened for reading.
 
 See documentation for [`QIODevice::read()`][qtdoc-qiodevice-read] for details.
 
+`QCoroIODevice::read()` additionally accepts an optional timeout parameter. If no data
+become available within the timeout, the coroutine returns an empty `QByteArray`. If no
+timeout is specified or if it is set to `-1`, the operation will never time out.
+
 ```cpp
-Awaitable auto QCoroIODevice::read(qint64 maxSize = 0);
+QCoro::Task<QByteArray> QCoroIODevice::read(qint64 maxSize = 0);
+QCoro::Task<QByteArray> QCoroIODevice::read(qint64 maxSize, std::chrono::milliseconds timeout);
 ```
 
 ## `readLine()`
@@ -80,8 +90,46 @@ until it reads `maxSize` bytes. Returns the resulting data as `QByteArray`.
 
 See documentation for [`QIODevice::readLine()`][qtdoc-qiodevice-readline] for details.
 
+`QCoroIODevice::readLine()` additionally accepts an optional timeout parameter. If no data
+become available within the timeout, the coroutine returns an empty `QByteArray`. If no
+timeout is specified or if it is set to `-1`, the operation will never time out.
+
 ```cpp
-Awaitable auto QCoroIODevice::readLine(qint64 maxSize = 0)
+QCoro::Task<QByteArray> QCoroIODevice::readLine(qint64 maxSize = 0)
+QCoro::Task<QByteArray> QCoroIODevice::readLine(qint64 maxSize, std::chrono::milliseconds timeout);
+```
+
+## `waitForReadyRead()`
+
+Waits for at most `timeout_msecs` milliseconds for data to become available for reading
+in the `QIODevice`. Returns `true` when the device becomes ready for reading within the
+given timeout. Returns `false` if the operation times out, if the device is not opened
+for reading or in any other state in which the device will never become ready for reading.
+
+If the timeout is -1, the operation will never time out.
+
+See documentation for [`QIODevice::waitForReadyRead()`][qtdoc-qiodevice-waitforreadyread] for details.
+
+```cpp
+QCoro::Task<bool> QCoroIODevice::waitForReadyRead(int timeout_msecs = 30'000);
+QCoro::Task<bool> QCoroIODevice::waitForReadyRead(std::chrono::milliseconds timeout);
+```
+
+## `waitForBytesWritten()`
+
+Waits for at most `timeout_msecs` milliseconds for data to be flushed from a buffered
+`QIODevice`. Returns `std::optional<qint64>`, which is empty if the operation has timed
+out, the device is not opened for writing or is in any other state in which the device
+will never be able to write any data. When the data are successfully flushed, returns
+number of bytes written.
+
+If the timeout is -1, the operation will never time out.
+
+See documentation for [`QIODevice::waitForBytesWritten()`][qtdoc-qiodevice-waitforbyteswritten] for details.
+
+```cpp
+QCoro::Task<std::optional<qint64>> QCoroIODevice::waitForBytesWritten(int timeout_msecs = 30'000);
+QCoro::Task<std::optional<qint64>> QCoroIODevice::waitForBytesWritten(std::chrono::milliseconds timeout);
 ```
 
 ## Examples
@@ -97,4 +145,6 @@ const QByteArray data = co_await qCoro(device).readAll();
 [qtdoc-qiodevice-readyread]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
 [qtdoc-qiodevice-readall]: https://doc.qt.io/qt-5/qiodevice.html#readAll
 [qtdoc-qiodevice-readline]: https://doc.qt.io/qt-5/qiodevice.html#readLine
+[qtdoc-qiodevice-waitforreadyread]: https://doc.qt.io/qt-5/qiodevice.html#waitForReadyRead
+[qtdoc-qiodevice-waitforbyteswritten]: https://doc.qt.io/qt-5/qiodevice.html#waitForBytesWritten
 

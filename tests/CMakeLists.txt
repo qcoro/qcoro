@@ -1,6 +1,6 @@
 include(CMakeParseArguments)
 
-add_library(qcoro_test STATIC testobject.cpp)
+add_library(qcoro_test STATIC testobject.cpp testloop.cpp)
 target_link_libraries(qcoro_test PUBLIC
     QCoro${QT_VERSION_MAJOR}Core
     Qt${QT_VERSION_MAJOR}::Core

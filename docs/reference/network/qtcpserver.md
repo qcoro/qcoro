@@ -25,12 +25,14 @@ QCoroTcpServer qCoro(QTcpServer *);
 Waits until a new incoming connection is available or until it times out. Returns pointer to `QTcpSocket` or
 `nullptr` if the operation timed out or another error has occured.
 
+If the timeout is -1 the operation will never time out.
+
 See documentation for [`QTcpServer::waitForNewConnection()`][qtdoc-qtcpserver-waitForNewConnection]
 for details.
 
 ```cpp
-Awaitable auto QCoroTcpServer::waitForNewConnection(int timeout_msecs = 30'000);
-Awaitable auto QCoroTcpServer::waitForNewConnection(std::chrono::milliseconds timeout);
+QCoro::Task<QTcpSocket *> QCoroTcpServer::waitForNewConnection(int timeout_msecs = 30'000);
+QCoro::Task<QTcpSocket *> QCoroTcpServer::waitForNewConnection(std::chrono::milliseconds timeout);
 ```
 
 ## Examples
@@ -38,7 +40,6 @@ Awaitable auto QCoroTcpServer::waitForNewConnection(std::chrono::milliseconds ti
 ```cpp
 {% include "../../examples/qtcpserver.cpp" %}
 ```
-
 
 [qtdoc-qtcpserver]: https://doc.qt.io/qt-5/qtcpserver.html
 [qtdoc-qtcpserver-waitForNewConnection]: https://doc.qt.io/qt-5/qtcpserver.html#waitForNewConnection

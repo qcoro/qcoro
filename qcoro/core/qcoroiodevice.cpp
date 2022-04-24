@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcoroiodevice.h"
+#include "qcoroiodevice_p.h"
+#include "qcorosignal.h"
 
 #include <QByteArray>
 #include <QIODevice>
@@ -42,43 +44,6 @@ QByteArray QCoroIODevice::ReadOperation::await_resume() {
     return mResultCb(mDevice);
 }
 
-QCoroIODevice::WriteOperation::WriteOperation(QIODevice *device, const QByteArray &data)
-    : OperationBase(device), mBytesToBeWritten(device->write(data))
-{}
-
-bool QCoroIODevice::WriteOperation::await_ready() const noexcept {
-    if (!mDevice || !mDevice->isOpen() || !mDevice->isWritable()) {
-        return true;
-    }
-
-    if (mBytesWritten == 0) {
-        return true;
-    }
-
-    if (mDevice->bytesToWrite() == 0) {
-        return true;
-    }
-
-    return false;
-}
-
-void QCoroIODevice::WriteOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
-    Q_ASSERT(mDevice);
-    mConn = QObject::connect(mDevice, &QIODevice::bytesWritten,
-                             [this, awaitingCoroutine](qint64 written) {
-                                 mBytesWritten += written;
-                                 if (mBytesWritten >= mBytesToBeWritten) {
-                                     finish(awaitingCoroutine);
-                                 }
-                             });
-    mCloseConn = QObject::connect(mDevice, &QIODevice::aboutToClose,
-                                  std::bind(&WriteOperation::finish, this, awaitingCoroutine));
-}
-
-qint64 QCoroIODevice::WriteOperation::await_resume() noexcept {
-    return mBytesWritten;
-}
-
 QCoroIODevice::ReadAllOperation::ReadAllOperation(QIODevice *device)
     : ReadOperation(device, [](QIODevice *d) { return d->readAll(); }) {}
 
@@ -89,19 +54,81 @@ QCoroIODevice::QCoroIODevice(QIODevice *device)
     : mDevice{device}
 {}
 
-QCoroIODevice::ReadOperation QCoroIODevice::readAll() {
-    return ReadOperation(mDevice, [](QIODevice *dev) { return dev->readAll(); });
+QCoro::Task<QByteArray> QCoroIODevice::readAll(std::chrono::milliseconds timeout) {
+    const auto device = mDevice;
+    if (!co_await waitForReadyRead(timeout)) {
+        co_return QByteArray{};
+    }
+
+    co_return device->readAll();
 }
 
-QCoroIODevice::ReadOperation QCoroIODevice::read(qint64 maxSize) {
-    return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->read(maxSize); });
+QCoro::Task<QByteArray> QCoroIODevice::read(qint64 maxSize, std::chrono::milliseconds timeout) {
+    const auto device = mDevice;
+    if (!co_await waitForReadyRead(timeout)) {
+        co_return QByteArray{};
+    }
+
+    co_return device->read(maxSize);
 }
 
-QCoroIODevice::ReadOperation QCoroIODevice::readLine(qint64 maxSize) {
-    return ReadOperation(mDevice, [maxSize](QIODevice *dev) { return dev->readLine(maxSize); });
+QCoro::Task<QByteArray> QCoroIODevice::readLine(qint64 maxSize, std::chrono::milliseconds timeout) {
+    const auto device = mDevice;
+    if (!co_await waitForReadyRead(timeout)) {
+        co_return QByteArray{};
+    }
+
+    co_return device->readLine(maxSize);
 }
 
-QCoroIODevice::WriteOperation QCoroIODevice::write(const QByteArray &buffer) {
-    return WriteOperation(mDevice, buffer);
+QCoro::Task<qint64> QCoroIODevice::write(const QByteArray &buffer) {
+    auto bytesWritten = mDevice->write(buffer);
+    while (bytesWritten > 0) {
+        const auto flushed = co_await waitForBytesWritten(-1);
+        bytesWritten -= flushed.value();
+    }
+
+    co_return bytesWritten;
 }
 
+QCoro::Task<bool> QCoroIODevice::waitForReadyRead(int timeout_msecs) {
+    return waitForReadyRead(std::chrono::milliseconds(timeout_msecs));
+}
+
+QCoro::Task<bool> QCoroIODevice::waitForReadyRead(std::chrono::milliseconds timeout) {
+    if (!mDevice->isReadable()) {
+        co_return false;
+    }
+    if (mDevice->bytesAvailable() > 0) {
+        co_return true;
+    }
+
+    const auto result = co_await waitForReadyReadImpl(timeout);
+    co_return result.has_value();
+}
+
+QCoro::Task<std::optional<qint64>> QCoroIODevice::waitForBytesWritten(int timeout_msecs) {
+    return waitForBytesWritten(std::chrono::milliseconds(timeout_msecs));
+}
+
+QCoro::Task<std::optional<qint64>> QCoroIODevice::waitForBytesWritten(std::chrono::milliseconds timeout) {
+    if (!mDevice->isWritable()) {
+        co_return std::nullopt;
+    }
+    if (mDevice->bytesToWrite() == 0) {
+        co_return 0;
+    }
+
+    const auto result = co_await waitForBytesWrittenImpl(timeout);
+    co_return result;
+}
+
+QCoro::Task<std::optional<bool>> QCoroIODevice::waitForReadyReadImpl(std::chrono::milliseconds timeout) {
+    WaitSignalHelper helper(mDevice.data(), &QIODevice::readyRead);
+    co_return co_await qCoro(&helper, qOverload<bool>(&WaitSignalHelper::ready), timeout);
+}
+
+QCoro::Task<std::optional<qint64>> QCoroIODevice::waitForBytesWrittenImpl(std::chrono::milliseconds timeout) {
+    WaitSignalHelper helper(mDevice.data(), &QIODevice::bytesWritten);
+    co_return co_await qCoro(&helper, qOverload<qint64>(&WaitSignalHelper::ready), timeout);
+}

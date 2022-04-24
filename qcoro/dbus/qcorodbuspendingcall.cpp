@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorodbuspendingcall.h"
+#include "qcorosignal.h"
 
 #include <QDBusPendingCall>
 
@@ -34,7 +35,9 @@ QCoroDBusPendingCall::QCoroDBusPendingCall(const QDBusPendingCall &call)
     : mCall(call)
 {}
 
-QCoroDBusPendingCall::WaitForFinishedOperation QCoroDBusPendingCall::waitForFinished() {
-    return WaitForFinishedOperation{mCall};
+QCoro::Task<QDBusMessage> QCoroDBusPendingCall::waitForFinished() {
+    QDBusPendingCallWatcher watcher{mCall};
+    co_await qCoro(&watcher, &QDBusPendingCallWatcher::finished);
+    co_return watcher.reply();
 }
 

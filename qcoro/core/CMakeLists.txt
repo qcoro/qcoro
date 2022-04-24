@@ -7,6 +7,7 @@ add_qcoro_library(
     INCLUDEDIR Core
     SOURCES
         qcoroiodevice.cpp
+        qcoroiodevice_p.cpp
         qcoroprocess.cpp
         qcorotimer.cpp
     CAMELCASE_HEADERS

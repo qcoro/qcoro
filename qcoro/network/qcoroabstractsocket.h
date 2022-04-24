@@ -19,91 +19,96 @@ namespace QCoro::detail {
 using namespace std::chrono_literals;
 
 //! QAbstractSocket wrapper with co_awaitable-friendly API.
-class QCoroAbstractSocket final : private QCoroIODevice {
-    class ReadOperation final : public QCoroIODevice::ReadOperation {
-    public:
-        using QCoroIODevice::ReadOperation::ReadOperation;
-        bool await_ready() const noexcept final;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept final;
-
-    private:
-        void finish(std::coroutine_handle<> awaitingCoroutine);
-
-        QMetaObject::Connection mStateConn;
-    };
-
-    class WaitForConnectedOperation final : public WaitOperationBase<QAbstractSocket> {
-    public:
-        WaitForConnectedOperation(QAbstractSocket *socket, int timeout_msecs = 30'000);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
-    };
-
-    class WaitForDisconnectedOperation final : public WaitOperationBase<QAbstractSocket> {
-    public:
-        WaitForDisconnectedOperation(QAbstractSocket *socket, int timeout_msecs);
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
-    };
-
+class QCoroAbstractSocket final : public QCoroIODevice {
 public:
     explicit QCoroAbstractSocket(QAbstractSocket *socket);
 
     //! Co_awaitable equivalent  to [`QAbstractSocket::waitForConnected()`][qtdoc-qabstractsocket-waitForConnected].
-    WaitForConnectedOperation waitForConnected(int timeout_msecs = 30'000);
+    /*!
+     * Waits until the socket is connected, up to \c timeout_msecs milliseconds. If the connection has been
+     * established, the coroutine returns `true`, otherwise it retuns `false`.
+     *
+     * If the timeout is -1, the operation will never time out.
+     *
+     * [qtdoc-qabstractsocket-waitForConnected]: https://doc.qt.io/qt-5/qabstractsocket.html#waitForConnected
+     */
+    Task<bool> waitForConnected(int timeout_msecs = 30'000);
 
     //! Co_awaitable equivalent to [`QAbstractSocket::waitForConnected()`][qtdoc-qabstractsocket-waitForConnected].
     /*!
+     * Waits until the socket is connected, up to \c timeout_msecs milliseconds. If the connection has been
+     * established, the coroutine returns `true`, otherwise it retuns `false`.
+     *
      * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
-     * timeout rather than plain `int`.
+     * timeout rather than plain `int`. If the timeout is -1, the operation will never time out.
+     *
+     *
+     * [qtdoc-qabstractsocket-waitForConnected]: https://doc.qt.io/qt-5/qabstractsocket.html#waitForConnected
      */
-    WaitForConnectedOperation waitForConnected(std::chrono::milliseconds timeout);
-
-    //! Co_awaitable equivalent to [`QAbstractSocket::waitForDisconnected()`][qtdoc-qabstractsocket-waitForDisconnected].
-    WaitForDisconnectedOperation waitForDisconnected(int timeout_msecs = 30'000);
+    Task<bool> waitForConnected(std::chrono::milliseconds timeout);
 
     //! Co_awaitable equivalent to [`QAbstractSocket::waitForDisconnected()`][qtdoc-qabstractsocket-waitForDisconnected].
     /*!
-     * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
-     * timeout rather than plain `int`.
+     * Waits until the socket has disconnected, up to \c timeout_msecs milliseconds. If the connection was
+     * successfully disconnected, returns `true`, otherwise returns `false` (if the operation timed out,
+     * if an error occurred or if the `QAbstractSocket` is already disconnected).
+     *
+     * If the timeout is -1, the operation will never time out.
+     *
+     * [qtdoc-qabstractsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qabstractsocket.hmtl#waitForDisconnected
      */
-    WaitForDisconnectedOperation waitForDisconnected(std::chrono::milliseconds timeout);
+    Task<bool> waitForDisconnected(int timeout_msecs = 30'000);
+
+    //! Co_awaitable equivalent to [`QAbstractSocket::waitForDisconnected()`][qtdoc-qabstractsocket-waitForDisconnected].
+    /*!
+     * Waits until the socket has disconnected, up to \c timeout_msecs milliseconds. If the connection was
+     * successfully disconnected, returns `true`, otherwise returns `false` (if the operation timed out,
+     * if an error occurred or if the `QAbstractSocket` is already disconnected).
+     *
+     * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
+     * timeout rather than plain `int`. If the timeout is -1, the operation will never time out.
+     *
+     * [qtdoc-qabstractsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qabstractsocket.hmtl#waitForDisconnected
+     */
+    Task<bool> waitForDisconnected(std::chrono::milliseconds timeout);
 
     //! Connects to server and waits until the connection is established.
     /*!
      * Equivalent to calling [`QAbstractSocket::connecToServer`][qdoc-qabstractsocket-connecToHost]
      * followed by [`QAbstractSocket::waitForConnected`][qdoc-qabstractsocket-waitForConnected].
+     *
+     * Returns `true` if the connection has been successfully established withint he given timeout,
+     * `false` otherwise. If the timeout is -1, the operation will never time out.
+     *
+     * [qtdoc-qabstractsocket-connectToHost]: https://doc.qt.io/qt-5/qabstractsocket.html#connectToHost
+     * [qtdoc-qabstractsocket-waitForConnected]: https://doc.qt.io/qt-5/qabstractsocket.html#waitForConnected
      */
-    WaitForConnectedOperation connectToHost(const QString &hostName, quint16 port,
-        QIODevice::OpenMode openMode = QIODevice::ReadWrite,
-        QAbstractSocket::NetworkLayerProtocol protocol = QAbstractSocket::AnyIPProtocol);
+    Task<bool> connectToHost(const QString &hostName, quint16 port,
+                             QIODevice::OpenMode openMode = QIODevice::ReadWrite,
+                             QAbstractSocket::NetworkLayerProtocol protocol = QAbstractSocket::AnyIPProtocol,
+                             std::chrono::milliseconds timeout = std::chrono::seconds{30});
 
     //! Connects to server and waits until the connection is established.
     /*!
      * Equivalent to calling [`QAbstractSocket::connecToServer`][qdoc-qabstractsocket-connecToHost-1]
      * followed by [`QAbstractSocket::waitForConnected`][qdoc-qabstractsocket-waitForConnected].
+     *
+     * Returns `true` if the connection has been successfully established within the given timeout,
+     * `false` otherwise. If the timeout is -1, the operation will never time out.
+     *
+     * [qtdoc-qabstractsocket-waitForConnected]: https://doc.qt.io/qt-5/qabstractsocket.html#waitForConnected
+     * [qtdoc-qabstractsocket-connectToHost-1]: https://doc.qt.io/qt-5/qabstractsocket.html#connectToHost-1
      */
-    WaitForConnectedOperation connectToHost(const QHostAddress &address, quint16 port,
-        QIODevice::OpenMode openMode = QIODevice::ReadWrite);
+    Task<bool> connectToHost(const QHostAddress &address, quint16 port,
+                             QIODevice::OpenMode openMode = QIODevice::ReadWrite,
+                             std::chrono::milliseconds timeout = std::chrono::seconds{30});
 
-    //! \copydoc QCoroIODevice::readAll
-    ReadOperation readAll();
-
-    //! \copydoc QCoroIODevice::read
-    ReadOperation read(qint64 maxSize);
-
-    //! \copydoc QCoroIODevice::readLine
-    ReadOperation readLine(qint64 maxSize = 0);
+private:
+    Task<std::optional<bool>> waitForReadyReadImpl(std::chrono::milliseconds timeout) override;
+    Task<std::optional<qint64>> waitForBytesWrittenImpl(std::chrono::milliseconds timeout) override;
 };
 
 } // namespace QCoro::detail
-
-/*!
- * [qtdoc-qabstractsocket-waitForConnected]: https://doc.qt.io/qt-5/qabstractsocket.html#waitForConnected
- * [qtdoc-qabstractsocket-waitForDisconnected]: https://doc.qt.io/qt-5/qabstractsocket.hmtl#waitForDisconnected
- * [qtdoc-qabstractsocket-connectToHost]: https://doc.qt.io/qt-5/qabstractsocket.html#connectToHost
- * [qtdoc-qabstractsocket-connectTo-1]: https://doc.qt.io/qt-5/qabstractsocket.html#connectToHost-1
- */
 
 //! Returns a coroutine-friendly wrapper for QAbstractSocket object.
 /*!

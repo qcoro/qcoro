@@ -107,8 +107,8 @@ public:
 
      [qfuturewatcher]: https://doc.qt.io/qt-5/qfuturewatcher.html
     */
-    WaitForFinishedOperation waitForFinished() {
-        return WaitForFinishedOperation{mFuture};
+    Task<T> waitForFinished() {
+        co_return co_await WaitForFinishedOperation{mFuture};
     }
 
 };

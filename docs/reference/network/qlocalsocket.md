@@ -29,28 +29,33 @@ Same as `QLocalSocket` is a subclass of `QIODevice`, `QCoroLocalSocket` subclass
 ## `waitForConnected()`
 
 Waits for the socket to connect or until it times out. Returns `bool` indicating whether
-connection has been established or whether the operation has timed out. The coroutine
-is not suspended if the socket is already connected.
+connection has been established (`true`) or whether the operation has timed out or another
+error has occurred (`false`). Returns immeditelly if the socket is already in connected
+state.
+
+If the timeout is -1, the operation will never time out.
 
 See documentation for [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected]
 for details.
 
 ```cpp
-Awaitable auto QCoroLocalSocket::waitForConnected(int timeout_msecs = 30'000);
-Awaitable auto QCoroLocalSocket::waitForConnected(std::chrono::milliseconds timeout);
+QCoro::Task<bool> QCoroLocalSocket::waitForConnected(int timeout_msecs = 30'000);
+QCoro::Task<bool> QCoroLocalSocket::waitForConnected(std::chrono::milliseconds timeout);
 ```
 
 ## `waitForDisconnected()`
 
 Waits for the socket to disconnect from the server or until the operation times out.
-The coroutine is not suspended if the socket is already disconnected.
+Returns immediatelly if the socket is not in connected state.
+
+If the timeout is -1, the operation will never time out.
 
 See documentation for [`QLocalSocket::waitForDisconnected()`][qtdoc-qlocalsocket-waitForDisconnected]
 for details.
 
 ```cpp
-Awaitable auto QCoroLocalSocket::waitForDisconnected(timeout_msecs = 30'000);
-Awaitable auto QCoroLocalSocket::waitForDisconnected(std::chrono::milliseconds timeout);
+QCoro::Task<bool> QCoroLocalSocket::waitForDisconnected(timeout_msecs = 30'000);
+QCoro::Task<bool> QCoroLocalSocket::waitForDisconnected(std::chrono::milliseconds timeout);
 ```
 
 ## `connectToServer()`
@@ -59,12 +64,16 @@ Awaitable auto QCoroLocalSocket::waitForDisconnected(std::chrono::milliseconds t
 to calling `QLocalSocket::connectToServer()` followed by `QLocalSocket::waitForConnected()`. This
 operation is co_awaitable as well.
 
+If the timeout is -1, the operation will never time out.
+
 See the documentation for [`QLocalSocket::connectToServer()`][qtdoc-qlocalsocket-connectToServer] and
 [`QLocalSocket::waitForConnected()`][qtdoc-qlocalsocket-waitForConnected] for details.
 
 ```cpp
-Awaitable auto QCoroLocalSocket::connectToServer(QIODevice::OpenMode openMode = QIODevice::ReadOnly);
-Awaitable auto QCoroLocalSocket::connectToServer(const QString &name, QIODevice::OpenMode openMode = QIODevice::ReadOnly);
+QCoro::Task<bool> QCoroLocalSocket::connectToServer(QIODevice::OpenMode openMode = QIODevice::ReadOnly,
+                                                    std::chrono::milliseconds timeout = std::chrono::seconds(30));
+QCoro::Taks<bool> QCoroLocalSocket::connectToServer(const QString &name, QIODevice::OpenMode openMode = QIODevice::ReadOnly,
+                                                    std::chrono::milliseconds timeout = std::chrono::seconds(30));
 ```
 
 ## Examples
@@ -87,7 +96,6 @@ QCoro::Task<QByteArray> requestDataFromServer(const QString &serverName) {
     co_return data;
 }
 ```
-
 
 [qtdoc-qiodevice]: https://doc.qt.io/qt-5/qiodevice.html
 [qtdoc-qlocalsocket]: https://doc.qt.io/qt-5/qlocalsocket.html

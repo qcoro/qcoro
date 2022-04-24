@@ -5,6 +5,7 @@
 #pragma once
 
 #include "task.h"
+#include "qcorosignal.h"
 
 #include <qglobal.h>
 #include <QDBusPendingReply>
@@ -81,7 +82,7 @@ public:
      QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
                       this, [](QDBusPendingCallWatcher *watcher) {
                          watcher->deleteLater();
-                         const QDBusReply<...> reply = *watcher;
+                         const QDBusPendingReply<...> reply = *watcher;
                          ...
                      });
      ```
@@ -106,8 +107,13 @@ public:
 
      @see docs/reference/qdbuspendingreply.md
      */
-    WaitForFinishedOperation waitForFinished() {
-        return WaitForFinishedOperation{mReply};
+    Task<QDBusPendingReply<Args ...>> waitForFinished() {
+        if (!mReply.isFinished()) {
+            QDBusPendingCallWatcher watcher{mReply};
+            co_await qCoro(&watcher, &QDBusPendingCallWatcher::finished);
+            co_return watcher.reply();
+        }
+        co_return mReply;
     }
 };
 

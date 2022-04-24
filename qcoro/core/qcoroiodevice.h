@@ -7,6 +7,7 @@
 #include "task.h"
 #include "coroutine.h"
 #include "macros_p.h"
+#include "waitoperationbase_p.h"
 
 #include <QPointer>
 
@@ -51,21 +52,6 @@ protected:
         std::function<QByteArray(QIODevice *)> mResultCb;
     };
 
-    class WriteOperation : public OperationBase {
-    public:
-        WriteOperation(QIODevice *device, const QByteArray &data);
-        Q_DISABLE_COPY(WriteOperation)
-        QCORO_DEFAULT_MOVE(WriteOperation)
-
-        bool await_ready() const noexcept;
-        void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
-        qint64 await_resume() noexcept;
-
-    private:
-        qint64 mBytesToBeWritten = 0;
-        qint64 mBytesWritten = 0;
-    };
-
     class ReadAllOperation final : public ReadOperation {
     public:
         explicit ReadAllOperation(QIODevice *device);
@@ -84,16 +70,21 @@ public:
      * Waits until the `QIODevice` emits [`readyRead()`][qdoc-qiodevice-readyRead] and
      * then calls `readAll()`.
      *
+     * Optional parameter timeout specifies how long to wait for the operation to
+     * complete. If timeout occurs before any data are available for reading, the
+     * operation will return an empty QByteArray. If the \c timeout is -1, the operation
+     * will never time out.
+     *
      * Identical to asynchronously calling
      * ```cpp
-     * device.waitForReadyRead();
+     * device.waitForReadyRead(timeout);
      * device.readAll();
      * ```
      *
      * [qdoc-qiodevice-readall]: https://doc.qt.io/qt-5/qiodevice.html#readAll
      * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
      */
-    ReadOperation readAll();
+    Task<QByteArray> readAll(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::read()`][qdoc-qiodevice-read].
@@ -101,23 +92,34 @@ public:
      * Waits until the `QIODevice` emits [`readyRead()`][qdoc-qiodevice-readyRead] and
      * then calls [`read()`][qdoc-qiodevice-read] to read up to \c maxSize bytes.
      *
+     * Optional parameter timeout specifies how long to wait for the operation to
+     * complete. If timeout occurs before any data are available for reading, the
+     * operation will return an empty QByteArray. If the timeout is -1, the operation
+     * will never time out.
+     *
      * Identical to asynchronously calling
      * ```cpp
-     * device.waitForReadyRead();
+     * device.waitForReadyRead(timeout);
      * device.read();
      * ```
      *
      * [qdoc-qiodevice-read]: https://doc.qt.io/qt-5/qiodevice.html#read-1
      * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
      */
-    ReadOperation read(qint64 maxSize);
+    Task<QByteArray> read(qint64 maxSize,
+                          std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
     /*!
      * \brief Co_awaitable equivalent to [`QIODevice::readLine()`][qdoc-qiodevice-readLine].
      *
      * Waits until the `QIODevice` emits [`readyRead()`][qdoc-qiodevice-readyRead] and
      * then calls [`readLine()`][qdoc-qiodevice-readLIne] to read until the end-of-line
-     * characte is reached or up to \c maxSize characters are read.
+     * character is reached or up to \c maxSize characters are read.
+     *
+     * Optional parameter timeout specifies how long to wait for the operation to
+     * complete. If timeout occurs before any data are available for reading, the
+     * operation will return an empty QByteArray. If the \c timeout is -1, the operation
+     * will never time out.
      *
      * Identical to asynchronously calling
      * ```cpp
@@ -128,7 +130,8 @@ public:
      * [qdoc-qiodevice-readLine]: https://doc.qt.io/qt-5/qiodevice.html#readLine
      * [qdoc-qiodevice-readyRead]: https://doc.qt.io/qt-5/qiodevice.html#readyRead
      */
-    ReadOperation readLine(qint64 maxSize = 0);
+    Task<QByteArray> readLine(qint64 maxSize = 0,
+                              std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
     // TODO
     //auto bytesAvailable(qint64 minBytes) {
@@ -149,9 +152,50 @@ public:
      * [qdoc-qiodevice-write]: https://doc.qt.io/qt-5/qiodevice.html#write-2
      * [qdoc-qiodevice-bytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#bytesWritten
      */
-    WriteOperation write(const QByteArray &buffer);
+    Task<qint64> write(const QByteArray &buffer);
+
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::waitForReadyRead`][qdoc-qiodevice-waitForReadyRead].
+     *
+     * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
+     * timeout rather than plain `int`. If the \c timeout is -1, the operation will enver time out.
+     *
+     * [qdoc-qiodevice-waitForReadyRead]: https://doc.qt.io/qt-5/qiodevice.html#waitForReadyRead
+     */
+    Task<bool> waitForReadyRead(std::chrono::milliseconds timeout);
+
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::waitForReadyRead`][qdoc-qiodevice-waitForReadyRead].
+     *
+     * If the \c timeout_msecs is -1, the operation will never time out.
+     *
+     * [qdoc-qiodevice-waitForReadyRead]: https://doc.qt.io/qt-5/qiodevice.html#waitForReadyRead
+     */
+    Task<bool> waitForReadyRead(int timeout_msecs);
+
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::waitForBytesWritten`][qdoc-qiodevice-waitForBytesWritten].
+     *
+     * Unlike the Qt version, this overload uses `std::chrono::milliseconds` to express the
+     * timeout rather than plain `int`. If the \c timeout is -1, the operation will never time out.
+     *
+     * [qdoc-qiodevice-waitForBytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#waitForBytesWritten
+     */
+    Task<std::optional<qint64>> waitForBytesWritten(std::chrono::milliseconds timeout);
+
+    /*!
+     * \brief Co_awaitable equivalent to [`QIODevice::waitForBytesWritten`][qdoc-qiodevice-waitForBytesWritten].
+     *
+     * If the \c timeout_msecs is -1, the operation will never time out.
+     *
+     * [qdoc-qiodevice-waitForBytesWritten]: https://doc.qt.io/qt-5/qiodevice.html#waitForBytesWritten
+     */
+    Task<std::optional<qint64>> waitForBytesWritten(int timeout_msecs);
 
 protected:
+    virtual Task<std::optional<bool>> waitForReadyReadImpl(std::chrono::milliseconds timeout);
+    virtual Task<std::optional<qint64>> waitForBytesWrittenImpl(std::chrono::milliseconds timeout);
+
     QPointer<QIODevice> mDevice = {};
 };
 
@@ -182,4 +226,18 @@ inline auto qCoro(QIODevice &d) noexcept {
 inline auto qCoro(QIODevice *d) noexcept {
     return QCoro::detail::QCoroIODevice{d};
 }
+
+// If you've got here due to a compile error, make sure to #include the QCoro header
+// for the corresponding class, so that the qCoro() overload that wraps the QIODevice-dervied
+// classes in their respective QCoroIODevice-derived wrappers is used.
+//
+// Wrapping those classes into QCoroIODevice will cause co_awaiting certain operations to not
+// work as expected.
+class QAbstractSocket;
+auto qCoro(QAbstractSocket *) noexcept; // You are likely missing "#include <QCoroAbstractSocket>"
+class QLocalSocket;
+auto qCoro(QLocalSocket *) noexcept; // You are likely missing "#include <QCoroLocalSocket>"
+class QNetworkReply;
+auto qCoro(QNetworkReply *) noexcept; // You are likely missing "#include <QNetworkReply>"
+
 
