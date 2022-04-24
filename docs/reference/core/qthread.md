@@ -6,7 +6,7 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 
 # QThread
 
-{{ doctable("Core", "QCoroThread", ("core/qthread", "QCoroThread")) }}
+{{ doctable("Core", "QCoroThread") }}
 
 [`QThread`][qtdoc-qthread] has two events: `started` and `finished`. QCoro provides
 a coroutine-friendly wrapper for `QThread` - `QCoroThread`, which allows `co_await`ing
