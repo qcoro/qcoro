@@ -25,25 +25,25 @@ See [`QCoroIODevice`][qcoro-qcoroiodevice] documentation for details.
 ## `waitForStarted()`
 
 Waits for the process to be started or until it times out. Returns `bool` indicating
-whether the process has started successfuly or timed out.
+whether the process has started successfuly (`true`) or timed out (`false`).
 
 See documentation for [`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted] for details.
 
 ```cpp
-Awaitable auto QCoroProcess::waitForStarted(int timeout = 30'000);
-Awaitable auto QCoroProcess::waitForStarted(std::chrono::milliseconds timeout);
+QCoro::Task<bool> QCoroProcess::waitForStarted(int timeout = 30'000);
+QCoro::Task<bool> QCoroProcess::waitForStarted(std::chrono::milliseconds timeout);
 ```
 
 ## `waitForFinished()`
 
 Waits for the process to finish or until it times out. Returns `bool` indicating
-whether the process has finished successfuly or timed out.
+whether the process has finished successfuly (`true`) or timed out (`false`).
 
 See documentation for [`QProcess::waitForFinished()`][qtdoc-qprocess-waitForFinished] for details.
 
 ```cpp
-Awaitable auto QCoroProcess::waitForFinishedint timeout = 30'000);
-Awaitable auto QCoroProcess::waitForFinished(std::chrono::milliseconds timeout);
+QCoro::Task<bool> QCoroProcess::waitForFinishedint timeout = 30'000);
+QCoro::Task<bool> QCoroProcess::waitForFinished(std::chrono::milliseconds timeout);
 
 ```
 
@@ -54,12 +54,16 @@ QCoroProcess provides an additional method called `start()` which is equivalent 
 as well.
 
 See the documentation for [`QProcess::start()`][qtdoc-qprocess-start] and
-[`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted] for details.
+[`QProcess::waitForStarted()`][qtdoc-qprocess-waitForStarted] for details.o
+
+Returns `true` when the process has successfully started, `false` otherwise.
 
 ```cpp
-Awaitable auto QCoroProcess::start(QIODevice::OpenMode openMode) = QIODevice::ReadOnly;
-Awaitable auto QCoroProcess::start(const QString &program, const QStringList &arguments,
-                                   QIODevice::OpenMode openMode = QIODevice::ReadOnly);
+QCoro::Task<bool> QCoroProcess::start(QIODevice::OpenMode openMode = QIODevice::ReadOnly,
+                                      std::chrono::milliseconds timeout = std::chrono::seconds(30));
+QCoro::Task<bool> QCoroProcess::start(const QString &program, const QStringList &arguments,
+                                      QIODevice::OpenMode openMode = QIODevice::ReadOnly,
+                                      std::chrono::milliseconds timeout = std::chrono::seconds(30));
 ```
 
 ## Examples
