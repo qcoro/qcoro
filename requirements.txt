@@ -1,5 +1,6 @@
 setuptools
 wheel
+pygments~=2.11.0
 mkdocs
 mkdocs-material
 mkdocs-section-index
