@@ -4,6 +4,7 @@
 
 #include "testhttpserver.h"
 #include "testobject.h"
+#include "qcoroiodevice_macros.h"
 
 #include "qcoro/network/qcoronetworkreply.h"
 
@@ -93,11 +94,7 @@ private:
         auto *reply = nam.get(
             QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
-        QByteArray data;
-        while (!reply->isFinished()) {
-            data += co_await qCoro(reply).readAll();
-        }
-        data += reply->readAll(); // read what's left in the buffer
+        QCORO_TEST_IODEVICE_READALL(*reply);
 
         QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
     }
@@ -108,11 +105,7 @@ private:
         auto *reply = nam.get(
             QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
-        QByteArray data;
-        while (!reply->isFinished()) {
-            data += co_await qCoro(reply).read(1);
-        }
-        data += reply->readAll(); // read what's left in the buffer
+        QCORO_TEST_IODEVICE_READ(*reply);
 
         QCORO_COMPARE(data.size(), reply->rawHeader("Content-Length").toInt());
     }
@@ -123,14 +116,7 @@ private:
         auto *reply = nam.get(
             QNetworkRequest{QStringLiteral("http://127.0.0.1:%1/stream").arg(mServer.port())});
 
-        QByteArrayList lines;
-        while (!reply->isFinished()) {
-            const auto line = co_await qCoro(reply).readLine();
-            if (!line.isNull()) {
-                lines.push_back(line);
-            }
-        }
-
+        QCORO_TEST_IODEVICE_READLINE(*reply);
         QCORO_COMPARE(lines.size(), 10);
     }
 

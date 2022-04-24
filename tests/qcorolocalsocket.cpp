@@ -4,6 +4,7 @@
 
 #include "testhttpserver.h"
 #include "testobject.h"
+#include "qcoroiodevice_macros.h"
 
 #include "qcoro/network/qcorolocalsocket.h"
 
@@ -85,11 +86,7 @@ private:
 
         QLocalSocket socket;
 
-        const auto start = std::chrono::steady_clock::now();
-        const bool ok = co_await qCoro(socket).waitForConnected(10ms);
-        const auto end = std::chrono::steady_clock::now();
-        QCORO_VERIFY(!ok);
-        QCORO_VERIFY(end - start < 500ms);
+        QCORO_TEST_TIMEOUT(co_await qCoro(socket).waitForConnected(10ms));
     }
 
     QCoro::Task<> testWaitForDisconnectedTimeout_coro(QCoro::TestContext) {
@@ -97,11 +94,7 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        const auto start = std::chrono::steady_clock::now();
-        const bool ok = co_await qCoro(socket).waitForDisconnected(10ms);
-        const auto end = std::chrono::steady_clock::now();
-        QCORO_VERIFY(!ok);
-        QCORO_VERIFY(end - start < 500ms);
+        QCORO_TEST_TIMEOUT(co_await qCoro(socket).waitForDisconnected(10ms));
     }
 
     QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext) {
@@ -111,14 +104,7 @@ private:
 
         socket.write("GET /stream HTTP/1.1\r\n");
 
-        QByteArray data;
-        while (socket.state() == QLocalSocket::ConnectedState) {
-            data += co_await qCoro(socket).readAll();
-        }
-        QCORO_VERIFY(!data.isEmpty());
-        data += socket.readAll(); // read what's left in the buffer
-
-        QCORO_VERIFY(!data.isEmpty());
+        QCORO_TEST_IODEVICE_READALL(socket);
     }
 
     QCoro::Task<> testReadTriggers_coro(QCoro::TestContext) {
@@ -128,14 +114,7 @@ private:
 
         socket.write("GET /stream HTTP/1.1\r\n");
 
-        QByteArray data;
-        while (socket.state() == QLocalSocket::ConnectedState) {
-            data += co_await qCoro(socket).read(1);
-        }
-        QCORO_VERIFY(!data.isEmpty());
-        data += socket.readAll(); // read what's left in the buffer
-
-        QCORO_VERIFY(!data.isEmpty());
+        QCORO_TEST_IODEVICE_READ(socket);
     }
 
     QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext) {
@@ -145,14 +124,7 @@ private:
 
         socket.write("GET /stream HTTP/1.1\r\n");
 
-        QByteArrayList lines;
-        while (socket.state() == QLocalSocket::ConnectedState) {
-            const auto line = co_await qCoro(socket).readLine();
-            if (!line.isNull()) {
-                lines.push_back(line);
-            }
-        }
-
+        QCORO_TEST_IODEVICE_READLINE(socket);
         QCORO_COMPARE(lines.size(), 14);
     }
 
