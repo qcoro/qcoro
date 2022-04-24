@@ -21,7 +21,11 @@ public:
     SocketConnectedHelper(const QLocalSocket *socket, void(QLocalSocket::*signal)())
         : QObject()
         , mSignal(connect(socket, signal, this, [this]() { emitReady(true); }))
-        , mError(connect(socket, &QLocalSocket::errorOccurred, this, [this]() { emitReady(false); }))
+        , mStateChange(connect(socket, &QLocalSocket::stateChanged, this, [this](auto state) {
+            if (state == QLocalSocket::UnconnectedState) {
+                emitReady(false);
+            }
+        }))
     {}
 
 Q_SIGNALS:
@@ -30,12 +34,12 @@ Q_SIGNALS:
 private:
     void emitReady(bool result) {
         disconnect(mSignal);
-        disconnect(mError);
+        disconnect(mStateChange);
         Q_EMIT ready(result);
     }
 private:
     QMetaObject::Connection mSignal;
-    QMetaObject::Connection mError;
+    QMetaObject::Connection mStateChange;
 };
 
 class SocketReadySignalHelper : public WaitSignalHelper {
