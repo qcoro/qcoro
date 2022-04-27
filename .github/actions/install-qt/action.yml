@@ -15,18 +15,31 @@ runs:
   steps:
     - shell: bash
       run: |
-        pip3 install aqtinstall~=2.1
         if [[ "${{ inputs.compiler }}" == "msvc" ]]; then
-          aqt install-qt -O C:\Qt windows desktop ${{ inputs.qt_version }} win64_msvc2019_64 --archives ${{ inputs.qt_modules }} w
+          pip3 install aqtinstall~=2.1
+          aqt install-qt -O C:\Qt windows desktop ${{ inputs.qt_version }} win64_msvc2019_64 --archives ${{ inputs.qt_modules }}
           QT_BASE_DIR="C:\Qt\${{ inputs.qt_version }}\msvc2019_64"
 
           powershell "./.github/actions/install-qt/install-dbus.ps1" "$QT_BASE_DIR"
 
           echo "$QT_BASE_DIR\\bin" >> $GITHUB_PATH
           echo "CMAKE_PREFIX_PATH=$QT_BASE_DIR\\lib\\cmake" >> $GITHUB_ENV
+        elif [[ "${{ inputs.compiler }}" == "apple-clang" ]]; then
+          pip3 install aqtinstall~=2.1
+          aqt install-qt -O /Users/runner/qt mac desktop ${{ inputs.qt_version }} --archives ${{ inputs.qt_modules }}
+
+          if [[ "$(echo ${{ inputs.qt_version }} | cut -d'.' -f1)" == "6" ]]; then
+            QT_BASE_DIR="/Users/runner/qt/${{ inputs.qt_version }}/macos"
+          else
+            QT_BASE_DIR="/Users/runner/qt/${{ inputs.qt_version }}/clang_64"
+          fi
+          echo "$QT_BASE_DIR/bin" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "XDG_DATA_DIRS=$QT_BASE_DIR/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
         else
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends build-essential dbus dbus-x11 libgl-dev libegl-dev
+          sudo apt-get install -y --no-install-recommends python3 python3-pip build-essential dbus dbus-x11 libgl-dev libegl-dev
+          pip3 install aqtinstall~=2.1
           if [[ "${{ inputs.compiler }}" == "clang"* ]]; then
             sudo apt-get install -y --no-install-recommends libc++1-11 libc++-11-dev libc++abi-11-dev
           fi
@@ -37,4 +50,3 @@ runs:
           echo "LD_LIBRARY_PATH=$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
           echo "XDG_DATA_DIRS=$QT_BASE_DIR/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
         fi
-
