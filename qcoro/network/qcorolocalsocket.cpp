@@ -42,15 +42,15 @@ private:
     QMetaObject::Connection mStateChange;
 };
 
-class SocketReadySignalHelper : public WaitSignalHelper {
+class LocalSocketReadySignalHelper : public WaitSignalHelper {
     Q_OBJECT
 public:
-    SocketReadySignalHelper(const QLocalSocket *socket, void(QIODevice::*signal)())
+    LocalSocketReadySignalHelper(const QLocalSocket *socket, void(QIODevice::*signal)())
         : WaitSignalHelper(socket, signal)
         , mStateChange(connect(socket, &QLocalSocket::stateChanged, this,
                                [this](auto state) { stateChanged(state, false); }))
     {}
-    SocketReadySignalHelper(const QLocalSocket *socket, void(QIODevice::*signal)(qint64))
+    LocalSocketReadySignalHelper(const QLocalSocket *socket, void(QIODevice::*signal)(qint64))
         : WaitSignalHelper(socket, signal)
         , mStateChange(connect(socket, &QLocalSocket::stateChanged, this,
                                [this](auto state) { stateChanged(state, static_cast<qint64>(0)); }))
@@ -80,8 +80,8 @@ QCoro::Task<std::optional<bool>> QCoroLocalSocket::waitForReadyReadImpl(std::chr
     if (socket->state() != QLocalSocket::ConnectedState) {
         co_return false;
     }
-    SocketReadySignalHelper helper(socket, &QLocalSocket::readyRead);
-    co_return co_await qCoro(&helper, qOverload<bool>(&SocketReadySignalHelper::ready), timeout);
+    LocalSocketReadySignalHelper helper(socket, &QLocalSocket::readyRead);
+    co_return co_await qCoro(&helper, qOverload<bool>(&LocalSocketReadySignalHelper::ready), timeout);
 }
 
 QCoro::Task<std::optional<qint64>> QCoroLocalSocket::waitForBytesWrittenImpl(std::chrono::milliseconds timeout) {
@@ -89,8 +89,8 @@ QCoro::Task<std::optional<qint64>> QCoroLocalSocket::waitForBytesWrittenImpl(std
     if (socket->state() != QLocalSocket::ConnectedState) {
         co_return std::nullopt;
     }
-    SocketReadySignalHelper helper(socket, &QLocalSocket::bytesWritten);
-    co_return co_await qCoro(&helper, qOverload<qint64>(&SocketReadySignalHelper::ready), timeout);
+    LocalSocketReadySignalHelper helper(socket, &QLocalSocket::bytesWritten);
+    co_return co_await qCoro(&helper, qOverload<qint64>(&LocalSocketReadySignalHelper::ready), timeout);
 }
 
 QCoro::Task<bool> QCoroLocalSocket::waitForConnected(int timeout_msecs) {
