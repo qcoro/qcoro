@@ -127,8 +127,7 @@ QCoroSignal(T *, FuncPtr &&, std::chrono::milliseconds) -> QCoroSignal<T, FuncPt
 template<QCoro::detail::concepts::QObject T, typename FuncPtr>
 inline auto qCoro(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
     -> QCoro::Task<typename QCoro::detail::QCoroSignal<T, FuncPtr>::result_type> {
-    QCoro::detail::QCoroSignal coroSignal(obj, std::forward<FuncPtr>(ptr), timeout);
-    auto result = co_await coroSignal;
+    auto result = co_await QCoro::detail::QCoroSignal(obj, std::forward<FuncPtr>(ptr), timeout);
     co_return std::move(result);
 }
 
