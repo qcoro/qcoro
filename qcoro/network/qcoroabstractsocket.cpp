@@ -11,16 +11,16 @@ using namespace std::chrono_literals;
 
 namespace {
 
-class SocketReadySignalHelper : public WaitSignalHelper {
+class AbstractSocketReadySignalHelper : public WaitSignalHelper {
     Q_OBJECT
 public:
-    explicit SocketReadySignalHelper(const QAbstractSocket *socket, void(QIODevice::*readySignal)())
+    explicit AbstractSocketReadySignalHelper(const QAbstractSocket *socket, void(QIODevice::*readySignal)())
         : WaitSignalHelper(socket, readySignal)
         , mStateChanged(connect(socket, &QAbstractSocket::stateChanged, this,
                         [this](QAbstractSocket::SocketState state) { handleStateChange(state, false); }))
     {}
 
-    explicit SocketReadySignalHelper(const QAbstractSocket *socket, void(QIODevice::*readySignal)(qint64))
+    explicit AbstractSocketReadySignalHelper(const QAbstractSocket *socket, void(QIODevice::*readySignal)(qint64))
         : WaitSignalHelper(socket, readySignal)
         , mStateChanged(connect(socket, &QAbstractSocket::stateChanged, this,
                         [this](QAbstractSocket::SocketState state) {
@@ -51,7 +51,7 @@ QCoro::Task<std::optional<bool>> QCoroAbstractSocket::waitForReadyReadImpl(std::
         co_return false;
     }
 
-    SocketReadySignalHelper helper(socket, &QIODevice::readyRead);
+    AbstractSocketReadySignalHelper helper(socket, &QIODevice::readyRead);
     co_return co_await qCoro(&helper, qOverload<bool>(&WaitSignalHelper::ready), timeout);
 }
 
@@ -61,7 +61,7 @@ QCoro::Task<std::optional<qint64>> QCoroAbstractSocket::waitForBytesWrittenImpl(
         co_return std::nullopt;
     }
 
-    SocketReadySignalHelper helper(socket, &QIODevice::bytesWritten);
+    AbstractSocketReadySignalHelper helper(socket, &QIODevice::bytesWritten);
     co_return co_await qCoro(&helper, qOverload<qint64>(&WaitSignalHelper::ready), timeout);
 }
 
