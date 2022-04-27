@@ -6,6 +6,11 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 
 # Changelog
 
+## 0.5.1 (2022-04-27)
+
+* Fix build with GCC>=11.3 ([#57](https://github.com/danvratil/qcoro/issues/#57), [#58](https://github.com/danvratil/qcoro/pulls/58))
+* Fix ODR violation when building with GCC and LTO enabled ([#59](https://github.com/danvratil/qcoro/pulls/59))
+
 ## 0.5.0 (2022-04-25)
 
 Major features:
