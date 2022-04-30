@@ -52,6 +52,8 @@ class TestHttpServer {
 public:
     template<typename T>
     void start(const T &name) {
+        mPort = 0;
+        mHasConnection = false;
         mStop = false;
         mExpectTimeout = false;
         // Can't use QThread::create, it's only available when Qt is built with C++17,
@@ -69,6 +71,7 @@ public:
         }
         mThread.reset();
         mPort = 0;
+        mHasConnection = false;
     }
 
     uint16_t port() const {
@@ -77,6 +80,11 @@ public:
 
     void setExpectTimeout(bool expectTimeout) {
         mExpectTimeout = expectTimeout;
+    }
+
+    bool waitForConnection() {
+        std::unique_lock lock(mReadyMutex);
+        return mServerReady.wait_for(lock, std::chrono::seconds(5), [this]() { return mHasConnection; });
     }
 
 private:
@@ -116,6 +124,9 @@ private:
             mPort = 0;
             return;
         }
+
+        mHasConnection = true;
+        mServerReady.notify_all();
 
         if (conn->waitForReadyRead(1000)) {
             const auto request = conn->readLine();
@@ -171,6 +182,7 @@ private:
     std::mutex mReadyMutex;
     std::condition_variable mServerReady;
     uint16_t mPort = 0;
+    bool mHasConnection = false;
     std::atomic_bool mStop = false;
     std::atomic_bool mExpectTimeout = false;
 };
