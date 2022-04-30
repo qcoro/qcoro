@@ -28,7 +28,7 @@ if (QCORO_WITH_QTDBUS)
 endif()
 
 function(qcoro_add_test _name)
-    set(options)
+    set(options SKIP_ADD_TEST)
     set(oneValueArgs)
     set(multiValueAgs LINK_LIBRARIES)
     cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
@@ -42,45 +42,30 @@ function(qcoro_add_test _name)
         ${TEST_LINK_LIBRARIES}
         Threads::Threads
     )
-    add_test(NAME test-${_name} COMMAND test-${_name})
+    if (NOT TEST_SKIP_ADD_TEST)
+        add_test(NAME test-${_name} COMMAND test-${_name})
+    endif()
 endfunction()
 
 function(qcoro_add_network_test _name)
-    set(options)
-    set(oneValueArgs)
-    set(multiValueAgs LINK_LIBRARIES)
-    cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
-    add_executable(test-${_name} ${_name}.cpp)
+    qcoro_add_test(${_name} ${ARGN})
     target_link_libraries(
         test-${_name}
         QCoro${QT_VERSION_MAJOR}Network
-        qcoro_test
-        Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::Test
         Qt${QT_VERSION_MAJOR}::Network
-        Threads::Threads
-        ${TEST_LINK_LIBRARIES}
     )
     if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB)
         target_link_libraries(test-${_name} atomic)
     endif()
-    add_test(NAME test-${_name} COMMAND test-${_name})
 endfunction()
 
 function(qcoro_add_dbus_test _name)
-    set(options)
-    set(oneValueArgs)
-    set(multiValueAgs LINK_LIBRARIES)
-    cmake_parse_arguments(TEST "${options}" "${oneValueArgs}" "${multiValueAgs}" ${ARGN})
-    set(test_SRCS ${_name}.cpp)
-    add_executable(test-${_name} ${test_SRCS})
+    qcoro_add_test(${_name} ${ARGN} SKIP_ADD_TEST)
     add_dependencies(test-${_name} testdbusserver qcoro_test_dbus)
     target_link_libraries(
         test-${_name}
         QCoro${QT_VERSION_MAJOR}DBus
-        qcoro_test
         qcoro_test_dbus
-        ${TEST_LINK_LIBRARIES}
     )
     target_include_directories(test-${_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_compile_definitions(test-${_name} PRIVATE TESTDBUSSERVER_EXECUTABLE=\"$<TARGET_FILE:testdbusserver>\")
