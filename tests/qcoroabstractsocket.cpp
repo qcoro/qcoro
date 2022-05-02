@@ -91,6 +91,8 @@ private:
         context.setShouldNotSuspend();
         co_await qCoro(socket).waitForConnected();
 
+        socket.write("GET / HTTP/1.1\r\n");
+
         QCORO_VERIFY(mServer.waitForConnection());
     }
 
