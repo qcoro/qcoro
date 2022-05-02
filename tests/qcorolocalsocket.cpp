@@ -25,6 +25,7 @@ private:
         co_await qCoro(socket).waitForConnected();
 
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenWaitForConnectedTriggers_coro(TestLoop &el) {
@@ -38,6 +39,7 @@ private:
         });
         el.exec();
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     QCoro::Task<> testWaitForDisconnectedTriggers_coro(QCoro::TestContext) {
@@ -50,6 +52,7 @@ private:
         co_await qCoro(socket).waitForDisconnected();
 
         QCORO_COMPARE(socket.state(), QLocalSocket::UnconnectedState);
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenWaitForDisconnectedTriggers_coro(TestLoop &el) {
@@ -66,6 +69,7 @@ private:
         });
         el.exec();
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     // On Linux at least, QLocalSocket connects immediately and synchronously
@@ -78,6 +82,7 @@ private:
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
         co_await qCoro(socket).waitForConnected();
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenDoesntCoAwaitConnectedSocket_coro(TestLoop &el) {
@@ -93,6 +98,7 @@ private:
         });
         el.exec();
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     QCoro::Task<> testDoesntCoAwaitDisconnectedSocket_coro(QCoro::TestContext context) {
@@ -128,6 +134,7 @@ private:
         co_await qCoro(socket).connectToServer(QCoroLocalSocketTest::getSocketName());
 
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenConnectToServerWithArgs_coro(TestLoop &el) {
@@ -140,6 +147,7 @@ private:
         });
         el.exec();
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     QCoro::Task<> testConnectToServer_coro(QCoro::TestContext context) {
@@ -151,6 +159,7 @@ private:
         co_await qCoro(socket).connectToServer();
 
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenConnectToServer_coro(TestLoop &el) {
@@ -164,6 +173,7 @@ private:
         });
         el.exec();
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     QCoro::Task<> testWaitForConnectedTimeout_coro(QCoro::TestContext) {
@@ -198,6 +208,7 @@ private:
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
         QCORO_TEST_TIMEOUT(co_await qCoro(socket).waitForDisconnected(10ms));
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenWaitForDisconnectedTimeout_coro(TestLoop &el) {
@@ -215,6 +226,7 @@ private:
         const auto end = std::chrono::steady_clock::now();
         QVERIFY(end - start < 500ms);
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     QCoro::Task<> testReadAllTriggers_coro(QCoro::TestContext) {
@@ -225,6 +237,7 @@ private:
         socket.write("GET /stream HTTP/1.1\r\n");
 
         QCORO_TEST_IODEVICE_READALL(socket);
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenReadAllTriggers_coro(TestLoop &el) {
@@ -241,6 +254,7 @@ private:
         el.exec();
 
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     QCoro::Task<> testReadTriggers_coro(QCoro::TestContext) {
@@ -251,6 +265,7 @@ private:
         socket.write("GET /stream HTTP/1.1\r\n");
 
         QCORO_TEST_IODEVICE_READ(socket);
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenReadTriggers_coro(TestLoop &el) {
@@ -266,6 +281,7 @@ private:
         socket.write("GET /block HTTP/1.1\r\n");
         el.exec();
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
     QCoro::Task<> testReadLineTriggers_coro(QCoro::TestContext) {
@@ -277,6 +293,7 @@ private:
 
         QCORO_TEST_IODEVICE_READLINE(socket);
         QCORO_COMPARE(lines.size(), 14);
+        QCORO_VERIFY(mServer.waitForConnection());
     }
 
     void testThenReadLineTriggers_coro(TestLoop &el) {
@@ -293,6 +310,7 @@ private:
         el.exec();
 
         QVERIFY(called);
+        QVERIFY(mServer.waitForConnection());
     }
 
 private Q_SLOTS:

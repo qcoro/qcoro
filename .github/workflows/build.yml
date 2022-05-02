@@ -13,29 +13,167 @@ env:
   QTEST_FUNCTION_TIMEOUT: 60000
 
 jobs:
-  build:
+  linux-gcc:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
         qt_version: [ 5.15.2, 6.2.0 ]
-        compiler: [ gcc-10, clang-11, msvc ]
-        exclude:
-          - os: ubuntu-latest
-            compiler: msvc
-          - os: windows-latest
-            compiler: gcc-10
-          - os: windows-latest
-            compiler: clang-11
-          - os: windows-latest
-            qt_version: 5.15.2
-        include:
-          - os: windows-latest
-            compiler: msvc
-            qt_version: 5.15.2
+        gcc_version: [ 10.3.0, 11.3.0 ]
 
-    runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-qt${{ matrix.qt_version}}-${{ matrix.compiler }}
+    runs-on: ubuntu-20.04
+    name: linux-gcc-${{ matrix.gcc_version }}-qt-${{ matrix.qt_version }}
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - name: Install Qt
+      run: |
+        GCC_VERSION_MAJOR=$(echo ${{ matrix.gcc_version }} | cut -d '.' -f1)
+        sudo add-apt-repository "deb https://ppa.launchpadcontent.net/ubuntu-toolchain-r/ppa/ubuntu focal main"
+        sudo apt-get update
+        sudo apt-get install -y \
+          lsb-release wget software-properties-common build-essential \
+          dbus dbus-x11 libgl-dev libegl-dev \
+          gcc-${GCC_VERSION_MAJOR} g++-${GCC_VERSION_MAJOR} libstdc++-${GCC_VERSION_MAJOR}-dev
+
+        pip3 install aqtinstall~=2.1
+
+        aqt install-qt -O /opt/qt linux desktop ${{ matrix.qt_version }} gcc_64 --archives qtbase icu
+
+        QT_BASE_DIR="/opt/qt/${{ matrix.qt_version }}/gcc_64/"
+        echo "$QT_BASE_DIR/bin" >> $GITHUB_PATH
+        echo "LD_LIBRARY_PATH=$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "XDG_DATA_DIRS=$QT_BASE_DIR/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
+
+    - name: Create Build Environment
+      run: |
+        cmake -E make_directory ${{ github.workspace }}/build
+
+    - name: Configure CMake
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/build
+        GCC_VERSION_MAJOR=$(echo ${{ matrix.gcc_version }} | cut -d '.' -f1)
+        QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
+        cmake $GITHUB_WORKSPACE \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
+          -DQCORO_WITH_QTDBUS=ON \
+          -DCMAKE_CXX_COMPILER=/usr/bin/g++-${GCC_VERSION_MAJOR}
+
+    - name: Build
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/build
+        cmake --build . --config $BUILD_TYPE --parallel $(nproc) --verbose
+
+    - name: Test
+      shell: bash
+      run: |
+        cd ${{ github.workspace }}/build
+        QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit linux-gcc-${{ matrix.gcc_version }}-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unit Tests Results (linux-gcc-${{ matrix.gcc_version }}-qt-${{ matrix.qt_version }})
+        path: |
+          ${{ github.workspace }}/build/linux-gcc-${{ matrix.gcc_version }}-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-linux-gcc-${{ matrix.gcc_version }}-qt-${{ matrix.qt_version }}
+        path: build/**
+
+  linux-clang:
+    strategy:
+      fail-fast: false
+      matrix:
+        qt_version: [ 5.15.2, 6.2.0 ]
+        clang_version: [ 11, 14, 15 ]
+
+    runs-on: ubuntu-20.04
+    name: linux-clang-${{ matrix.clang_version }}-qt-${{ matrix.qt_version}}
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - name: Install Qt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          lsb-release wget software-properties-common build-essential \
+          dbus dbus-x11 libgl-dev libegl-dev
+        pip3 install aqtinstall~=2.1
+
+        aqt install-qt -O /opt/qt linux desktop ${{ matrix.qt_version }} gcc_64 --archives qtbase icu
+
+        QT_BASE_DIR="/opt/qt/${{ matrix.qt_version }}/gcc_64/"
+        echo "$QT_BASE_DIR/bin" >> $GITHUB_PATH
+        echo "LD_LIBRARY_PATH=$QT_BASE_DIR/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+        echo "XDG_DATA_DIRS=$QT_BASE_DIR/share:$XDG_DATA_DIRS" >> $GITHUB_ENV
+
+    - name: Install clang
+      run: |
+        wget https://apt.llvm.org/llvm.sh -O llvm.sh
+        chmod a+x llvm.sh
+        sed -i "s/libunwind-\$LLVM_VERSION-dev//" llvm.sh
+        sudo ./llvm.sh ${{ matrix.clang_version }} all
+
+    - name: Create Build Environment
+      run: |
+        cmake -E make_directory ${{ github.workspace }}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{ github.workspace }}/build
+      run: |
+        QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
+        cmake $GITHUB_WORKSPACE \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
+          -DQCORO_WITH_DBUS=ON \
+          -DQCORO_WITH_ASAN=ON \
+          -DCMAKE_CXX_COMPILER=/usr/bin/clang++-${{ matrix.clang_version }}
+
+    - name: Build
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --parallel $(nproc) --verbose
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit linux-clang-${{ matrix.clang_version }}-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unit Tests Results (linux-clang-${{ matrix.clang_version }}-qt-${{ matrix.qt_version }})
+        path: |
+          ${{ github.workspace }}/build/linux-clang-${{ matrix.clang_version }}-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-linux-clang-${{ matrix.clang_version }}-qt-${{ matrix.qt_version }}
+        path: build/**
+
+  windows-msvc:
+    strategy:
+      fail-fast: false
+      matrix:
+        qt_version: [ 5.15.2, 6.2.0 ]
+
+    runs-on: windows-2022
+    name: window-msvc-qt-${{ matrix.qt_version }}
 
     steps:
     - name: Checkout sources
@@ -45,32 +183,20 @@ jobs:
       uses: ./.github/actions/install-qt
       with:
         qt_version: ${{ matrix.qt_version }}
-        compiler: ${{ matrix.compiler }}
+        compiler: msvc
 
     - name: Create Build Environment
       run: |
-        cmake -E make_directory ${{github.workspace}}/build
+        cmake -E make_directory ${{ github.workspace }}/build
 
     - name: Configure CMake
       shell: bash
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{ github.workspace }}/build
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
-        ARGS="-DCMAKE_BUILD_TYPE=$BULD_TYPE -DUSE_QT_VERSION=$QT_VERSION_MAJOR -DQCORO_WITH_DBUS=ON"
-        # Don't enable ASAN on Qt5 MSVC build: it crashes due to some false-positive issue outside of QCoro
-        if [[ "${{ matrix.compiler }}" != "msvc" || "${QT_VERSION_MAJOR}" != "5" ]]; then
-          ARGS="${ARGS} -DQCORO_ENABLE_ASAN=ON"
-        fi
-        if [[ "${{ matrix.compiler }}" == "gcc-10"* ]]; then
-          ARGS="$ARGS -DCMAKE_CXX_COMPILER=/usr/bin/g++-10"
-        elif [[ "${{ matrix.compiler }}" == "clang-11" ]]; then
-          ARGS="$ARGS -DCMAKE_CXX_COMPILER=/usr/bin/clang++-11"
-        fi
-
-        cmake $GITHUB_WORKSPACE $ARGS
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BULD_TYPE -DUSE_QT_VERSION=$QT_VERSION_MAJOR -DQCORO_WITH_DBUS=ON
 
     - name: Add ASAN DLL directory to PATH
-      if: ${{ matrix.os == 'windows-latest' }}
       shell: cmd
       run: |
         setlocal enabledelayedexpansion
@@ -85,28 +211,87 @@ jobs:
         )
 
     - name: Build
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{ github.workspace }}/build
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --parallel 4 --verbose
 
     - name: Test
-      working-directory: ${{github.workspace}}/build
+      working-directory: ${{ github.workspace }}/build
       shell: bash
-      run: QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit qcoro-test-results.xml
+      run: QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit windows-msvc-qt-${{ matrix.qt_version }}.xml
 
     - name: Upload Test Results
       if: always()
       uses: actions/upload-artifact@v2
       with:
-        name: Unit Tests Results (${{ matrix.os }}-qt${{ matrix.qt_version }}-${{ matrix.compiler }})
+        name: Unit Tests Results (windows-msvc-qt-${{ matrix.qt_version }})
         path: |
-          ${{ github.workspace }}/build/qcoro-test-results.xml
+          ${{ github.workspace }}/build/windows-msvc-qt-${{ matrix.qt_version }}.xml
 
     - name: Upload build logs on failure
       if: failure()
       uses: actions/upload-artifact@v2
       with:
-        name: build-${{ matrix.os }}-qt${{ matrix.qt_version }}-${{ matrix.compiler }}
+        name: build-windows-msvc-qt-${{ matrix.qt_version }}
+        path: build/**
+
+  apple-clang:
+    strategy:
+      fail-fast: false
+      matrix:
+        qt_version: [ 5.15.2, 6.2.0 ]
+
+    runs-on: macos-11
+    name: apple-clang-qt-${{ matrix.qt_version }}
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - name: Install Qt
+      uses: ./.github/actions/install-qt
+      with:
+        qt_version: ${{ matrix.qt_version }}
+        compiler: apple-clang
+
+    - name: Create Build Environment
+      run: |
+        cmake -E make_directory ${{ github.workspace }}/build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{ github.workspace }}/build
+      run: |
+        QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
+        cmake $GITHUB_WORKSPACE \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
+          -DQCORO_WITH_DBUS=ON \
+          -DQCORO_WITH_ASAN=ON
+
+    - name: Build
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --parallel $(nproc) --verbose
+
+    - name: Test
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE --output-on-failure --verbose --output-junit apple-clang-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unit Tests Results (apple-clang-qt-${{ matrix.qt_version }})
+        path: |
+          ${{ github.workspace }}/build/apple-clang-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-apple-clang-qt-${{ matrix.qt_version }}
         path: build/**
 
   event_file:

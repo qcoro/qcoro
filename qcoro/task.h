@@ -554,27 +554,27 @@ public:
      * returns an awaitable (Task<R>) then the result of then is the awaitable.
      */
     template<typename ThenCallback>
-    requires (std::invocable<ThenCallback> || (!std::is_void_v<T> && std::invocable<ThenCallback, T>))
+    requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
     auto then(ThenCallback &&callback) {
         return thenImpl(std::forward<ThenCallback>(callback));
     }
 
     template<typename ThenCallback, typename ErrorCallback>
-    requires ((std::invocable<ThenCallback> || (!std::is_void_v<T> && std::invocable<ThenCallback, T>)) &&
-               std::invocable<ErrorCallback, const std::exception &>)
+    requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
+               std::is_invocable_v<ErrorCallback, const std::exception &>)
     auto then(ThenCallback &&callback, ErrorCallback &&errorCallback) {
         return thenImpl(std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback));
     }
 
 private:
     template<typename ThenCallback, typename ... Args>
-    requires (std::invocable<ThenCallback>)
+    requires (std::is_invocable_v<ThenCallback>)
     auto invoke(ThenCallback &&callback, Args && ...) {
         return callback();
     }
 
     template<typename ThenCallback, typename Arg>
-    requires (std::invocable<ThenCallback, Arg>)
+    requires (std::is_invocable_v<ThenCallback, Arg>)
     auto invoke(ThenCallback &&callback, Arg && arg) {
         return callback(std::forward<Arg>(arg));
     }
