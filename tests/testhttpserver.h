@@ -128,7 +128,7 @@ private:
         mHasConnection = true;
         mServerReady.notify_all();
 
-        if (conn->waitForReadyRead(1000)) {
+        if (conn->waitForReadyRead(10000)) {
             const auto request = conn->readLine();
             qDebug() << request;
             if (request == "GET /stream HTTP/1.1\r\n") {
@@ -167,7 +167,7 @@ private:
         } else if (!mStop) {
             if (conn->state() == std::remove_cvref_t<decltype(*conn)>::ConnectedState) {
                 if (!mExpectTimeout) {
-                    QFAIL("No request within 1 second");
+                    QFAIL("No request within 10 seconds");
                 }
             } else {
                 qDebug() << "Client disconnected without sending request";
