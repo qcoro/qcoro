@@ -24,7 +24,7 @@ private:
             std::this_thread::sleep_for(100ms);
         }));
 
-        QScopeGuard guard([&]() { thread->wait(); });
+        const auto threadGuard = qScopeGuard([&]() { thread->wait(); });
 
         QCORO_DELAY(thread->start());
 
