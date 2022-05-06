@@ -66,6 +66,7 @@ jobs:
         cmake $GITHUB_WORKSPACE \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
+          -DBUILD_SHARED_LIBS=ON \
           -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
           -DQCORO_WITH_ASAN=ON
 
