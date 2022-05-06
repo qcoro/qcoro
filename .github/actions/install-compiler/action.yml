@@ -1,0 +1,32 @@
+name: Install Compiler
+description: Installs compiler
+inputs:
+  compiler:
+    description: Compiler to install (gcc|clang)
+    required: true
+  version:
+    description: Version of compiler to install
+    required: true
+
+runs:
+  using: composite
+  steps:
+  - name: Install GCC
+    if: ${{ inputs.compiler == 'gcc' }}
+    shell: bash
+    run: |
+      GCC_VERSION_MAJOR=$(echo ${{ inputs.version }} | cut -d '.' -f1)
+      sudo add-apt-repository "deb https://ppa.launchpadcontent.net/ubuntu-toolchain-r/ppa/ubuntu focal main"
+      sudo apt-get update
+      sudo apt-get install -y \
+        gcc-${GCC_VERSION_MAJOR} g++-${GCC_VERSION_MAJOR} libstdc++-${GCC_VERSION_MAJOR}-dev
+      echo "CXX=/usr/bin/g++-${GCC_VERSION_MAJOR}" >> $GITHUB_ENV
+  - name: Install Clang
+    if : ${{ inputs.compiler == 'clang' }}
+    shell: bash
+    run: |
+      wget https://apt.llvm.org/llvm.sh -O llvm.sh
+      chmod a+x llvm.sh
+      sed -i "s/libunwind-\$LLVM_VERSION-dev//" llvm.sh
+      sudo ./llvm.sh ${{ inputs.version }} all
+      echo "CXX=/usr/bin/clang++-${{ inputs.version }}" >> $GITHUB_ENV
