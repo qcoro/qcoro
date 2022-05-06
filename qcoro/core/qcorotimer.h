@@ -5,6 +5,7 @@
 #pragma once
 
 #include "task.h"
+#include "qcorocore_export.h"
 
 #include <QMetaObject>
 #include <QPointer>
@@ -14,7 +15,7 @@
 
 namespace QCoro::detail {
 
-class QCoroTimer {
+class QCOROCORE_EXPORT QCoroTimer {
 private:
     class WaitForTimeoutOperation {
     public:

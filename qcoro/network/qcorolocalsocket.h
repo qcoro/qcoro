@@ -6,6 +6,7 @@
 
 #include "waitoperationbase_p.h"
 #include "qcoroiodevice.h"
+#include "qcoronetwork_export.h"
 
 #include <QLocalSocket>
 
@@ -16,7 +17,7 @@ namespace QCoro::detail {
 using namespace std::chrono_literals;
 
 //! QLocalSocket wrapper with co_awaitable-friendly API.
-class QCoroLocalSocket : public QCoroIODevice {
+class QCORONETWORK_EXPORT QCoroLocalSocket : public QCoroIODevice {
 public:
     explicit QCoroLocalSocket(QLocalSocket *socket);
 

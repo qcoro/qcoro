@@ -5,6 +5,7 @@
 #pragma once
 
 #include "waitoperationbase_p.h"
+#include "qcoronetwork_export.h"
 
 #include <QPointer>
 
@@ -22,7 +23,7 @@ namespace QCoro::detail {
 using namespace std::chrono_literals;
 
 //! QTcpServer wrapper with co_awaitable-friendly API.
-class QCoroTcpServer {
+class QCORONETWORK_EXPORT QCoroTcpServer {
     //! An Awaitable that suspends the coroutine until new connection is available
     class WaitForNewConnectionOperation final : public WaitOperationBase<QTcpServer> {
     public:

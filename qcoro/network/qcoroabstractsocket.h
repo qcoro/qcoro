@@ -6,6 +6,7 @@
 
 #include "waitoperationbase_p.h"
 #include "qcoroiodevice.h"
+#include "qcoronetwork_export.h"
 
 #include <QPointer>
 #include <QAbstractSocket>
@@ -19,7 +20,7 @@ namespace QCoro::detail {
 using namespace std::chrono_literals;
 
 //! QAbstractSocket wrapper with co_awaitable-friendly API.
-class QCoroAbstractSocket final : public QCoroIODevice {
+class QCORONETWORK_EXPORT QCoroAbstractSocket final : public QCoroIODevice {
 public:
     explicit QCoroAbstractSocket(QAbstractSocket *socket);
 

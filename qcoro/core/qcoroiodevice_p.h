@@ -5,10 +5,11 @@
 #pragma once
 
 #include <QIODevice>
+#include "qcorocore_export.h"
 
 namespace QCoro::detail {
 
-class WaitSignalHelper : public QObject {
+class QCOROCORE_EXPORT WaitSignalHelper : public QObject {
     Q_OBJECT
 public:
     explicit WaitSignalHelper(const QIODevice *device, void(QIODevice::*signalFunc)());

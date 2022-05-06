@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 include(GenerateHeaders)
+include(GenerateExportHeader)
 include(GenerateModuleConfigFile)
 include(ECMGeneratePriFile)
 
@@ -87,6 +88,7 @@ function(add_qcoro_library)
         ${target_include_interface} $<BUILD_INTERFACE:${QCORO_SOURCE_DIR}>
         ${target_include_interface} $<BUILD_INTERFACE:${QCORO_SOURCE_DIR}/qcoro>
         ${target_include_interface} $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        ${target_include_interface} $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
         ${target_include_interface} $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         ${target_include_interface} $<INSTALL_INTERFACE:${QCORO_INSTALL_INCLUDEDIR}>
         ${target_include_interface} $<INSTALL_INTERFACE:${QCORO_INSTALL_INCLUDEDIR}/qcoro>
@@ -115,6 +117,15 @@ function(add_qcoro_library)
         OUTPUT_DIR QCoro
         ORIGINAL_HEADERS_VAR source_HEADERS
     )
+
+    if (NOT LIB_INTERFACE)
+        string(TOUPPER "qcoro${LIB_NAME}" export_name)
+        string(TOLOWER "${export_name}" export_file)
+        generate_export_header(
+            ${target_name}
+            BASE_NAME ${export_name}
+        )
+    endif()
 
     if (NOT LIB_NO_CMAKE_CONFIG)
         generate_cmake_module_config_file(
@@ -165,6 +176,13 @@ function(add_qcoro_library)
         DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/QCoro/
         COMPONENT Devel
     )
+    if (NOT LIB_INTERFACE)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${target_name}_export.h
+                DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/qcoro
+                COMPONENT Devel
+        )
+    endif()
+
     install(
         FILES "${CMAKE_CURRENT_BINARY_DIR}/${target_name}Config.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/${target_name}ConfigVersion.cmake"
