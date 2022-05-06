@@ -5,6 +5,7 @@
 #pragma once
 
 #include "task.h"
+#include "qcorodbus_export.h"
 
 #include <QDBusPendingCallWatcher>
 
@@ -15,7 +16,7 @@ class QDBusPendingCall;
 
 namespace QCoro::detail {
 
-class QCoroDBusPendingCall {
+class QCORODBUS_EXPORT QCoroDBusPendingCall {
 private:
     class WaitForFinishedOperation {
     public:

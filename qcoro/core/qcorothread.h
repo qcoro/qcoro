@@ -5,6 +5,7 @@
 #pragma once
 
 #include <QPointer>
+#include "qcorocore_export.h"
 
 class QThread;
 
@@ -15,7 +16,7 @@ class Task;
 
 namespace QCoro::detail {
 
-class QCoroThread {
+class QCOROCORE_EXPORT QCoroThread {
 public:
     explicit QCoroThread(QThread *thread);
 

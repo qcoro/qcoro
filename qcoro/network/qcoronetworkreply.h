@@ -6,12 +6,13 @@
 
 #include "task.h"
 #include "qcoroiodevice.h"
+#include "qcoronetwork_export.h"
 
 #include <QNetworkReply>
 
 namespace QCoro::detail {
 
-class QCoroNetworkReply final : public QCoroIODevice {
+class QCORONETWORK_EXPORT QCoroNetworkReply final : public QCoroIODevice {
 private:
     class WaitForFinishedOperation final {
     public:

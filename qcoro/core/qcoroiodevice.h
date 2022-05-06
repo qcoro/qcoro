@@ -8,6 +8,7 @@
 #include "coroutine.h"
 #include "macros_p.h"
 #include "waitoperationbase_p.h"
+#include "qcorocore_export.h"
 
 #include <QPointer>
 
@@ -17,7 +18,7 @@ class QIODevice;
 
 namespace QCoro::detail {
 
-class QCoroIODevice {
+class QCOROCORE_EXPORT QCoroIODevice {
 private:
     class OperationBase {
     public:

@@ -6,6 +6,7 @@
 
 #include "waitoperationbase_p.h"
 #include "qcoroiodevice.h"
+#include "qcorocore_export.h"
 
 #include <chrono>
 
@@ -18,7 +19,7 @@ namespace QCoro::detail {
 using namespace std::chrono_literals;
 
 //! QProcess wrapper with co_awaitable-friendly API.
-class QCoroProcess : public QCoroIODevice {
+class QCOROCORE_EXPORT QCoroProcess : public QCoroIODevice {
 public:
     explicit QCoroProcess(QProcess *process);
 
