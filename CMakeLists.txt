@@ -27,6 +27,8 @@ endif()
 add_feature_info(QtDBus QCORO_WITH_QTDBUS "Build QtDBus support")
 option(QCORO_WITH_QTNETWORK "Build QtNetwork support" ON)
 add_feature_info(QtNetwork QCORO_WITH_QTNETWORK "Build QtNetwork support")
+option(QCORO_WITH_QTWEBSOCKETS "Build QtWebSockets support" ON)
+add_feature_info(QtWebSockets QCORO_WITH_QTWEBSOCKETS "Build QtWebSockets support")
 
 #-----------------------------------------------------------#
 # Dependencies
@@ -43,6 +45,9 @@ if (QCORO_WITH_QTDBUS)
 endif()
 if (QCORO_WITH_QTNETWORK)
     list(APPEND REQUIRED_QT_COMPONENTS Network)
+endif()
+if (QCORO_WITH_QTWEBSOCKETS)
+    list(APPEND REQUIRED_QT_COMPONENTS WebSockets)
 endif()
 if (QCORO_BUILD_EXAMPLES)
     list(APPEND REQUIRED_QT_COMPONENTS Widgets Concurrent)
