@@ -41,20 +41,18 @@ private:
 class EventLoopChecker : public QTimer {
     Q_OBJECT
 public:
-    explicit EventLoopChecker(int minTicks = 10, std::chrono::milliseconds interval = 10ms)
+    explicit EventLoopChecker(int minTicks = 10, std::chrono::milliseconds interval = 5ms)
         : mMinTicks{minTicks} {
-        connect(this, &EventLoopChecker::timeout, this, &EventLoopChecker::timeoutCheck);
+        connect(this, &EventLoopChecker::timeout, this, [this]() { ++mTick; });
         setInterval(interval);
         start();
     }
 
     operator bool() const {
-        return mTick > mMinTicks;
-    }
-
-private Q_SLOTS:
-    void timeoutCheck() {
-        ++mTick;
+        if (mTick < mMinTicks) {
+            qDebug() << "EventLoopChecker failed: ticks=" << mTick << ", minTicks=" << mMinTicks;
+        }
+        return mTick >= mMinTicks;
     }
 
 private:
