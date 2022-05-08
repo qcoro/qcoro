@@ -12,5 +12,5 @@ add_qcoro_library(
     QCORO_LINK_LIBRARIES
         PUBLIC Coro Core
     QT_LINK_LIBRARIES
-        PUBLIC Core WebSockets
+        PUBLIC Core Network WebSockets
 )

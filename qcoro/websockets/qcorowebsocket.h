@@ -32,14 +32,11 @@ public:
 
     Task<std::optional<qint64>> ping(const QByteArray &payload, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
-    Task<std::optional<std::tuple<QByteArray, bool>>> waitForBinaryFrame(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
-    Task<std::optional<QByteArray>> waitForBinaryMessage(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    Task<std::optional<std::tuple<QByteArray, bool>>> binaryFrame(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    Task<std::optional<QByteArray>> binaryMessage(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
-    Task<std::optional<std::tuple<QString, bool>>> waitForTextFrame(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
-    Task<std::optional<QString>> waitForTextMessage(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
-
-    Task<bool> sendBinaryMessage(const QByteArray &data, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
-    Task<bool> sendTextMessage(const QString &data, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    Task<std::optional<std::tuple<QString, bool>>> textFrame(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    Task<std::optional<QString>> textMessage(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
 private:
     QWebSocket *mWebSocket;
