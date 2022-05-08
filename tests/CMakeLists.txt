@@ -27,6 +27,16 @@ if (QCORO_WITH_QTDBUS)
     )
 endif()
 
+if (QCORO_WITH_QTWEBSOCKETS)
+    set(qcoro_test_ws_SRCS testwsserver.cpp)
+    add_library(qcoro_test_ws OBJECT ${qcoro_test_ws_SRCS})
+    target_link_libraries(qcoro_test_ws PUBLIC
+        Qt${QT_VERSION_MAJOR}::Core
+        Qt${QT_VERSION_MAJOR}::Test
+        Qt${QT_VERSION_MAJOR}::WebSockets
+    )
+endif()
+
 function(qcoro_add_test _name)
     set(options SKIP_ADD_TEST)
     set(oneValueArgs)
@@ -77,6 +87,15 @@ function(qcoro_add_dbus_test _name)
     endif()
 endfunction()
 
+function(qcoro_add_websockets_test _name)
+    qcoro_add_network_test(${_name} ${ARGN})
+    target_link_libraries(
+        test-${_name}
+        QCoro${QT_VERSION_MAJOR}WebSockets
+        Qt${QT_VERSION_MAJOR}::WebSockets
+        qcoro_test_ws
+    )
+endfunction()
 
 
 qcoro_add_test(qtimer)
@@ -102,4 +121,8 @@ if (QCORO_WITH_QTNETWORK)
 
     # Tests for test utilities
     qcoro_add_network_test(testhttpserver)
+endif()
+
+if (QCORO_WITH_QTWEBSOCKETS)
+    qcoro_add_websockets_test(qcorowebsocket)
 endif()
