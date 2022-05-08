@@ -107,8 +107,12 @@ add_compile_definitions(
     QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
     QT_NO_KEYWORDS
     QT_NO_FOREACH
-    QT_STRICT_ITERATORS
 )
+if (NOT WIN32)
+    # strict iterators on MSVC only work when Qt itself is also built with them,
+    # which is not usually the case. Otherwise there are linking issues.
+    add_compile_definitions(QT_STRICT_ITERATORS)
+endif()
 
 include(qcoro/QCoroMacros.cmake)
 qcoro_enable_coroutines()
