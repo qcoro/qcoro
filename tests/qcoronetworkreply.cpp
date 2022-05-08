@@ -188,7 +188,7 @@ private Q_SLOTS:
 private:
     QNetworkRequest buildRequest(const QString &path = QString()) {
         return QNetworkRequest{
-            QStringLiteral("http://127.0.0.1:%1/%2").arg(mServer.port()).arg(path)
+            QUrl{QStringLiteral("http://127.0.0.1:%1/%2").arg(mServer.port()).arg(path)}
         };
     }
 
