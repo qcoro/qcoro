@@ -54,7 +54,7 @@ private Q_SLOTS:
         QEventLoop el;
 
         auto reply = std::unique_ptr<QNetworkReply>(
-            nam.get(QNetworkRequest{url.arg(mServer.port())}));
+            nam.get(QNetworkRequest{QUrl{url.arg(mServer.port())}}));
         connect(reply.get(), &QNetworkReply::finished, &el, &QEventLoop::quit);
 
         QTimer::singleShot(timeout, &el, [&el]() mutable { el.exit(1); });

@@ -59,7 +59,7 @@ private:
                                          QDBusConnection::sessionBus());
         QCORO_VERIFY(iface.isValid());
 
-        const QString reply = co_await iface.ping("Hello there!");
+        const QString reply = co_await iface.ping(QStringLiteral("Hello there!"));
 
         QCORO_COMPARE(reply, QStringLiteral("Hello there!"));
     }
@@ -70,7 +70,7 @@ private:
         QVERIFY(iface.isValid());
 
         bool called = false;
-        qCoro(iface.ping("Hello there!")).waitForFinished().then(
+        qCoro(iface.ping(QStringLiteral("Hello there!"))).waitForFinished().then(
             [&](const QDBusPendingReply<QString> &reply) {
                 called = true;
                 el.quit();
@@ -140,7 +140,7 @@ private:
                                          QDBusConnection::sessionBus());
         QCORO_VERIFY(iface.isValid());
 
-        QDBusPendingReply<QString, bool> reply = iface.asyncCall("blockAndReturnMultipleArguments", 1);
+        QDBusPendingReply<QString, bool> reply = iface.asyncCall(QStringLiteral("blockAndReturnMultipleArguments"), 1);
         co_await reply;
 
         QCORO_VERIFY(reply.isFinished());
@@ -153,7 +153,7 @@ private:
                                          QDBusConnection::sessionBus());
         QVERIFY(iface.isValid());
 
-        QDBusPendingReply<QString, bool> reply = iface.asyncCall("blockAndReturnMultipleArguments", 1);
+        QDBusPendingReply<QString, bool> reply = iface.asyncCall(QStringLiteral("blockAndReturnMultipleArguments"), 1);
         bool called = false;
         qCoro(reply).waitForFinished().then([&](const QDBusPendingReply<QString, bool> &reply) {
             called = true;

@@ -98,6 +98,22 @@ if (QCORO_ENABLE_ASAN)
     endif()
 endif()
 
+add_compile_definitions(
+    QT_NO_CAST_FROM_ASCII
+    QT_NO_CAST_TO_ASCII
+    QT_NO_URL_CAST_FROM_STRING
+    QT_NO_CAST_FROM_BYTEARRAY
+    QT_USE_STRINGBUILDER
+    QT_NO_NARROWING_CONVERSIONS_IN_CONNECT
+    QT_NO_KEYWORDS
+    QT_NO_FOREACH
+)
+if (NOT WIN32)
+    # strict iterators on MSVC only work when Qt itself is also built with them,
+    # which is not usually the case. Otherwise there are linking issues.
+    add_compile_definitions(QT_STRICT_ITERATORS)
+endif()
+
 include(qcoro/QCoroMacros.cmake)
 qcoro_enable_coroutines()
 
