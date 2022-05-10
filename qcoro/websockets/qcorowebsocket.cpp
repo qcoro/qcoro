@@ -9,6 +9,15 @@
 
 using namespace QCoro::detail;
 
+using TupleQInt64QByteArray = std::tuple<qint64, QByteArray>;
+using TupleQByteArrayBool = std::tuple<QByteArray, bool>;
+using TupleQStringBool = std::tuple<QString, bool>;
+Q_DECLARE_METATYPE(std::optional<TupleQInt64QByteArray>);
+Q_DECLARE_METATYPE(std::optional<TupleQByteArrayBool>);
+Q_DECLARE_METATYPE(std::optional<std::tuple<QByteArray>>);
+Q_DECLARE_METATYPE(std::optional<TupleQStringBool>);
+Q_DECLARE_METATYPE(std::optional<std::tuple<QString>>);
+
 namespace {
 
 class WebSocketStateWatcher : public QObject {
@@ -62,7 +71,13 @@ public:
                 this->emitReady(std::optional<typename signal_args<Signal>::types>{});
             }
         }))
-    {}
+    {
+        qRegisterMetaType<std::optional<std::tuple<qint64, QByteArray>>>();
+        qRegisterMetaType<std::optional<std::tuple<QByteArray, bool>>>();
+        qRegisterMetaType<std::optional<std::tuple<QByteArray>>>();
+        qRegisterMetaType<std::optional<std::tuple<QString, bool>>>();
+        qRegisterMetaType<std::optional<std::tuple<QString>>>();
+    }
 
 Q_SIGNALS:
     void ready(std::optional<std::tuple<qint64, QByteArray>>);
@@ -114,20 +129,6 @@ QCoro::Task<bool> QCoroWebSocket::open(const QNetworkRequest &request, std::chro
     co_return result.value_or(false);
 }
 
-QCoro::Task<bool> QCoroWebSocket::close(QWebSocketProtocol::CloseCode closeCode,
-                                        const QString &reason,
-                                        std::chrono::milliseconds timeout)
-{
-    if (mWebSocket->state() == QAbstractSocket::UnconnectedState) {
-        co_return true;
-    }
-
-    WebSocketStateWatcher watcher(mWebSocket, QAbstractSocket::UnconnectedState);
-    mWebSocket->close(closeCode,reason);
-    const auto result = co_await qCoro(&watcher, &WebSocketStateWatcher::ready, timeout);
-    co_return result.value_or(false);
-}
-
 QCoro::Task<std::optional<qint64>> QCoroWebSocket::ping(const QByteArray &payload,
                                                         std::chrono::milliseconds timeout)
 {
@@ -139,7 +140,7 @@ QCoro::Task<std::optional<qint64>> QCoroWebSocket::ping(const QByteArray &payloa
     mWebSocket->ping(payload);
     const auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<qint64, QByteArray>>>(&WebSocketSignalWatcher::ready), timeout);
     if (result.has_value() && (*result).has_value()) {
-        co_return std::get<0>(**result); 
+        co_return std::get<0>(**result);
     }
     co_return std::nullopt;
 }
@@ -152,7 +153,7 @@ QCoro::Task<std::optional<std::tuple<QByteArray, bool>>> QCoroWebSocket::binaryF
     }
 
     WebSocketSignalWatcher watcher(mWebSocket, &QWebSocket::binaryFrameReceived);
-    const auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<QByteArray, bool>>>(&WebSocketSignalWatcher::ready), timeout); 
+    const auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<QByteArray, bool>>>(&WebSocketSignalWatcher::ready), timeout);
     co_return result.value_or(std::nullopt);
 }
 
