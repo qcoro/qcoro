@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Daniel Vrátil <dvratil@kde.org>
+//
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include <QThread>
@@ -13,7 +17,7 @@ class TestWsServer {
 public:
     TestWsServer();
     ~TestWsServer();
-    
+
     void start();
     void stop();
     QUrl url() const;

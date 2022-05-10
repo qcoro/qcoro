@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2022 Daniel Vrátil <dvratil@kde.org>
+//
+// SPDX-License-Identifier: MIT
+
 #include "testwsserver.h"
 
 #include <QWebSocket>
@@ -8,6 +12,7 @@
 #include <QTest>
 
 #include <chrono>
+#include <cstring>
 
 using namespace std::chrono_literals;
 
@@ -55,10 +60,16 @@ public:
 
         connect(mServer.get(), &QWebSocketServer::newConnection,
                 this, &Server::newConnection);
-        
+
         mCond.notify_all();
     }
 
+    void close() {
+        QThread::currentThread()->quit();
+        mSocket.reset();
+        mTimeout.reset();
+        mServer.reset();
+    }
 private Q_SLOTS:
     void newConnectionTimeout() {
         if (!mExpectTimeout) {
@@ -112,20 +123,9 @@ private Q_SLOTS:
                         mSocket->sendBinaryMessage(msg);
                     }
                 });
-        connect(mSocket.get(), &QWebSocket::disconnected,
-                this, [this]() {
-                    close();
-                });
     }
 
 private:
-    void close() {
-        mSocket.release()->deleteLater();
-        mTimeout.reset();
-        mServer.reset();
-        QThread::currentThread()->quit();
-    }
-
     QByteArray generateLargeMessage() const {
         constexpr qsizetype size = 10 * 1024 * 1024; /* 10MiB */
         std::vector<uint64_t> buffer;
@@ -163,8 +163,8 @@ void TestWsServer::start() {
 }
 
 void TestWsServer::stop() {
-    if (mThread->isRunning()) {
-        mThread->quit();
+    if (mThread && mThread->isRunning()) {
+        QMetaObject::invokeMethod(mServer.get(), &Server::close, Qt::BlockingQueuedConnection);
         mThread->wait();
     }
     mThread.reset();
