@@ -63,12 +63,22 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
+
+        if [[ "${{ matrix.platform }}" != "windows" ]]; then
+          # Don't built QCoro as .dlls on Windows - making it work with ASAN on Github CI
+          # is major PITA...
+          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
+        fi
+        if [[ "${{ matrix.platform }}" == "windows" && "${QT_VERSION_MAJOR}" == "5" ]]; then
+          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+        fi
+
         cmake $GITHUB_WORKSPACE \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
-          -DBUILD_SHARED_LIBS=ON \
           -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
-          -DQCORO_WITH_ASAN=ON
+          -DQCORO_ENABLE_ASAN=ON \
+          ${EXTRA_CMAKE_FLAGS}
 
     - name: Add ASAN DLL directory to PATH
       if: ${{ matrix.platform == 'windows' }}
@@ -114,7 +124,7 @@ jobs:
       with:
         name: build-${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
         path: build/**
-  
+
   event_file:
     name: "Event File"
     runs-on: ubuntu-latest
