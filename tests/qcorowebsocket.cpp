@@ -326,6 +326,35 @@ private:
         QVERIFY(called);
     }
 
+    QCoro::Task<> testReadFragmentedMessage_coro(QCoro::TestContext) {
+        QWebSocket socket;
+        connect(&socket, &QWebSocket::binaryFrameReceived, this,
+                [](const QByteArray &frame, bool isLast) {
+                    qDebug() << "SLOT RECEIVED FRAME " << frame.size() << isLast;
+                });
+        QUrl url = mServer.url();
+        url.setPath(QStringLiteral("/large"));
+        QCORO_VERIFY(QCoro::waitFor(qCoro(socket).open(url)));
+
+        QCORO_DELAY(socket.sendBinaryMessage("One large, please"));
+
+        auto coroSocket = qCoro(socket);
+
+        QByteArray data;
+        Q_FOREVER {
+            const auto response = co_await coroSocket.binaryFrame();
+            QCORO_VERIFY(response.has_value());
+            qDebug() << std::get<0>(*response).size() << std::get<1>(*response);
+            data += std::get<0>(*response);
+            if (std::get<1>(*response)) { // last
+                break;
+            }
+        }
+
+        qDebug() << data.size();
+        QCORO_VERIFY(data.size() >= 10 * 1024 * 1024); // 10MB
+    }
+
 private Q_SLOTS:
     void init() {
         mServer.start();
@@ -349,13 +378,11 @@ private Q_SLOTS:
     addCoroAndThenTests(TextMessage)
     addCoroAndThenTests(TextMessageTimeout)
 
+    addTest(ReadFragmentedMessage)
 
 private:
     bool connectSocket(QWebSocket &socket) {
-        QEventLoop el;
-        qCoro(socket).open(mServer.url()).then([&el]() { el.quit(); });
-        el.exec();
-        return socket.state() == QAbstractSocket::ConnectedState;
+        return QCoro::waitFor(qCoro(socket).open(mServer.url()));
     }
 
     TestWsServer mServer;
