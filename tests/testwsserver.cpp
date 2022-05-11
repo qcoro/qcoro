@@ -117,6 +117,7 @@ private Q_SLOTS:
                     const auto request = mSocket->requestUrl().path();
                     if (request == QLatin1String("/delay")) {
                         std::this_thread::sleep_for(100ms);
+                        mSocket->sendBinaryMessage(msg);
                     } else if (request == QLatin1String("/large")) {
                         mSocket->sendBinaryMessage(generateLargeMessage());
                     } else {
