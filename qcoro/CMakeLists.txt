@@ -14,6 +14,8 @@ add_qcoro_library(
     NO_CMAKE_CONFIG
     INCLUDEDIR Coro
     CAMELCASE_HEADERS
+        AsyncGenerator
+        Generator
         Task
         QCoro
     HEADERS
@@ -58,4 +60,3 @@ endif()
 if (QCORO_WITH_QTNETWORK)
     add_subdirectory(network)
 endif()
-

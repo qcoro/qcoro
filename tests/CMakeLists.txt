@@ -86,6 +86,8 @@ qcoro_add_test(qcorothread)
 qcoro_add_test(task)
 qcoro_add_test(testconstraints)
 qcoro_add_test(qfuture LINK_LIBRARIES Qt${QT_VERSION_MAJOR}::Concurrent)
+qcoro_add_test(generator)
+qcoro_add_test(asyncgenerator)
 
 if (QCORO_WITH_QTDBUS)
     qcoro_add_dbus_test(qdbuspendingcall)
