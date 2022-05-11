@@ -125,4 +125,5 @@ endif()
 
 if (QCORO_WITH_QTWEBSOCKETS)
     qcoro_add_websockets_test(qcorowebsocket)
+    qcoro_add_websockets_test(qcorowebsocketserver)
 endif()

@@ -6,9 +6,11 @@ add_qcoro_library(
     NAME WebSockets
     SOURCES
         qcorowebsocket.cpp
+        qcorowebsocketserver.cpp
     CAMELCASE_HEADERS
         QCoroWebSockets
         QCoroWebSocket
+        QCoroWebSocketServer
     QCORO_LINK_LIBRARIES
         PUBLIC Coro Core
     QT_LINK_LIBRARIES
