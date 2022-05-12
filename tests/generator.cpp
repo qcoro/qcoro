@@ -6,6 +6,7 @@
 
 #include <QObject>
 #include <QTest>
+#include <QScopeGuard>
 
 class GeneratorTest : public QObject {
     Q_OBJECT
@@ -19,12 +20,48 @@ private Q_SLOTS:
 
         auto generator = createGenerator();
         std::vector<int> values;
-        while (generator) {
-            values.emplace_back(*generator);
+        for (auto it = generator.begin(), end = generator.end(); it != end; ++it) {
+            values.emplace_back(*it);
         }
 
         QCOMPARE(values.size(), 10);
         QCOMPARE(values, (std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
+    }
+
+    void testTerminateSuspendedGenerator() {
+        bool destroyed = false;
+        const auto createGenerator = [&destroyed]() -> QCoro::Generator<int> {
+            const auto guard = qScopeGuard([&destroyed]() {
+                destroyed = true;
+            });
+
+            const auto pointer = std::make_unique<QString>(
+                QStringLiteral("This should get destroyed. If not, ASAN will catch it."));
+
+            while (true) {
+                co_yield 42;
+            }
+        };
+
+        {
+            auto generator = createGenerator();
+            const auto it = generator.begin();
+            QCOMPARE(*it, 42);
+        } // The generator gets destroyed here.
+
+        QVERIFY(destroyed);
+    }
+
+    void testEmptyGenerator() {
+        const auto createGenerator = []() -> QCoro::Generator<int> {
+            if (false) {
+                co_yield 42; // Make it a coroutine, except it never gets invoked.
+            }
+        };
+
+        auto generator = createGenerator();
+        const auto begin = generator.begin();
+        QCOMPARE(begin, generator.end());
     }
 };
 
