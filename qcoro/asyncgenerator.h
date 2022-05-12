@@ -8,7 +8,9 @@
 #pragma once
 
 #include "coroutine.h"
+
 #include <iterator>
+#include <exception>
 
 namespace QCoro {
 
