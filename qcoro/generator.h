@@ -28,7 +28,8 @@ public:
         mValue = std::current_exception();
     }
 
-    template<std::convertible_to<T> From>
+    template<typename From>
+    requires std::is_convertible_v<From, T>
     std::suspend_always yield_value(From &&from) {
         mValue.template emplace<T>(std::forward<From>(from));
         return {};
