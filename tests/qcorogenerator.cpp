@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "generator.h"
+#include "qcorogenerator.h"
 
 #include <QObject>
 #include <QTest>
@@ -81,4 +81,4 @@ private Q_SLOTS:
 
 QTEST_GUILESS_MAIN(GeneratorTest)
 
-#include "generator.moc"
+#include "qcorogenerator.moc"

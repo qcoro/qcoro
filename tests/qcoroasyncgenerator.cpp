@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "asyncgenerator.h"
-#include "testobject.h"
+#include "qcoroasyncgenerator.h"
 #include "qcorotimer.h"
+#include "testobject.h"
 
 #include <vector>
 
@@ -96,4 +96,4 @@ private Q_SLOTS:
 
 QTEST_GUILESS_MAIN(AsyncGeneratorTest)
 
-#include "asyncgenerator.moc"
+#include "qcoroasyncgenerator.moc"
