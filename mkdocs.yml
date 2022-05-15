@@ -50,8 +50,10 @@ nav:
     - Reference:
       - Coro:
         - reference/coro/index.md
-        - QCoro::Task<T>: reference/coro/task.md
+        - QCoro::Task&lt;T>: reference/coro/task.md
         - QCoro::coro(): reference/coro/coro.md
+        - QCoro::Generator&lt;T>: reference/coro/generator.md
+        - QCoro::AsyncGenerator&lt;T>: reference/coro/asyncgenerator.md
       - Core:
         - reference/core/index.md
         - QFuture: reference/core/qfuture.md

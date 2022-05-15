@@ -141,6 +141,9 @@ public:
     }
 };
 
+/**
+ * @brief Promise type for asynchronous generator coroutine.
+ */
 template<typename T>
 class AsyncGeneratorPromise<T &&> final : public AsyncGeneratorPromiseBase {
 public:
