@@ -8,6 +8,7 @@
 #include "macros_p.h"
 #include "concepts_p.h"
 #include "task.h"
+#include "qcoroasyncgenerator.h"
 
 #include <QObject>
 #include <QPointer>
@@ -15,6 +16,7 @@
 
 #include <cassert>
 #include <optional>
+#include <deque>
 
 namespace QCoro::detail {
 
@@ -53,12 +55,13 @@ struct args_tuple<R(Arg)> {
 };
 
 template<concepts::QObject T, typename FuncPtr>
-class QCoroSignal {
+class QCoroSignalBase {
 public:
-    // TODO: Ignore QtPrivateSignal
+    // TODO: Ignore QPrivateSignal
     using result_type = std::optional<typename args_tuple<FuncPtr>::type>;
 
-    QCoroSignal(T *obj, FuncPtr &&funcPtr, std::chrono::milliseconds timeout)
+protected:
+    QCoroSignalBase(T *obj, FuncPtr &&funcPtr, std::chrono::milliseconds timeout)
         : mObj(obj), mFuncPtr(std::forward<FuncPtr>(funcPtr)) {
         if (timeout.count() > -1) {
             mTimeoutTimer = std::make_unique<QTimer>();
@@ -67,11 +70,7 @@ public:
         }
     }
 
-    bool await_ready() const noexcept {
-        return mObj.isNull();
-    }
-
-    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+    void handleTimeout(std::coroutine_handle<> awaitingCoroutine) {
         if (mTimeoutTimer) {
             QObject::connect(mTimeoutTimer.get(), &QTimer::timeout, mObj,
                 [this, awaitingCoroutine]() {
@@ -80,13 +79,37 @@ public:
                 });
             mTimeoutTimer->start();
         }
-        mConn = QObject::connect(
-            mObj, mFuncPtr, mObj,
+    }
+
+protected:
+    QPointer<T> mObj;
+    FuncPtr mFuncPtr;
+    QMetaObject::Connection mConn;
+    std::unique_ptr<QTimer> mTimeoutTimer;
+};
+
+template<concepts::QObject T, typename FuncPtr>
+class QCoroSignal : public QCoroSignalBase<T, FuncPtr> {
+public:
+    using typename QCoroSignalBase<T, FuncPtr>::result_type;
+
+    QCoroSignal(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
+        : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout) {}
+
+    bool await_ready() const noexcept {
+        return this->mObj.isNull();
+    }
+
+    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+        this->handleTimeout(awaitingCoroutine);
+
+        this->mConn = QObject::connect(
+            this->mObj, this->mFuncPtr, this->mObj,
             [this, awaitingCoroutine](auto &&...args) mutable {
-                if (mTimeoutTimer) {
-                    mTimeoutTimer->stop();
+                if (this->mTimeoutTimer) {
+                    this->mTimeoutTimer->stop();
                 }
-                QObject::disconnect(mConn);
+                QObject::disconnect(this->mConn);
 
                 mResult.emplace(std::forward<decltype(args)>(args)...);
                 awaitingCoroutine.resume();
@@ -99,15 +122,64 @@ public:
     }
 
 private:
-    QPointer<T> mObj;
-    FuncPtr mFuncPtr;
-    QMetaObject::Connection mConn;
-    std::unique_ptr<QTimer> mTimeoutTimer;
     result_type mResult;
 };
 
 template<concepts::QObject T, typename FuncPtr>
 QCoroSignal(T *, FuncPtr &&, std::chrono::milliseconds) -> QCoroSignal<T, FuncPtr>;
+
+template<concepts::QObject T, typename FuncPtr>
+class QCoroSignalQueue : public QCoroSignalBase<T, FuncPtr> {
+public:
+    using typename QCoroSignalBase<T, FuncPtr>::result_type;
+
+    QCoroSignalQueue(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
+        : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout) {}
+
+    bool await_ready() const noexcept {
+        return !mQueue.empty() || this->mObj.isNull();
+    }
+
+    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+        this->handleTimeout(awaitingCoroutine);
+        if (!this->mConn) {
+            this->mConn = QObject::connect(
+                this->mObj, this->mFuncPtr, this->mObj,
+                [this](auto && ...args) mutable {
+                    if (this->mTimeoutTimer) {
+                        this->mTimeoutTimer->stop();
+                    }
+
+                    mQueue.emplace_back(std::forward<decltype(args)>(args) ...);
+
+                    if (mAwaitingCoroutine) {
+                        mAwaitingCoroutine.resume();
+                    }
+                },
+                Qt::QueuedConnection);
+        }
+
+        mAwaitingCoroutine = awaitingCoroutine;
+    }
+
+    result_type await_resume() {
+        if (mQueue.empty()) {
+            return std::nullopt;
+        }
+
+        auto result = std::move(mQueue.front());
+        mQueue.pop_front();
+        return result;
+    }
+
+private:
+    std::coroutine_handle<> mAwaitingCoroutine;
+    std::deque<typename result_type::value_type> mQueue;
+};
+
+template<concepts::QObject T, typename FuncPtr>
+QCoroSignalQueue(T *, FuncPtr &&, std::chrono::milliseconds) -> QCoroSignalQueue<T, FuncPtr>;
+
 
 } // namespace QCoro::detail
 
@@ -149,3 +221,18 @@ inline auto qCoro(T *obj, FuncPtr &&ptr)
     co_return std::move(*result);
 }
 
+template<QCoro::detail::concepts::QObject T, typename FuncPtr>
+inline auto qCoroSignalGenerator(T *obj, FuncPtr &&ptr,
+                                 std::chrono::milliseconds timeout = std::chrono::milliseconds{-1})
+    -> QCoro::AsyncGenerator<typename QCoro::detail::QCoroSignalQueue<T, FuncPtr>::result_type::value_type> {
+    QCoro::detail::QCoroSignalQueue signalQueue{obj, std::forward<FuncPtr>(ptr), timeout};
+
+    Q_FOREVER {
+        auto result = co_await signalQueue;
+        if (!result.has_value()) { // timeout
+            break;
+        }
+
+        co_yield std::move(*result);
+    }
+}
