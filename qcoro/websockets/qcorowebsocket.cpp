@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorowebsocket.h"
+#include "task.h"
+#include "qcoroasyncgenerator.h"
 #include "qcorosignal.h"
 
 #include <QWebSocket>
@@ -60,23 +62,23 @@ class WebSocketSignalWatcher : public QObject {
     Q_OBJECT
 public:
     template<typename Signal>
-    WebSocketSignalWatcher(QWebSocket *socket, Signal &&signal)
-        : mConnection(connect(socket, signal, this, [this](auto && ... args) {
-            this->emitReady(std::make_optional(std::make_tuple(std::forward<decltype(args)>(args) ...)));
-        }))
-        , mState(connect(socket, &QWebSocket::stateChanged, this, [this](auto state) {
-            // In theory, WebSocketSignalWatcher should never be used on
-            // unconnected socket, so maybe the check is redundant
-            if (state != QAbstractSocket::ConnectedState) {
-                this->emitReady(std::optional<typename signal_args<Signal>::types>{});
-            }
-        }))
-    {
+    WebSocketSignalWatcher(QWebSocket *socket, Signal signal) {
         qRegisterMetaType<std::optional<std::tuple<qint64, QByteArray>>>();
         qRegisterMetaType<std::optional<std::tuple<QByteArray, bool>>>();
         qRegisterMetaType<std::optional<std::tuple<QByteArray>>>();
         qRegisterMetaType<std::optional<std::tuple<QString, bool>>>();
         qRegisterMetaType<std::optional<std::tuple<QString>>>();
+
+        connect(socket, signal, this, [this](auto && ... args) {
+            Q_EMIT this->ready(std::make_optional(std::make_tuple(std::forward<decltype(args)>(args) ...)));
+        });
+        connect(socket, &QWebSocket::stateChanged, this, [this](auto state) {
+            // In theory, WebSocketSignalWatcher should never be used on
+            // unconnected socket, so maybe the check is redundant
+            if (state != QAbstractSocket::ConnectedState) {
+                Q_EMIT this->ready(std::optional<typename signal_args<Signal>::types>{});
+            }
+        });
     }
 
 Q_SIGNALS:
@@ -85,18 +87,6 @@ Q_SIGNALS:
     void ready(std::optional<std::tuple<QByteArray>>);
     void ready(std::optional<std::tuple<QString, bool>>);
     void ready(std::optional<std::tuple<QString>>);
-
-private:
-    template<typename ... Args>
-    void emitReady(std::optional<std::tuple<Args ...>> &&result) {
-        disconnect(mConnection);
-        disconnect(mState);
-
-        Q_EMIT ready(std::forward<std::optional<std::tuple<Args ...>>>(result));
-    }
-
-    QMetaObject::Connection mConnection;
-    QMetaObject::Connection mState;
 };
 
 } // namespace
@@ -145,56 +135,42 @@ QCoro::Task<std::optional<qint64>> QCoroWebSocket::ping(const QByteArray &payloa
     co_return std::nullopt;
 }
 
-QCoro::Task<std::optional<std::tuple<QByteArray, bool>>> QCoroWebSocket::binaryFrame(
+namespace {
+
+template<typename T, typename Signal>
+QCoro::AsyncGenerator<T> signalGenerator(
+    QWebSocket *socket, Signal signal, std::chrono::milliseconds timeout)
+{
+    auto generator = qCoroSignalGenerator(socket, signal, timeout);
+    QCORO_FOREACH (const auto &msg, generator) {
+        co_yield msg;
+    }
+}
+
+} // namespace
+
+QCoro::AsyncGenerator<std::tuple<QByteArray, bool>> QCoroWebSocket::binaryFrames(
     std::chrono::milliseconds timeout)
 {
-    if (mWebSocket->state() != QAbstractSocket::ConnectedState) {
-        co_return std::nullopt;
-    }
-
-    WebSocketSignalWatcher watcher(mWebSocket, &QWebSocket::binaryFrameReceived);
-    const auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<QByteArray, bool>>>(&WebSocketSignalWatcher::ready), timeout);
-    co_return result.value_or(std::nullopt);
+    return qCoroSignalGenerator(mWebSocket, &QWebSocket::binaryFrameReceived, timeout);
 }
 
-QCoro::Task<std::optional<QByteArray>> QCoroWebSocket::binaryMessage(std::chrono::milliseconds timeout)
-{
-    if (mWebSocket->state() != QAbstractSocket::ConnectedState) {
-        co_return std::nullopt;
-    }
-
-    WebSocketSignalWatcher watcher(mWebSocket, &QWebSocket::binaryMessageReceived);
-    auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<QByteArray>>>(&WebSocketSignalWatcher::ready) , timeout);
-    if (result.has_value() && (*result).has_value()) {
-        co_return std::get<0>(**result);
-    }
-    co_return std::nullopt;
-}
-
-QCoro::Task<std::optional<std::tuple<QString, bool>>> QCoroWebSocket::textFrame(
+QCoro::AsyncGenerator<QByteArray> QCoroWebSocket::binaryMessages(
     std::chrono::milliseconds timeout)
 {
-    if (mWebSocket->state() != QAbstractSocket::ConnectedState) {
-        co_return std::nullopt;
-    }
-
-    WebSocketSignalWatcher watcher(mWebSocket, &QWebSocket::textFrameReceived);
-    const auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<QString, bool>>>(&WebSocketSignalWatcher::ready), timeout);
-    co_return result.value_or(std::nullopt);
+    return qCoroSignalGenerator(mWebSocket, &QWebSocket::binaryMessageReceived, timeout);
 }
 
-QCoro::Task<std::optional<QString>> QCoroWebSocket::textMessage(std::chrono::milliseconds timeout)
+QCoro::AsyncGenerator<std::tuple<QString, bool>> QCoroWebSocket::textFrames(
+    std::chrono::milliseconds timeout)
 {
-    if (mWebSocket->state() != QAbstractSocket::ConnectedState) {
-        co_return std::nullopt;
-    }
+    return qCoroSignalGenerator(mWebSocket, &QWebSocket::textFrameReceived, timeout);
+}
 
-    WebSocketSignalWatcher watcher(mWebSocket, &QWebSocket::textMessageReceived);
-    const auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<QString>>>(&WebSocketSignalWatcher::ready), timeout);
-    if (result.has_value() && (*result).has_value()) {
-        co_return std::get<0>(**result);
-    }
-    co_return std::nullopt;
+QCoro::AsyncGenerator<QString> QCoroWebSocket::textMessages(
+    std::chrono::milliseconds timeout)
+{
+    return qCoroSignalGenerator(mWebSocket, &QWebSocket::textMessageReceived, timeout);
 }
 
 #include "qcorowebsocket.moc"

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "task.h"
+#include "qcoroasyncgenerator.h"
 #include "qcorowebsockets_export.h"
 
 #include <QWebSocketProtocol>
@@ -28,11 +29,11 @@ public:
 
     Task<std::optional<qint64>> ping(const QByteArray &payload, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
-    Task<std::optional<std::tuple<QByteArray, bool>>> binaryFrame(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
-    Task<std::optional<QByteArray>> binaryMessage(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    AsyncGenerator<std::tuple<QByteArray, bool>> binaryFrames(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    AsyncGenerator<QByteArray> binaryMessages(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
-    Task<std::optional<std::tuple<QString, bool>>> textFrame(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
-    Task<std::optional<QString>> textMessage(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    AsyncGenerator<std::tuple<QString, bool>> textFrames(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    AsyncGenerator<QString> textMessages(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
 private:
     QWebSocket *mWebSocket;

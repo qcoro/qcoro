@@ -119,27 +119,11 @@ private:
         QCORO_VERIFY(connectSocket(socket));
 
         QCORO_DELAY(socket.sendBinaryMessage("TEST MESSAGE"));
-        const auto frame = co_await qCoro(socket).binaryFrame();
-        QCORO_VERIFY(frame.has_value());
+        auto frames = qCoro(socket).binaryFrames();
+        const auto frame = co_await frames.begin();
+        QCORO_VERIFY(frame != frames.end());
         QCORO_COMPARE(std::get<0>(*frame), QByteArray("TEST MESSAGE"));
         QCORO_COMPARE(std::get<1>(*frame), true);
-    }
-
-    void testThenBinaryFrame_coro(TestLoop &el) {
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        QCORO_DELAY(socket.sendBinaryMessage("TEST MESSAGE"));
-        bool called = false;
-        qCoro(socket).binaryFrame().then([&el, &called](const auto &frame) {
-            el.quit();
-            called = true;
-            QVERIFY(frame.has_value());
-            QCOMPARE(std::get<0>(*frame), QByteArray("TEST MESSAGE"));
-            QCOMPARE(std::get<1>(*frame), true);
-        });
-        el.exec();
-        QVERIFY(called);
     }
 
     QCoro::Task<> testBinaryFrameTimeout_coro(QCoro::TestContext) {
@@ -148,24 +132,9 @@ private:
         QWebSocket socket;
         QCORO_VERIFY(connectSocket(socket));
 
-        const auto frame = co_await qCoro(socket).binaryFrame(10ms);
-        QCORO_VERIFY(!frame.has_value());
-    }
-
-    void testThenBinaryFrameTimeout_coro(TestLoop &el) {
-        mServer.setExpectTimeout();
-
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        bool called = false;
-        qCoro(socket).binaryFrame(10ms).then([&el, &called](const auto &frame) {
-            el.quit();
-            called = true;
-            QVERIFY(!frame.has_value());
-        });
-        el.exec();
-        QVERIFY(called);
+        auto frames = qCoro(socket).binaryFrames(10ms);
+        const auto frame = co_await frames.begin();
+        QCORO_COMPARE(frame, frames.end());
     }
 
     QCoro::Task<> testBinaryMessage_coro(QCoro::TestContext) {
@@ -173,25 +142,10 @@ private:
         QCORO_VERIFY(connectSocket(socket));
 
         QCORO_DELAY(socket.sendBinaryMessage("TEST MESSAGE"));
-        const auto message = co_await qCoro(socket).binaryMessage();
-        QCORO_VERIFY(message.has_value());
+        auto messages = qCoro(socket).binaryMessages();
+        const auto message = co_await messages.begin();
+        QCORO_VERIFY(message != messages.end());
         QCORO_COMPARE(*message, QByteArray("TEST MESSAGE"));
-    }
-
-    void testThenBinaryMessage_coro(TestLoop &el) {
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        QCORO_DELAY(socket.sendBinaryMessage("TEST MESSAGE"));
-        bool called = false;
-        qCoro(socket).binaryMessage().then([&el, &called](const auto &msg) {
-            el.quit();
-            called = true;
-            QVERIFY(msg.has_value());
-            QCOMPARE(*msg, QByteArray("TEST MESSAGE"));
-        });
-        el.exec();
-        QVERIFY(called);
     }
 
     QCoro::Task<> testBinaryMessageTimeout_coro(QCoro::TestContext) {
@@ -200,24 +154,9 @@ private:
         QWebSocket socket;
         QCORO_VERIFY(connectSocket(socket));
 
-        const auto message = co_await qCoro(socket).binaryMessage(10ms);
-        QCORO_VERIFY(!message.has_value());
-    }
-
-    void testThenBinaryMessageTimeout_coro(TestLoop &el) {
-        mServer.setExpectTimeout();
-
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        bool called = false;
-        qCoro(socket).binaryMessage(10ms).then([&el, &called](const auto &msg) {
-            el.quit();
-            called = true;
-            QVERIFY(!msg.has_value());
-        });
-        el.exec();
-        QVERIFY(called);
+        auto messages = qCoro(socket).binaryMessages(10ms);
+        const auto message = co_await messages.begin();
+        QCORO_COMPARE(message, messages.end());
     }
 
     QCoro::Task<> testTextFrame_coro(QCoro::TestContext) {
@@ -225,27 +164,11 @@ private:
         QCORO_VERIFY(connectSocket(socket));
 
         QCORO_DELAY(socket.sendTextMessage(QStringLiteral("TEST MESSAGE")));
-        const auto frame = co_await qCoro(socket).textFrame();
-        QCORO_VERIFY(frame.has_value());
+        auto frames = qCoro(socket).textFrames();
+        const auto frame = co_await frames.begin();
+        QCORO_VERIFY(frame != frames.end());
         QCORO_COMPARE(std::get<0>(*frame), QStringLiteral("TEST MESSAGE"));
         QCORO_COMPARE(std::get<1>(*frame), true);
-    }
-
-    void testThenTextFrame_coro(TestLoop &el) {
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        QCORO_DELAY(socket.sendTextMessage(QStringLiteral("TEST MESSAGE")));
-        bool called = false;
-        qCoro(socket).textFrame().then([&el, &called](const auto &frame) {
-            el.quit();
-            called = true;
-            QVERIFY(frame.has_value());
-            QCOMPARE(std::get<0>(*frame), QStringLiteral("TEST MESSAGE"));
-            QCOMPARE(std::get<1>(*frame), true);
-        });
-        el.exec();
-        QVERIFY(called);
     }
 
     QCoro::Task<> testTextFrameTimeout_coro(QCoro::TestContext) {
@@ -254,24 +177,9 @@ private:
         QWebSocket socket;
         QCORO_VERIFY(connectSocket(socket));
 
-        const auto frame = co_await qCoro(socket).textFrame(10ms);
-        QCORO_VERIFY(!frame.has_value());
-    }
-
-    void testThenTextFrameTimeout_coro(TestLoop &el) {
-        mServer.setExpectTimeout();
-
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        bool called = false;
-        qCoro(socket).textFrame(10ms).then([&el, &called](const auto &frame) {
-            el.quit();
-            called = true;
-            QVERIFY(!frame.has_value());
-        });
-        el.exec();
-        QVERIFY(called);
+        auto frames = qCoro(socket).textFrames(10ms);
+        const auto frame = co_await frames.begin();
+        QCORO_COMPARE(frame, frames.end());
     }
 
     QCoro::Task<> testTextMessage_coro(QCoro::TestContext) {
@@ -279,25 +187,10 @@ private:
         QCORO_VERIFY(connectSocket(socket));
 
         QCORO_DELAY(socket.sendTextMessage(QStringLiteral("TEST MESSAGE")));
-        const auto message = co_await qCoro(socket).textMessage();
-        QCORO_VERIFY(message.has_value());
+        auto messages = qCoro(socket).textMessages();
+        const auto message = co_await messages.begin();
+        QCORO_VERIFY(message != messages.end());
         QCORO_COMPARE(*message, QStringLiteral("TEST MESSAGE"));
-    }
-
-    void testThenTextMessage_coro(TestLoop &el) {
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        QCORO_DELAY(socket.sendTextMessage(QStringLiteral("TEST MESSAGE")));
-        bool called = false;
-        qCoro(socket).textMessage().then([&el, &called](const auto &msg) {
-            el.quit();
-            called = true;
-            QVERIFY(msg.has_value());
-            QCOMPARE(*msg, QStringLiteral("TEST MESSAGE"));
-        });
-        el.exec();
-        QVERIFY(called);
     }
 
     QCoro::Task<> testTextMessageTimeout_coro(QCoro::TestContext) {
@@ -306,52 +199,28 @@ private:
         QWebSocket socket;
         QCORO_VERIFY(connectSocket(socket));
 
-        const auto message = co_await qCoro(socket).textMessage(10ms);
-        QCORO_VERIFY(!message.has_value());
-    }
-
-    void testThenTextMessageTimeout_coro(TestLoop &el) {
-        mServer.setExpectTimeout();
-
-        QWebSocket socket;
-        QVERIFY(connectSocket(socket));
-
-        bool called = false;
-        qCoro(socket).textMessage(10ms).then([&el, &called](const auto &msg) {
-            el.quit();
-            called = true;
-            QVERIFY(!msg.has_value());
-        });
-        el.exec();
-        QVERIFY(called);
+        auto messages = qCoro(socket).textMessages(10ms);
+        const auto message = co_await messages.begin();
+        QCORO_COMPARE(message, messages.end());
     }
 
     QCoro::Task<> testReadFragmentedMessage_coro(QCoro::TestContext) {
         QWebSocket socket;
-        connect(&socket, &QWebSocket::binaryFrameReceived, this,
-                [](const QByteArray &frame, bool isLast) {
-                    qDebug() << "SLOT RECEIVED FRAME " << frame.size() << isLast;
-                });
         QUrl url = mServer.url();
         url.setPath(QStringLiteral("/large"));
         QCORO_VERIFY(QCoro::waitFor(qCoro(socket).open(url)));
 
         QCORO_DELAY(socket.sendBinaryMessage("One large, please"));
 
-        auto coroSocket = qCoro(socket);
-
+        auto frames = qCoro(socket).binaryFrames();
         QByteArray data;
-        Q_FOREVER {
-            const auto response = co_await coroSocket.binaryFrame();
-            QCORO_VERIFY(response.has_value());
-            qDebug() << std::get<0>(*response).size() << std::get<1>(*response);
-            data += std::get<0>(*response);
-            if (std::get<1>(*response)) { // last
+        for (auto frame = co_await frames.begin(), end = frames.end(); frame != end; co_await ++frame) {
+            data += std::get<0>(*frame);
+            if (std::get<1>(*frame)) { // last
                 break;
             }
         }
 
-        qDebug() << data.size();
         QCORO_VERIFY(data.size() >= 10 * 1024 * 1024); // 10MB
     }
 
@@ -369,14 +238,14 @@ private Q_SLOTS:
     addCoroAndThenTests(WaitForOpenWithNetworkRequest)
     addTest(DoesntCoawaitOpenedSocket)
     addCoroAndThenTests(Ping)
-    addCoroAndThenTests(BinaryFrame)
-    addCoroAndThenTests(BinaryFrameTimeout)
-    addCoroAndThenTests(BinaryMessage)
-    addCoroAndThenTests(BinaryMessageTimeout)
-    addCoroAndThenTests(TextFrame)
-    addCoroAndThenTests(TextFrameTimeout)
-    addCoroAndThenTests(TextMessage)
-    addCoroAndThenTests(TextMessageTimeout)
+    addTest(BinaryFrame)
+    addTest(BinaryFrameTimeout)
+    addTest(BinaryMessage)
+    addTest(BinaryMessageTimeout)
+    addTest(TextFrame)
+    addTest(TextFrameTimeout)
+    addTest(TextMessage)
+    addTest(TextMessageTimeout)
 
     addTest(ReadFragmentedMessage)
 
