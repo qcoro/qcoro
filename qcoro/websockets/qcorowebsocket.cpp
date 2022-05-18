@@ -135,20 +135,6 @@ QCoro::Task<std::optional<qint64>> QCoroWebSocket::ping(const QByteArray &payloa
     co_return std::nullopt;
 }
 
-namespace {
-
-template<typename T, typename Signal>
-QCoro::AsyncGenerator<T> signalGenerator(
-    QWebSocket *socket, Signal signal, std::chrono::milliseconds timeout)
-{
-    auto generator = qCoroSignalGenerator(socket, signal, timeout);
-    QCORO_FOREACH (const auto &msg, generator) {
-        co_yield msg;
-    }
-}
-
-} // namespace
-
 QCoro::AsyncGenerator<std::tuple<QByteArray, bool>> QCoroWebSocket::binaryFrames(
     std::chrono::milliseconds timeout)
 {
