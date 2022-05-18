@@ -36,12 +36,12 @@ struct args_tuple;
 
 template<class R, class... Args>
 struct args_tuple<R(Args...)> {
-    using type = std::tuple<Args...>;
+    using type = std::tuple<std::remove_cvref_t<Args>...>;
 };
 
 template<class R, class T, class... Args>
 struct args_tuple<R (T::*)(Args...)> {
-    using type = std::tuple<Args...>;
+    using type = std::tuple<std::remove_cvref_t<Args>...>;
 };
 
 template<class R, class T, class Arg>
@@ -58,7 +58,7 @@ template<concepts::QObject T, typename FuncPtr>
 class QCoroSignalBase {
 public:
     // TODO: Ignore QPrivateSignal
-    using result_type = std::optional<typename args_tuple<FuncPtr>::type>;
+    using result_type = std::optional<typename args_tuple<std::remove_cvref_t<FuncPtr>>::type>;
 
     QCoroSignalBase(const QCoroSignalBase &) = delete;
     QCoroSignalBase &operator=(const QCoroSignalBase &) = delete;

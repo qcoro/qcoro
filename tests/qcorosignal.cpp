@@ -72,7 +72,7 @@ private:
         SignalTest obj;
 
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg);
-        static_assert(std::is_same_v<decltype(result), const std::tuple<const QString &, int, QObject *>>);
+        static_assert(std::is_same_v<decltype(result), const std::tuple<QString, int, QObject *>>);
         const auto [value, number, ptr] = result;
         QCORO_COMPARE(value, QStringLiteral("YAY!"));
         QCORO_COMPARE(number, 42);
@@ -118,7 +118,7 @@ private:
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg, 10ms);
         static_assert(std::is_same_v<
                 decltype(result),
-                const std::optional<std::tuple<const QString &, int, QObject *>>>);
+                const std::optional<std::tuple<QString, int, QObject *>>>);
         QCORO_VERIFY(!result.has_value());
     }
 
@@ -128,7 +128,7 @@ private:
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg, 1s);
         static_assert(std::is_same_v<
                 decltype(result),
-                const std::optional<std::tuple<const QString &, int, QObject *>>>);
+                const std::optional<std::tuple<QString, int, QObject *>>>);
         QCORO_VERIFY(result.has_value());
         QCORO_COMPARE(std::get<0>(*result), QStringLiteral("YAY!"));
         QCORO_COMPARE(std::get<1>(*result), 42);
