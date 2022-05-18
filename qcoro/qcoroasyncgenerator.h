@@ -107,7 +107,9 @@ protected:
         , m_producerCoroutine(producerCoroutine) {}
 
 public:
-    bool await_ready() const noexcept { return false; }
+    bool await_ready() const noexcept {
+        return false;
+    }
 
     std::coroutine_handle<> await_suspend(std::coroutine_handle<> consumerCoroutine) noexcept {
         m_promise->m_consumerCoroutine = consumerCoroutine;

@@ -14,12 +14,16 @@ using namespace std::chrono_literals;
 class SignalTest : public QObject {
     Q_OBJECT
 public:
-    explicit SignalTest() {
-        QTimer::singleShot(100ms, this, [this]() {
-            Q_EMIT voidSignal();
-            Q_EMIT singleArg(QStringLiteral("YAY!"));
-            Q_EMIT multiArg(QStringLiteral("YAY!"), 42, this);
-        });
+    explicit SignalTest(bool active = true) {
+        if (active) {
+            QTimer::singleShot(100ms, this, &SignalTest::emit);
+        }
+    }
+
+    void emit() {
+        Q_EMIT voidSignal();
+        Q_EMIT singleArg(QStringLiteral("YAY!"));
+        Q_EMIT multiArg(QStringLiteral("YAY!"), 42, this);
     }
 
 Q_SIGNALS:
@@ -28,23 +32,17 @@ Q_SIGNALS:
     void multiArg(const QString &value, int number, QObject *ptr);
 };
 
-class MultiSignalTest : public QObject {
+class MultiSignalTest : public SignalTest {
     Q_OBJECT
 public:
-    explicit MultiSignalTest() {
-        mTimer.setInterval(10ms);
-        connect(&mTimer, &QTimer::timeout, this, [this]() {
-            Q_EMIT voidSignal();
-            Q_EMIT singleArg(QStringLiteral("YAY!"));
-            Q_EMIT multiArg(QStringLiteral("YAY"), 42, this);
-        });
-        mTimer.start();
+    explicit MultiSignalTest(bool active = true)
+        : SignalTest(false) {
+        if (active) {
+            mTimer.setInterval(10ms);
+            connect(&mTimer, &QTimer::timeout, this, &MultiSignalTest::emit);
+            mTimer.start();
+        }
     }
-
-Q_SIGNALS:
-    void voidSignal();
-    void singleArg(const QString &value);
-    void multiArg(const QString &value, int number, QObject *ptr);
 
 private:
     QTimer mTimer;
@@ -235,7 +233,7 @@ private:
         auto generator = qCoroSignalGenerator(&obj, &MultiSignalTest::multiArg);
         int count = 0;
         QCORO_FOREACH(const auto &value, generator) {
-            QCORO_COMPARE(std::get<0>(value), QStringLiteral("YAY"));
+            QCORO_COMPARE(std::get<0>(value), QStringLiteral("YAY!"));
             QCORO_COMPARE(std::get<1>(value), 42);
             QCORO_COMPARE(std::get<2>(value), &obj);
             if (++count == 10) {
@@ -257,6 +255,30 @@ private:
         }
     }
 
+    QCoro::Task<> testSignalGeneratorQueue_coro(QCoro::TestContext ctx) {
+        SignalTest test{false};
+        // I have a generator
+        auto generator = qCoroSignalGenerator(&test, &SignalTest::voidSignal);
+        // I emit signals that the generator is listening to, the generator
+        // should enqueue them.
+        for (int i = 0; i < 10; ++i) {
+            test.emit();
+        }
+
+        // I asynchronously wait for first iterator
+        auto it = co_await generator.begin();
+        int count = 0;
+        ctx.setShouldNotSuspend();
+        // I loop over generator - this should not suspend as we are simply consuming
+        // events from the queue.
+        for (; it != generator.end(); co_await ++it) {
+            if (++count == 10) {
+                break;
+            }
+        }
+        QCORO_COMPARE(count, 10);
+    }
+
 private Q_SLOTS:
     addTest(Triggers)
     addTest(ReturnsValue)
@@ -275,6 +297,7 @@ private Q_SLOTS:
     addTest(SignalGeneratorValue)
     addTest(SignalGeneratorTuple)
     addTest(SignalGeneratorTimeout)
+    addTest(SignalGeneratorQueue)
 };
 
 QTEST_GUILESS_MAIN(QCoroSignalTest)
