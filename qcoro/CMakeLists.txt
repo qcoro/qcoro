@@ -14,13 +14,14 @@ add_qcoro_library(
     NO_CMAKE_CONFIG
     INCLUDEDIR Coro
     CAMELCASE_HEADERS
-        Task
         QCoro
+        QCoroAsyncGenerator
+        QCoroGenerator
+        Task
     HEADERS
         concepts_p.h
         coroutine.h
         macros_p.h
-        task.h
         waitoperationbase_p.h
     QT_LINK_LIBRARIES
         INTERFACE Core
@@ -58,4 +59,3 @@ endif()
 if (QCORO_WITH_QTNETWORK)
     add_subdirectory(network)
 endif()
-

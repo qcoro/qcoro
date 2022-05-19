@@ -14,19 +14,38 @@ using namespace std::chrono_literals;
 class SignalTest : public QObject {
     Q_OBJECT
 public:
-    explicit SignalTest() {
-        QTimer::singleShot(100ms, this, [this]() {
-            Q_EMIT voidSignal();
-            Q_EMIT singleArg(QStringLiteral("YAY!"));
-            Q_EMIT multiArg(QStringLiteral("YAY!"), 42, this);
-            qDebug() << "Emission done";
-        });
+    explicit SignalTest(bool active = true) {
+        if (active) {
+            QTimer::singleShot(100ms, this, &SignalTest::emit);
+        }
+    }
+
+    void emit() {
+        Q_EMIT voidSignal();
+        Q_EMIT singleArg(QStringLiteral("YAY!"));
+        Q_EMIT multiArg(QStringLiteral("YAY!"), 42, this);
     }
 
 Q_SIGNALS:
     void voidSignal();
-    void singleArg(const QString &value);
-    void multiArg(const QString &value, int number, QObject *ptr);
+    void singleArg(const QString &);
+    void multiArg(const QString &, int, QObject *);
+};
+
+class MultiSignalTest : public SignalTest {
+    Q_OBJECT
+public:
+    explicit MultiSignalTest(bool active = true)
+        : SignalTest(false) {
+        if (active) {
+            mTimer.setInterval(10ms);
+            connect(&mTimer, &QTimer::timeout, this, &MultiSignalTest::emit);
+            mTimer.start();
+        }
+    }
+
+private:
+    QTimer mTimer;
 };
 
 class QCoroSignalTest : public QCoro::TestObject<QCoroSignalTest> {
@@ -53,7 +72,7 @@ private:
         SignalTest obj;
 
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg);
-        static_assert(std::is_same_v<decltype(result), const std::tuple<const QString &, int, QObject *>>);
+        static_assert(std::is_same_v<decltype(result), const std::tuple<QString, int, QObject *>>);
         const auto [value, number, ptr] = result;
         QCORO_COMPARE(value, QStringLiteral("YAY!"));
         QCORO_COMPARE(number, 42);
@@ -99,7 +118,7 @@ private:
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg, 10ms);
         static_assert(std::is_same_v<
                 decltype(result),
-                const std::optional<std::tuple<const QString &, int, QObject *>>>);
+                const std::optional<std::tuple<QString, int, QObject *>>>);
         QCORO_VERIFY(!result.has_value());
     }
 
@@ -109,7 +128,7 @@ private:
         const auto result = co_await qCoro(&obj, &SignalTest::multiArg, 1s);
         static_assert(std::is_same_v<
                 decltype(result),
-                const std::optional<std::tuple<const QString &, int, QObject *>>>);
+                const std::optional<std::tuple<QString, int, QObject *>>>);
         QCORO_VERIFY(result.has_value());
         QCORO_COMPARE(std::get<0>(*result), QStringLiteral("YAY!"));
         QCORO_COMPARE(std::get<1>(*result), 42);
@@ -178,20 +197,107 @@ private:
         QCORO_COMPARE(result, QStringLiteral("YAY!YAY!"));
     }
 
+    QCoro::Task<> testSignalGeneratorVoid_coro(QCoro::TestContext) {
+        MultiSignalTest obj;
+
+        auto generator = qCoroSignalGenerator(&obj, &MultiSignalTest::voidSignal);
+        int count = 0;
+        QCORO_FOREACH(const std::tuple<> &value, generator) {
+            Q_UNUSED(value);
+            if (++count == 10) {
+                break;
+            }
+        }
+
+        QCORO_COMPARE(count, 10);
+    }
+
+    QCoro::Task<> testSignalGeneratorValue_coro(QCoro::TestContext) {
+        MultiSignalTest obj;
+
+        auto generator = qCoroSignalGenerator(&obj, &MultiSignalTest::singleArg);
+        int count = 0;
+        QCORO_FOREACH(const QString &value, generator) {
+            QCORO_COMPARE(value, QStringLiteral("YAY!"));
+            if (++count == 10) {
+                break;
+            }
+        }
+
+        QCORO_COMPARE(count, 10);
+    }
+
+    QCoro::Task<> testSignalGeneratorTuple_coro(QCoro::TestContext) {
+        MultiSignalTest obj;
+
+        auto generator = qCoroSignalGenerator(&obj, &MultiSignalTest::multiArg);
+        int count = 0;
+        QCORO_FOREACH(const auto &value, generator) {
+            QCORO_COMPARE(std::get<0>(value), QStringLiteral("YAY!"));
+            QCORO_COMPARE(std::get<1>(value), 42);
+            QCORO_COMPARE(std::get<2>(value), &obj);
+            if (++count == 10) {
+                break;
+            }
+        }
+
+        QCORO_COMPARE(count, 10);
+    }
+
+    QCoro::Task<> testSignalGeneratorTimeout_coro(QCoro::TestContext) {
+        QObject obj;
+
+        // A signal that doesn't get invoked
+        auto generator = qCoroSignalGenerator(&obj, &QObject::destroyed, 1ms);
+        QCORO_FOREACH(const auto &value, generator) {
+            Q_UNUSED(value);
+            QCORO_FAIL("The signal should time out and the generator should not return invalid iterator.");
+        }
+    }
+
+    QCoro::Task<> testSignalGeneratorQueue_coro(QCoro::TestContext ctx) {
+        SignalTest test{false};
+        // I have a generator
+        auto generator = qCoroSignalGenerator(&test, &SignalTest::voidSignal);
+        // I emit signals that the generator is listening to, the generator
+        // should enqueue them.
+        for (int i = 0; i < 10; ++i) {
+            test.emit();
+        }
+
+        // I asynchronously wait for first iterator
+        auto it = co_await generator.begin();
+        int count = 0;
+        ctx.setShouldNotSuspend();
+        // I loop over generator - this should not suspend as we are simply consuming
+        // events from the queue.
+        for (; it != generator.end(); co_await ++it) {
+            if (++count == 10) {
+                break;
+            }
+        }
+        QCORO_COMPARE(count, 10);
+    }
+
 private Q_SLOTS:
     addTest(Triggers)
     addTest(ReturnsValue)
     addTest(ReturnsTuple)
     addTest(TimeoutVoid)
     addTest(TimeoutTriggersVoid)
-    addTest(TimeoutValue);
-    addTest(TimeoutTriggersValue);
-    addTest(TimeoutTuple);
-    addTest(TimeoutTriggersTuple);
+    addTest(TimeoutValue)
+    addTest(TimeoutTriggersValue)
+    addTest(TimeoutTuple)
+    addTest(TimeoutTriggersTuple)
     addTest(ThenChained)
     addThenTest(Triggers)
     addThenTest(ReturnsValue)
     addThenTest(ReturnsTuple)
+    addTest(SignalGeneratorVoid)
+    addTest(SignalGeneratorValue)
+    addTest(SignalGeneratorTuple)
+    addTest(SignalGeneratorTimeout)
+    addTest(SignalGeneratorQueue)
 };
 
 QTEST_GUILESS_MAIN(QCoroSignalTest)
