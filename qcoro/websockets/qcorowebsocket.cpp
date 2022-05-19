@@ -14,11 +14,12 @@ using namespace QCoro::detail;
 using TupleQInt64QByteArray = std::tuple<qint64, QByteArray>;
 using TupleQByteArrayBool = std::tuple<QByteArray, bool>;
 using TupleQStringBool = std::tuple<QString, bool>;
-Q_DECLARE_METATYPE(std::optional<TupleQInt64QByteArray>);
-Q_DECLARE_METATYPE(std::optional<TupleQByteArrayBool>);
-Q_DECLARE_METATYPE(std::optional<std::tuple<QByteArray>>);
-Q_DECLARE_METATYPE(std::optional<TupleQStringBool>);
-Q_DECLARE_METATYPE(std::optional<std::tuple<QString>>);
+
+Q_DECLARE_METATYPE(std::optional<TupleQInt64QByteArray>)
+Q_DECLARE_METATYPE(std::optional<TupleQByteArrayBool>)
+Q_DECLARE_METATYPE(std::optional<std::tuple<QByteArray>>)
+Q_DECLARE_METATYPE(std::optional<TupleQStringBool>)
+Q_DECLARE_METATYPE(std::optional<std::tuple<QString>>)
 
 namespace {
 
