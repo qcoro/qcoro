@@ -71,16 +71,6 @@ public:
         }
     }
 
-protected:
-    QCoroSignalBase(T *obj, FuncPtr &&funcPtr, std::chrono::milliseconds timeout)
-        : mObj(obj), mFuncPtr(std::forward<FuncPtr>(funcPtr)) {
-        if (timeout.count() > -1) {
-            mTimeoutTimer = std::make_unique<QTimer>();
-            mTimeoutTimer->setInterval(timeout);
-            mTimeoutTimer->setSingleShot(true);
-        }
-    }
-
     void handleTimeout(std::coroutine_handle<> awaitingCoroutine) {
         if (mTimeoutTimer) {
             QObject::connect(mTimeoutTimer.get(), &QTimer::timeout, mObj,
@@ -89,6 +79,16 @@ protected:
                     awaitingCoroutine.resume();
                 });
             mTimeoutTimer->start();
+        }
+    }
+
+protected:
+    QCoroSignalBase(T *obj, FuncPtr &&funcPtr, std::chrono::milliseconds timeout)
+        : mObj(obj), mFuncPtr(std::forward<FuncPtr>(funcPtr)) {
+        if (timeout.count() > -1) {
+            mTimeoutTimer = std::make_unique<QTimer>();
+            mTimeoutTimer->setInterval(timeout);
+            mTimeoutTimer->setSingleShot(true);
         }
     }
 
@@ -110,15 +110,19 @@ public:
     QCoroSignal(QCoroSignal &&other) noexcept
         : QCoroSignalBase<T, FuncPtr>(std::move(other))
         , mResult(std::move(other.mResult)) {
-        QObject::disconnect(this->mConn);
-        setupConnection();
+        if (this->mConn) {
+            QObject::disconnect(this->mConn);
+            setupConnection();
+        }
     }
 
     QCoroSignal &operator=(QCoroSignal &&other) noexcept {
         QCoroSignalBase<T, FuncPtr>::operator=(std::move(other));
         std::swap(mResult, other.mResult);
-        QObject::disconnect(this->mConn);
-        setupConnection();
+        if (this->mConn) {
+            QObject::disconnect(this->mConn);
+            setupConnection();
+        }
         return *this;
     }
 
@@ -138,6 +142,7 @@ public:
 
 private:
     void setupConnection() {
+        Q_ASSERT(!this->mConn);
         this->mConn = QObject::connect(
             this->mObj, this->mFuncPtr, this->mObj,
             [this](auto &&...args) mutable {
@@ -171,32 +176,41 @@ public:
         setupConnection();
     }
 
-    QCoroSignalQueue(QCoroSignalQueue &&other) noexcept
-        : QCoroSignalBase<T, FuncPtr>(std::move(other))
-        , mAwaitingCoroutine(std::move(other.mAwaitingCoroutine))
-        , mQueue(std::move(other.mQueue)) {
-        QObject::disconnect(this->mConn);
-        setupConnection();
+    QCoroSignalQueue(QCoroSignalQueue &&) = delete;
+    QCoroSignalQueue &operator=(QCoroSignalQueue &&) = delete;
+
+    auto operator co_await() noexcept {
+        struct Awaiter {
+            Awaiter(QCoroSignalQueue &queue)
+                : mQueue(queue)
+            {}
+
+            bool await_ready() const noexcept {
+                return !mQueue.isValid() || !mQueue.empty();
+            }
+            void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+                mQueue.handleTimeout(awaitingCoroutine);
+                mQueue.setAwaiter(awaitingCoroutine);
+            }
+            result_type await_resume() {
+                return mQueue.dequeue();
+            }
+
+        private:
+            QCoro::detail::QCoroSignalQueue<T, FuncPtr> &mQueue;
+        };
+        return Awaiter{*this};
     }
 
-    QCoroSignalQueue &operator=(QCoroSignalQueue &&other) noexcept {
-        QCoroSignalBase<T, FuncPtr>::operator=(std::move(other));
-        std::swap(mAwaitingCoroutine, other.mAwaitingCoroutine);
-        std::swap(mQueue, other.mQueue);
-        QObject::disconnect(this->mConn);
-        setupConnection();
+    bool isValid() const {
+        return !this->mObj.isNull();
     }
 
-    bool await_ready() const noexcept {
-        return !mQueue.empty() || this->mObj.isNull();
+    bool empty() const {
+        return mQueue.empty();
     }
 
-    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
-        this->handleTimeout(awaitingCoroutine);
-        mAwaitingCoroutine = awaitingCoroutine;
-    }
-
-    result_type await_resume() {
+    result_type dequeue() {
         if (mQueue.empty()) {
             return std::nullopt;
         }
@@ -206,8 +220,15 @@ public:
         return result;
     }
 
+    void setAwaiter(std::coroutine_handle<> awaiter) {
+        mAwaitingCoroutine = awaiter;
+    }
+
 private:
     void setupConnection() {
+        if (this->mConn) {
+            return;
+        }
         this->mConn = QObject::connect(
             this->mObj, this->mFuncPtr, this->mObj,
             [this](auto && ...args) mutable {
@@ -276,10 +297,15 @@ inline auto qCoroSignalGenerator(T *obj, FuncPtr &&ptr,
                                  std::chrono::milliseconds timeout = std::chrono::milliseconds{-1})
     -> QCoro::AsyncGenerator<typename QCoro::detail::QCoroSignalQueue<T, FuncPtr>::result_type::value_type> {
 
-    constexpr auto innerGenerator = [](auto signalQueue) ->
-        QCoro::AsyncGenerator<typename QCoro::detail::QCoroSignalQueue<T, FuncPtr>::result_type::value_type> {
+    using SignalQueue = QCoro::detail::QCoroSignalQueue<T, FuncPtr>;
+
+    // The actual generator is in a wrapper function, so that we can perform
+    // some initialization (constructing signalQueue) in the qCoroSignalGenerator()
+    // function before the generator gets initially suspended.
+    constexpr auto innerGenerator = [](std::unique_ptr<SignalQueue> signalQueue) ->
+        QCoro::AsyncGenerator<typename SignalQueue::result_type::value_type> {
         Q_FOREVER {
-            auto result = co_await signalQueue;
+            auto result = co_await *signalQueue;
             if (!result.has_value()) { // timeout
                 break;
             }
@@ -288,6 +314,5 @@ inline auto qCoroSignalGenerator(T *obj, FuncPtr &&ptr,
         }
     };
 
-    QCoro::detail::QCoroSignalQueue signalQueue{obj, std::forward<FuncPtr>(ptr), timeout};
-    return innerGenerator(std::move(signalQueue));
+    return innerGenerator(std::make_unique<SignalQueue>(obj, std::forward<FuncPtr>(ptr), timeout));
 }
