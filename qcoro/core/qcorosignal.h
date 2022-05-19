@@ -66,7 +66,7 @@ public:
     QCoroSignalBase &operator=(QCoroSignalBase &&) noexcept = default;
 
     ~QCoroSignalBase() {
-        if (mConn) {
+        if (static_cast<bool>(mConn)) {
             QObject::disconnect(mConn);
         }
     }
@@ -106,7 +106,7 @@ public:
 
     QCoroSignal(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
         : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout) {}
-
+    QCoroSignal(const QCoroSignal &) = delete;
     QCoroSignal(QCoroSignal &&other) noexcept
         : QCoroSignalBase<T, FuncPtr>(std::move(other))
         , mResult(std::move(other.mResult)) {
@@ -125,6 +125,10 @@ public:
         }
         return *this;
     }
+
+    QCoroSignal &operator=(const QCoroSignal &) = delete;
+    ~QCoroSignal() = default;
+
 
     bool await_ready() const noexcept {
         return this->mObj.isNull();
@@ -177,11 +181,14 @@ public:
     }
 
     QCoroSignalQueue(QCoroSignalQueue &&) = delete;
+    QCoroSignalQueue(const QCoroSignalQueue &) = delete;
     QCoroSignalQueue &operator=(QCoroSignalQueue &&) = delete;
+    QCoroSignalQueue &operator=(const QCoroSignalQueue &) = delete;
+    ~QCoroSignalQueue() = default;
 
     auto operator co_await() noexcept {
         struct Awaiter {
-            Awaiter(QCoroSignalQueue &queue)
+            explicit Awaiter(QCoroSignalQueue &queue)
                 : mQueue(queue)
             {}
 

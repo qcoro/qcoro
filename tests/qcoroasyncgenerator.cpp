@@ -78,7 +78,7 @@ private:
         ctx.setShouldNotSuspend();
 
         const auto createGenerator = []() -> QCoro::AsyncGenerator<int> {
-            if (false) {
+            if (false) { // NOLINT(readability-simplify-boolean-expr)
                 co_yield 42;
             }
         };

@@ -68,7 +68,7 @@ private Q_SLOTS:
 
     CLANG11_DISABLE_ASAN void testEmptyGenerator() {
         const auto createGenerator = []() -> QCoro::Generator<int> {
-            if (false) {
+            if (false) { // NOLINT(readability-simplify-boolean-expr)
                 co_yield 42; // Make it a coroutine, except it never gets invoked.
             }
         };

@@ -49,7 +49,7 @@ public:
      * object is destroyed.
      **/
     std::suspend_always final_suspend() noexcept {
-        mValue = std::monostate{};
+        mValue = nullptr;
         return {};
     }
 
@@ -60,7 +60,7 @@ public:
      * caller (see QCoro::detail::GeneratorIterator<T>::operator*()).
      **/
     void unhandled_exception() {
-        mValue = std::current_exception();
+        mException = std::current_exception();
     }
 
     /**
@@ -69,10 +69,16 @@ public:
      * The value is stored and in the promise and the generator coroutine
      * is suspended.
      **/
-    template<typename From>
-    requires std::is_convertible_v<From, T>
-    std::suspend_always yield_value(From &&from) {
-        mValue.template emplace<T>(std::forward<From>(from));
+
+    template<typename U = T>
+    requires (!std::is_rvalue_reference_v<U>)
+    std::suspend_always yield_value(std::remove_reference_t<T> &value) {
+        mValue = std::addressof(value);
+        return {};
+    }
+
+    std::suspend_always yield_value(std::remove_reference_t<T> &&value) {
+        mValue = std::addressof(value);
         return {};
     }
 
@@ -85,27 +91,26 @@ public:
      * Returns the exception stored in the promise type (if any).
      **/
     std::exception_ptr exception() const {
-        return std::holds_alternative<std::exception_ptr>(mValue)
-            ? std::get<std::exception_ptr>(mValue)
-            : std::exception_ptr{};
+        return mException;
     }
 
     /**
      * Returns the current value stored in the promise type.
      **/
     T &value() {
-        return std::get<T>(mValue);
+        return *static_cast<T *>(mValue);
     }
 
     /**
      * Whether the generator coroutine has finished or not.
      **/
     bool finished() const {
-        return std::holds_alternative<std::monostate>(mValue);
+        return mValue == nullptr;
     }
 
 private:
-    std::variant<std::monostate, T, std::exception_ptr> mValue;
+    void *mValue = nullptr;
+    std::exception_ptr mException;
 };
 
 /**
@@ -216,6 +221,11 @@ class Generator {
 public:
     using promise_type = detail::GeneratorPromise<T>;
 
+    explicit Generator() = default;
+    Generator(Generator &&) noexcept = default;
+    Generator(const Generator &) = delete;
+    Generator &operator=(Generator &&) noexcept = default;
+    Generator &operator=(const Generator &) = delete;
     /**
      * @brief Destroys this Generator object and the associated generator coroutine.
      *

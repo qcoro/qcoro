@@ -28,8 +28,8 @@ public:
 
 Q_SIGNALS:
     void voidSignal();
-    void singleArg(const QString &value);
-    void multiArg(const QString &value, int number, QObject *ptr);
+    void singleArg(const QString &);
+    void multiArg(const QString &, int, QObject *);
 };
 
 class MultiSignalTest : public SignalTest {

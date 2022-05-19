@@ -29,7 +29,10 @@ class AsyncGeneratorPromiseBase {
 public:
     AsyncGeneratorPromiseBase() noexcept = default;
     AsyncGeneratorPromiseBase(const AsyncGeneratorPromiseBase &) = delete;
+    AsyncGeneratorPromiseBase(AsyncGeneratorPromiseBase &&) noexcept = default;
     AsyncGeneratorPromiseBase& operator=(const AsyncGeneratorPromiseBase &) = delete;
+    AsyncGeneratorPromiseBase& operator=(AsyncGeneratorPromiseBase &&) noexcept = default;
+    ~AsyncGeneratorPromiseBase() = default;
 
     std::suspend_always initial_suspend() const noexcept { return {}; }
 
@@ -72,7 +75,7 @@ protected:
 
 class AsyncGeneratorYieldOperation final {
 public:
-    AsyncGeneratorYieldOperation(std::coroutine_handle<> consumer) noexcept
+    explicit AsyncGeneratorYieldOperation(std::coroutine_handle<> consumer) noexcept
         : m_consumer(consumer)
     {}
 
@@ -99,7 +102,7 @@ inline AsyncGeneratorYieldOperation AsyncGeneratorPromiseBase::internal_yield_va
 
 class IteratorAwaitableBase {
 protected:
-    IteratorAwaitableBase(std::nullptr_t) noexcept {}
+    explicit IteratorAwaitableBase(std::nullptr_t) noexcept {}
     IteratorAwaitableBase(
         AsyncGeneratorPromiseBase &promise,
         std::coroutine_handle<> producerCoroutine) noexcept
@@ -176,15 +179,15 @@ public:
     using reference = std::add_lvalue_reference_t<T>;
     using pointer = std::add_pointer_t<value_type>;
 
-    AsyncGeneratorIterator(std::nullptr_t) noexcept {}
-    AsyncGeneratorIterator(handle_type coroutine) noexcept
+    explicit AsyncGeneratorIterator(std::nullptr_t) noexcept {}
+    explicit AsyncGeneratorIterator(handle_type coroutine) noexcept
         : m_coroutine(coroutine)
     {}
 
     auto operator++() noexcept {
         class IncrementIteratorAwaitable final : public IteratorAwaitableBase {
         public:
-            IncrementIteratorAwaitable(AsyncGeneratorIterator &iterator) noexcept
+            explicit IncrementIteratorAwaitable(AsyncGeneratorIterator &iterator) noexcept
                 : IteratorAwaitableBase(iterator.m_coroutine.promise(), iterator.m_coroutine)
                 , m_iterator(iterator)
             {}
@@ -307,9 +310,9 @@ public:
     auto begin() noexcept {
         class BeginIteratorAwaitable final : public detail::IteratorAwaitableBase {
         public:
-            BeginIteratorAwaitable(std::nullptr_t) noexcept
+            explicit BeginIteratorAwaitable(std::nullptr_t) noexcept
                 : IteratorAwaitableBase(nullptr) {}
-            BeginIteratorAwaitable(std::coroutine_handle<promise_type> producerCoroutine) noexcept
+            explicit BeginIteratorAwaitable(std::coroutine_handle<promise_type> producerCoroutine) noexcept
                 : IteratorAwaitableBase(producerCoroutine.promise(), producerCoroutine) {}
 
             bool await_ready() const noexcept {
@@ -347,8 +350,8 @@ private:
 };
 
 template<typename T>
-void swap(AsyncGenerator<T> &a, AsyncGenerator<T> &b) noexcept {
-    a.swap(b);
+void swap(AsyncGenerator<T> &arg1, AsyncGenerator<T> &arg2) noexcept {
+    arg1.swap(arg2);
 }
 
 namespace detail {
@@ -378,9 +381,10 @@ AsyncGenerator<T> AsyncGeneratorPromise<T>::get_return_object() noexcept {
  * @param var The full declaration of the iteration variable (incl. type, cvref), e.g. "const QString &user"
  * @param generator The AsyncGenerator<T> object.
  **/
+
 #define QCORO_FOREACH(var, generator) \
-    if (auto && _container = generator; false) {} else \
+    if (auto && _container = (generator); false) {} else \
         for (auto _begin = co_await _container.begin(), _end = _container.end(); \
              _begin != _end; \
              co_await ++_begin) \
-         if (var = *_begin; false) {} else
+         if (var = *_begin; false) {} else // NOLINT(bugprone-macro-parentheses)
