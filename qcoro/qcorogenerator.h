@@ -108,6 +108,15 @@ public:
         return mValue == nullptr;
     }
 
+    /**
+     * @brief Prevent use of `co_await` inside the generator coroutine
+     *
+     * Use `QCoro::AsyncGenerator<T>` if you need to use `co_await` inside the
+     * generator coroutine.
+     */
+    template<typename U>
+    std::suspend_never await_transform(U &&) = delete;
+
 private:
     void *mValue = nullptr;
     std::exception_ptr mException;
