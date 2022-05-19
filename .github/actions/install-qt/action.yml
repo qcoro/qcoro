@@ -6,7 +6,7 @@ inputs:
     required: true
   qt_modules:
     description: 'List of Qt modules to intall'
-    default: qtbase icu
+    default: qtbase qtwebsockets icu
   platform:
     description: 'Operating system (linux|windows|macos)'
     required: true
@@ -22,7 +22,7 @@ runs:
           python3 python3-pip \
           build-essential \
           dbus dbus-x11 \
-          libgl-dev libegl-dev  
+          libgl-dev libegl-dev
     - name: Install Qt
       shell: bash
       run: |
@@ -62,4 +62,3 @@ runs:
         if [[ "${{ inputs.platform }}" == "windows" ]]; then
           powershell "./.github/actions/install-qt/install-dbus.ps1" "$QT_BASE_DIR"
         fi
-    
