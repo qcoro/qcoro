@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorogenerator.h"
+#include "testmacros.h"
 
 #include <QObject>
 #include <QTest>
@@ -20,6 +21,28 @@
 #else
     #define CLANG11_DISABLE_ASAN
 #endif
+
+struct Nocopymove {
+    explicit constexpr Nocopymove(int val): val(val) {}
+    Nocopymove(const Nocopymove &) = delete;
+    Nocopymove &operator=(const Nocopymove &) = delete;
+    Nocopymove(Nocopymove &&) = delete;
+    Nocopymove &operator=(Nocopymove &&) = delete;
+    ~Nocopymove() = default;
+
+    int val;
+};
+
+struct Moveonly {
+    explicit constexpr Moveonly(int val): val(val) {}
+    Moveonly(const Moveonly &) = delete;
+    Moveonly &operator=(const Moveonly &) = delete;
+    Moveonly(Moveonly &&) noexcept = default;
+    Moveonly &operator=(Moveonly &&) noexcept = default;
+    ~Moveonly() = default;
+
+    int val;
+};
 
 class GeneratorTest : public QObject {
     Q_OBJECT
@@ -76,6 +99,65 @@ private Q_SLOTS:
         auto generator = createGenerator();
         const auto begin = generator.begin();
         QCOMPARE(begin, generator.end());
+    }
+
+    CLANG11_DISABLE_ASAN void testConstReferenceGenerator() {
+        const auto createGenerator = []() -> QCoro::Generator<const Nocopymove &> {
+            for (int i = 0; i < 4; ++i) {
+                const Nocopymove val(i);
+                co_yield val;
+            }
+        };
+
+        auto generator = createGenerator();
+        auto it = generator.begin();
+        int testval = 0;
+        while (it != generator.end()) {
+            const Nocopymove &value = *it;
+            QCOMPARE(value.val, testval++);
+            ++it;
+        }
+        QCOMPARE(testval, 4);
+    }
+
+    CLANG11_DISABLE_ASAN void testReferenceGenerator() {
+        const auto createGenerator = []() -> QCoro::Generator<Nocopymove &> {
+            for (int i = 0; i < 8; i += 2) {
+                Nocopymove val(i);
+                co_yield val;
+                QCORO_COMPARE(val.val, i + 1);
+            }
+        };
+
+        auto generator = createGenerator();
+        auto it = generator.begin();
+        int testval = 0;
+        while (it != generator.end()) {
+            Nocopymove &value = *it;
+            QCOMPARE(value.val, testval);
+            value.val += 1;
+            testval += 2;
+            ++it;
+        }
+    }
+
+    CLANG11_DISABLE_ASAN void testMoveonlyGenerator() {
+        const auto createGenerator = []() -> QCoro::Generator<Moveonly &&> {
+            for (int i = 0; i < 4; ++i) {
+                Moveonly value{i};
+                co_yield std::move(value);
+            }
+        };
+
+        auto generator = createGenerator();
+        auto it = generator.begin();
+        int testval = 0;
+        while (it != generator.end()) {
+            Moveonly val = std::move(*it);
+            QCOMPARE(val.val, testval++);
+            ++it;
+        }
+        QCOMPARE(testval, 4);
     }
 };
 

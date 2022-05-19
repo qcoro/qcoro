@@ -29,6 +29,7 @@ namespace detail {
  **/
 template<typename T>
 class GeneratorPromise {
+    using value_type = std::remove_reference_t<T>;
 public:
     /**
      * Constructs the Generator<T> object returned from the generator coroutine
@@ -70,14 +71,12 @@ public:
      * is suspended.
      **/
 
-    template<typename U = T>
-    requires (!std::is_rvalue_reference_v<U>)
-    std::suspend_always yield_value(std::remove_reference_t<T> &value) {
+    std::suspend_always yield_value(value_type &value) {
         mValue = std::addressof(value);
         return {};
     }
 
-    std::suspend_always yield_value(std::remove_reference_t<T> &&value) {
+    std::suspend_always yield_value(value_type &&value) {
         mValue = std::addressof(value);
         return {};
     }
@@ -97,8 +96,9 @@ public:
     /**
      * Returns the current value stored in the promise type.
      **/
-    T &value() {
-        return *static_cast<T *>(mValue);
+    value_type &value() {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        return *const_cast<value_type *>(static_cast<const value_type *>(mValue));
     }
 
     /**
@@ -111,14 +111,13 @@ public:
     /**
      * @brief Prevent use of `co_await` inside the generator coroutine
      *
-     * Use `QCoro::AsyncGenerator<T>` if you need to use `co_await` inside the
-     * generator coroutine.
+     * Use `QCoro::AsyncGenerator<T>` if you need to use `co_await` inside the generator coroutine.
      */
     template<typename U>
     std::suspend_never await_transform(U &&) = delete;
 
 private:
-    void *mValue = nullptr;
+    const void *mValue = nullptr;
     std::exception_ptr mException;
 };
 

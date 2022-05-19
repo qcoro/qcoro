@@ -133,7 +133,8 @@ public:
     AsyncGenerator<T> get_return_object() noexcept;
 
     AsyncGeneratorYieldOperation yield_value(value_type &value) noexcept {
-        m_currentValue = std::addressof(value);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        m_currentValue = const_cast<std::remove_const_t<value_type> *>(std::addressof(value));
         return internal_yield_value();
     }
 
@@ -142,7 +143,8 @@ public:
     }
 
     T &value() const noexcept {
-        return *static_cast<T *>(m_currentValue);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        return *const_cast<value_type *>(static_cast<const value_type *>(m_currentValue));
     }
 };
 

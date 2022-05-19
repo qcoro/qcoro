@@ -10,6 +10,34 @@
 
 #include <QScopeGuard>
 
+struct Nocopymove {
+    explicit constexpr Nocopymove(int val): val(val) {}
+    Nocopymove(const Nocopymove &) = delete;
+    Nocopymove &operator=(const Nocopymove &) = delete;
+    Nocopymove(Nocopymove &&) = delete;
+    Nocopymove &operator=(Nocopymove &&) = delete;
+    ~Nocopymove() = default;
+
+    int val;
+};
+
+struct Moveonly {
+    explicit constexpr Moveonly(int val): val(val) {}
+    Moveonly(const Moveonly &) = delete;
+    Moveonly &operator=(const Moveonly &) = delete;
+    Moveonly(Moveonly &&) noexcept = default;
+    Moveonly &operator=(Moveonly &&) noexcept = default;
+    ~Moveonly() = default;
+
+    int val;
+};
+
+QCoro::Task<> sleep(std::chrono::milliseconds ms) {
+    QTimer timer;
+    timer.start(ms);
+    co_await timer;
+}
+
 class AsyncGeneratorTest : public QCoro::TestObject<AsyncGeneratorTest> {
     Q_OBJECT
 private:
@@ -87,11 +115,67 @@ private:
         QCORO_COMPARE(co_await generator.begin(), generator.end());
     }
 
+    QCoro::Task<> testReferenceGenerator_coro(QCoro::TestContext) {
+        const auto createGenerator = []() -> QCoro::AsyncGenerator<Nocopymove &> {
+            for (int i = 0; i < 8; i += 2) {
+                Nocopymove val{i};
+                co_await sleep(10ms);
+                co_yield val;
+                QCORO_COMPARE(val.val, i + 1);
+            }
+        };
+
+        int testvalue = 0;
+        QCORO_FOREACH(Nocopymove &val, createGenerator()) {
+            QCORO_COMPARE(val.val, testvalue);
+            ++val.val;
+            testvalue += 2;
+        }
+        QCORO_COMPARE(testvalue, 8);
+    }
+
+    QCoro::Task<> testConstReferenceGenerator_coro(QCoro::TestContext) {
+        const auto createGenerator = []() -> QCoro::AsyncGenerator<const Nocopymove &> {
+            for (int i = 0; i < 4; ++i) {
+                const Nocopymove value{i};
+                co_await sleep(10ms);
+                co_yield value;
+            }
+        };
+
+        int testvalue = 0;
+        QCORO_FOREACH(const Nocopymove &val, createGenerator()) {
+            QCORO_COMPARE(val.val, testvalue++);
+        }
+        QCORO_COMPARE(testvalue, 4);
+    }
+
+    QCoro::Task<> testMoveonlyGenerator_coro(QCoro::TestContext) {
+        const auto createGenerator = []() -> QCoro::AsyncGenerator<Moveonly> {
+            for (int i = 0; i < 4; ++i) {
+                Moveonly value{i};
+                co_await sleep(10ms);
+                co_yield std::move(value);
+            }
+        };
+
+        auto generator = createGenerator();
+        int testvalue = 0;
+        for (auto it = co_await generator.begin(), end = generator.end(); it != end; co_await ++it) {
+            Moveonly value = std::move(*it);
+            QCORO_COMPARE(value.val, testvalue++);
+        }
+        QCORO_COMPARE(testvalue, 4);
+    }
+
 private Q_SLOTS:
     addTest(Generator)
     addTest(SyncGenerator)
     addTest(TerminateSuspendedGenerator)
     addTest(EmptyGenerator)
+    addTest(ReferenceGenerator)
+    addTest(ConstReferenceGenerator)
+    addTest(MoveonlyGenerator)
 };
 
 QTEST_GUILESS_MAIN(AsyncGeneratorTest)
