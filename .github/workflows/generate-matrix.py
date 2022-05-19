@@ -17,7 +17,7 @@ platforms = [
         "compilers": [
             {
                 "name": "gcc",
-                "versions": [ "10.3.0", "11.3.0" ]
+                "versions": [ "10.3.0", "11.3.0", "12.1.0" ]
             },
             {
                 "name": "clang",
@@ -41,7 +41,7 @@ def get_os_for_platform(platform):
     if platform == "macos":
         return "macos-11"
     raise RuntimeError(f"Invalid platform '{platform}'.")
-    
+
 
 def create_configuration(qt_version, platform, compiler, compiler_version = ""):
     return {
