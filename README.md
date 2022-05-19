@@ -155,9 +155,44 @@ continuations.
 
 📘 [Full documentation here](https://qcoro.dvratil.cz/reference/coro/task).
 
+## Generators
+
+Generator is a coroutine that lazily produces multiple values. While there's
+nothing Qt-specific, QCoro provides the necessary tools for users to create
+custom generators in their Qt applications.
+
+QCoro provides API for both synchronous generators (`QCoro::Generator<T>`)
+and asynchronous generators (`QCoro::AsyncGenerator<T>`). Both generators provide
+container-like API: `begin()` and `end()` member functions that return iterator-like
+objects, which is well-known and established API and makes generators compatible
+with existing algorithms.
+
+```cpp
+QCoro::Generator<int> fibonacci() {
+    quint64 a = 0, b = 0;
+    Q_FOREVER {
+        co_yield b;
+        const auto tmp = b;
+        a = b;
+        b += tmp;
+    }
+}
+
+void printFib(quint64 max) {
+    for (auto fib : fibonacci()) {
+        if (fib > max) {
+            break;
+        }
+        std::cout << fib << std::endl;
+    }
+}
+```
+
+📘 [Full documentation here](https://qcoro.dvratil.cz/reference/coro/generator).
+
 ## License
 
-```
+```text
 MIT License
 
 Copyright (c) 2022 Daniel Vrátil <dvratil@kde.org>
