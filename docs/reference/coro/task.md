@@ -6,7 +6,7 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 
 # QCoro::Task
 
-{{ doctable("Coro", "Task") }}
+{{ doctable("Coro", "QCoroTask") }}
 
 ```cpp
 template<typename T> class QCoro::Task
@@ -18,7 +18,7 @@ return type `QCoro::Task<T>`, where `T` is the type of the "regular" coroutine r
 There's no need by the user to interact with or construct `QCoro::Task` manually, the object is
 constructed automatically by the compiler before the user code is executed. To return a value
 from a coroutine, use `co_return`, which will store the result in the `Task` object and leave
-the coroutine. 
+the coroutine.
 
 ```cpp
 QCoro::Task<QString> getUserName(UserID userId) {
@@ -45,7 +45,7 @@ QCoro::Task<void> getUserDetails(UserID userId) {
     ...
 
     const QString name = co_await getUserName(userId);
-    
+
     ...
 }
 ```
@@ -92,7 +92,7 @@ If the coroutine throws an exception, the exception is re-thrown when the result
 continuation is `co_await`ed. If the result of the continuation is not `co_await`ed, the exception
 is silently ignored.
 
-If an exception is thrown from the `ThenCallback`, then the exception is either propagated to the nex 
+If an exception is thrown from the `ThenCallback`, then the exception is either propagated to the nex
 chained `then()` continuation or re-thrown if directly `co_await`ed. If the result is not `co_await`ed
 and no futher `then()` continuation is chained after the one that has thrown, then the exception is
 silently ignored.

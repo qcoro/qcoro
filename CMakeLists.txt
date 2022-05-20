@@ -17,6 +17,7 @@ option(QCORO_BUILD_EXAMPLES "Build examples" ON)
 add_feature_info(Examples QCORO_BUILD_EXAMPLES "Build examples")
 option(QCORO_ENABLE_ASAN "Build with AddressSanitizer" OFF)
 add_feature_info(Asan QCORO_ENABLE_ASAN "Build with AddressSanitizer")
+option(QCORO_DISABLE_DEPRECATED_TASK_H "Disable deprecated task.h header" OFF)
 
 if(WIN32 OR APPLE OR ANDROID)
     option(QCORO_WITH_QTDBUS "Build QtDBus support" OFF)
@@ -174,5 +175,3 @@ install(
 #-----------------------------------------------------------#
 
 feature_summary(FATAL_ON_MISSING_REQUIRED_PACKAGES WHAT ALL)
-
-
