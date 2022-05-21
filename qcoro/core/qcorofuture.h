@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "task.h"
+#include "qcorotask.h"
 #include "macros_p.h"
 
 #include <type_traits>
@@ -133,4 +133,3 @@ template<typename T>
 inline auto qCoro(const QFuture<T> &f) noexcept {
     return QCoro::detail::QCoroFuture<T>{f};
 }
-

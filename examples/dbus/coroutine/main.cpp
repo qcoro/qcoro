@@ -4,7 +4,7 @@
 
 #include "coroutine.h"
 #include "qcorodbus.h"
-#include "task.h"
+#include "qcorotask.h"
 
 #include "common/dbusserver.h"
 

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "qcorotask.h"
 #include "waitoperationbase_p.h"
 #include "qcoronetwork_export.h"
 
@@ -13,10 +14,6 @@
 
 class QTcpServer;
 class QTcpSocket;
-
-namespace QCoro {
-template<typename T> class Task;
-}
 
 namespace QCoro::detail {
 
@@ -81,4 +78,3 @@ inline auto qCoro(QTcpServer &s) noexcept {
 inline auto qCoro(QTcpServer *s) noexcept {
     return QCoro::detail::QCoroTcpServer{s};
 }
-

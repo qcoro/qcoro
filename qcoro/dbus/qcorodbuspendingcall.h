@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "task.h"
+#include "qcorotask.h"
 #include "qcorodbus_export.h"
 
 #include <QDBusPendingCallWatcher>
@@ -103,4 +103,3 @@ struct awaiter_type<QDBusPendingCall> {
 inline auto qCoro(const QDBusPendingCall &call) {
     return QCoro::detail::QCoroDBusPendingCall{call};
 }
-

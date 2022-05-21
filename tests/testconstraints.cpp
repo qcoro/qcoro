@@ -2,7 +2,7 @@
 #include <QTest>
 
 #include "qcoro/coroutine.h"
-#include "qcoro/task.h"
+#include "qcoro/qcorotask.h"
 
 namespace helper {
 

@@ -7,7 +7,7 @@
 #include "coroutine.h"
 #include "macros_p.h"
 #include "concepts_p.h"
-#include "task.h"
+#include "qcorotask.h"
 #include "qcoroasyncgenerator.h"
 
 #include <QObject>

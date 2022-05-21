@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "task.h"
+#include "qcorotask.h"
 #include "qcorosignal.h"
 
 #include <qglobal.h>
@@ -145,4 +145,3 @@ template<typename ... Args>
 inline auto qCoro(const QDBusPendingReply<Args ...> &reply) {
     return QCoro::detail::QCoroDBusPendingReply<Args ...>{reply};
 }
-

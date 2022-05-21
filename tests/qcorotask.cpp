@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
-#include "task.h"
+#include "qcorotask.h"
 #include "qcorotimer.h"
 
 #include <QTest>
@@ -540,4 +540,4 @@ private Q_SLOTS:
 
 QTEST_GUILESS_MAIN(QCoroTaskTest)
 
-#include "task.moc"
+#include "qcorotask.moc"
