@@ -177,7 +177,7 @@ function(add_qcoro_library)
         COMPONENT Devel
     )
     if (NOT LIB_INTERFACE)
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${target_name}_export.h
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${export_file}_export.h
                 DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/qcoro
                 COMPONENT Devel
         )
