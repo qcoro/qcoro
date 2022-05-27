@@ -1,7 +1,18 @@
 import json
 from socket import create_connection
 
-qt_versions = [ "5.15.2", "6.2.0" ]
+qt = [
+    {
+        "version": "5.15.2",
+        "archives": [ "qtbase", "icu", "qtwebsockets" ],
+        "modules": []
+    },
+    {
+        "version": "6.2.0",
+        "archives": [ "qtbase", "icu" ],
+        "modules": [ "qtwebsockets" ]
+    }
+]
 
 platforms = [
     {
@@ -41,11 +52,13 @@ def get_os_for_platform(platform):
     if platform == "macos":
         return "macos-11"
     raise RuntimeError(f"Invalid platform '{platform}'.")
-    
 
-def create_configuration(qt_version, platform, compiler, compiler_version = ""):
+
+def create_configuration(qt, platform, compiler, compiler_version = ""):
     return {
-        "qt_version": qt_version,
+        "qt_version": qt["version"],
+        "qt_modules": ' '.join(qt["modules"]),
+        "qt_archives": ' '.join(qt["archives"]),
         "platform": platform,
         "compiler": compiler,
         "compiler_version": compiler_version,
@@ -54,7 +67,7 @@ def create_configuration(qt_version, platform, compiler, compiler_version = ""):
         "with_qtdbus": "OFF" if platform == "macos" else "ON"
     }
 
-for qt_version in qt_versions:
+for qt_version in qt:
     for platform in platforms:
         for compiler in platform["compilers"]:
             if "versions" in compiler:
