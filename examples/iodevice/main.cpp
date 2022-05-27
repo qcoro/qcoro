@@ -1,5 +1,5 @@
 #include "qcoroiodevice.h"
-#include "qcoro/task.h"
+#include "qcorotask.h"
 
 #include <QCoreApplication>
 #include <QHostAddress>

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "task.h"
+#include "qcorotask.h"
 #include "qcorocore_export.h"
 
 #include <QMetaObject>
@@ -70,4 +70,3 @@ inline auto qCoro(QTimer *timer) noexcept {
 inline auto qCoro(QTimer &timer) noexcept{
     return QCoro::detail::QCoroTimer{&timer};
 }
-

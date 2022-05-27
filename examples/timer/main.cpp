@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "task.h"
+#include "qcorotask.h"
 #include "qcorotimer.h"
 
 #include <QCoreApplication>

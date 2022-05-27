@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "task.h"
 #include "qcoroiodevice.h"
 #include "qcoronetwork_export.h"
 
@@ -72,5 +71,3 @@ struct awaiter_type<QNetworkReply *> {
 };
 
 } // namespace QCoro::detail
-
-

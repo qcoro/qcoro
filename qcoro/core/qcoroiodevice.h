@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "task.h"
+#include "qcorotask.h"
 #include "coroutine.h"
 #include "macros_p.h"
 #include "waitoperationbase_p.h"
@@ -240,5 +240,3 @@ class QLocalSocket;
 auto qCoro(QLocalSocket *) noexcept; // You are likely missing "#include <QCoroLocalSocket>"
 class QNetworkReply;
 auto qCoro(QNetworkReply *) noexcept; // You are likely missing "#include <QNetworkReply>"
-
-

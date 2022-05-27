@@ -12,7 +12,7 @@
 #include <QTimer>
 #include <QVariant>
 
-#include "qcoro/task.h"
+#include "qcoro/qcorotask.h"
 #include "testloop.h"
 
 #include <chrono>

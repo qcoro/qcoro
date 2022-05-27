@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorotcpserver.h"
-#include "task.h"
 #include "qcorosignal.h"
 
 #include <QTcpServer>
@@ -50,4 +49,3 @@ QCoro::Task<QTcpSocket *> QCoroTcpServer::waitForNewConnection(std::chrono::mill
     }
     co_return nullptr;
 }
-
