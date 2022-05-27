@@ -4,9 +4,10 @@ inputs:
   qt_version:
     description: 'Version of Qt to install'
     required: true
+  qt_archives:
+    description: 'List of Qt archives to intall'
   qt_modules:
-    description: 'List of Qt modules to intall'
-    default: qtbase icu
+    description: 'List of Qt modules to install'
   platform:
     description: 'Operating system (linux|windows|macos)'
     required: true
@@ -22,7 +23,7 @@ runs:
           python3 python3-pip \
           build-essential \
           dbus dbus-x11 \
-          libgl-dev libegl-dev  
+          libgl-dev libegl-dev
     - name: Install Qt
       shell: bash
       run: |
@@ -52,7 +53,13 @@ runs:
             ;;
         esac
 
-        aqt install-qt -O ${QT_INSTALL_PATH} ${QT_OS} desktop ${{ inputs.qt_version }} ${QT_ARCH} --archives ${{ inputs.qt_modules }}
+        if [[ -n "${{ inputs.qt_archives }}" ]]; then
+          qt_archives="--archives ${{ inputs.qt_archives }}"
+        fi
+        if [[ -n "${{ inputs.qt_modules }}" ]]; then
+          qt_modules="--modules ${{ inputs.qt_modules }}"
+        fi
+        aqt install-qt -O ${QT_INSTALL_PATH} ${QT_OS} desktop ${{ inputs.qt_version }} ${QT_ARCH} ${qt_archives} ${qt_modules}
 
         echo "${QT_BASE_DIR}/bin" >> $GITHUB_PATH
         echo "CMAKE_PREFIX_PATH=${QT_BASE_DIR}/lib/cmake" >> $GITHUB_ENV
@@ -62,4 +69,3 @@ runs:
         if [[ "${{ inputs.platform }}" == "windows" ]]; then
           powershell "./.github/actions/install-qt/install-dbus.ps1" "$QT_BASE_DIR"
         fi
-    

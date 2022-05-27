@@ -82,3 +82,7 @@ endif()
 if (QCORO_WITH_QTNETWORK)
     add_subdirectory(network)
 endif()
+
+if (QCORO_WITH_QTWEBSOCKETS)
+    add_subdirectory(websockets)
+endif()
