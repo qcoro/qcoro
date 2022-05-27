@@ -138,25 +138,25 @@ QCoro::Task<std::optional<qint64>> QCoroWebSocket::ping(const QByteArray &payloa
 QCoro::AsyncGenerator<std::tuple<QByteArray, bool>> QCoroWebSocket::binaryFrames(
     std::chrono::milliseconds timeout)
 {
-    return qCoroSignalGenerator(mWebSocket, &QWebSocket::binaryFrameReceived, timeout);
+    return qCoroSignalListener(mWebSocket, &QWebSocket::binaryFrameReceived, timeout);
 }
 
 QCoro::AsyncGenerator<QByteArray> QCoroWebSocket::binaryMessages(
     std::chrono::milliseconds timeout)
 {
-    return qCoroSignalGenerator(mWebSocket, &QWebSocket::binaryMessageReceived, timeout);
+    return qCoroSignalListener(mWebSocket, &QWebSocket::binaryMessageReceived, timeout);
 }
 
 QCoro::AsyncGenerator<std::tuple<QString, bool>> QCoroWebSocket::textFrames(
     std::chrono::milliseconds timeout)
 {
-    return qCoroSignalGenerator(mWebSocket, &QWebSocket::textFrameReceived, timeout);
+    return qCoroSignalListener(mWebSocket, &QWebSocket::textFrameReceived, timeout);
 }
 
 QCoro::AsyncGenerator<QString> QCoroWebSocket::textMessages(
     std::chrono::milliseconds timeout)
 {
-    return qCoroSignalGenerator(mWebSocket, &QWebSocket::textMessageReceived, timeout);
+    return qCoroSignalListener(mWebSocket, &QWebSocket::textMessageReceived, timeout);
 }
 
 #include "qcorowebsocket.moc"

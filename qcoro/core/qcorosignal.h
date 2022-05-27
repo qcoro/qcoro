@@ -300,14 +300,14 @@ inline auto qCoro(T *obj, FuncPtr &&ptr)
 }
 
 template<QCoro::detail::concepts::QObject T, typename FuncPtr>
-inline auto qCoroSignalGenerator(T *obj, FuncPtr &&ptr,
+inline auto qCoroSignalListener(T *obj, FuncPtr &&ptr,
                                  std::chrono::milliseconds timeout = std::chrono::milliseconds{-1})
     -> QCoro::AsyncGenerator<typename QCoro::detail::QCoroSignalQueue<T, FuncPtr>::result_type::value_type> {
 
     using SignalQueue = QCoro::detail::QCoroSignalQueue<T, FuncPtr>;
 
     // The actual generator is in a wrapper function, so that we can perform
-    // some initialization (constructing signalQueue) in the qCoroSignalGenerator()
+    // some initialization (constructing signalQueue) in the qCoroSignalListener()
     // function before the generator gets initially suspended.
     constexpr auto innerGenerator = [](std::unique_ptr<SignalQueue> signalQueue) ->
         QCoro::AsyncGenerator<typename SignalQueue::result_type::value_type> {

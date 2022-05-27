@@ -197,10 +197,10 @@ private:
         QCORO_COMPARE(result, QStringLiteral("YAY!YAY!"));
     }
 
-    QCoro::Task<> testSignalGeneratorVoid_coro(QCoro::TestContext) {
+    QCoro::Task<> testSignalListenerVoid_coro(QCoro::TestContext) {
         MultiSignalTest obj;
 
-        auto generator = qCoroSignalGenerator(&obj, &MultiSignalTest::voidSignal);
+        auto generator = qCoroSignalListener(&obj, &MultiSignalTest::voidSignal);
         int count = 0;
         QCORO_FOREACH(const std::tuple<> &value, generator) {
             Q_UNUSED(value);
@@ -212,10 +212,10 @@ private:
         QCORO_COMPARE(count, 10);
     }
 
-    QCoro::Task<> testSignalGeneratorValue_coro(QCoro::TestContext) {
+    QCoro::Task<> testSignalListenerValue_coro(QCoro::TestContext) {
         MultiSignalTest obj;
 
-        auto generator = qCoroSignalGenerator(&obj, &MultiSignalTest::singleArg);
+        auto generator = qCoroSignalListener(&obj, &MultiSignalTest::singleArg);
         int count = 0;
         QCORO_FOREACH(const QString &value, generator) {
             QCORO_COMPARE(value, QStringLiteral("YAY!"));
@@ -227,10 +227,10 @@ private:
         QCORO_COMPARE(count, 10);
     }
 
-    QCoro::Task<> testSignalGeneratorTuple_coro(QCoro::TestContext) {
+    QCoro::Task<> testSignalListenerTuple_coro(QCoro::TestContext) {
         MultiSignalTest obj;
 
-        auto generator = qCoroSignalGenerator(&obj, &MultiSignalTest::multiArg);
+        auto generator = qCoroSignalListener(&obj, &MultiSignalTest::multiArg);
         int count = 0;
         QCORO_FOREACH(const auto &value, generator) {
             QCORO_COMPARE(std::get<0>(value), QStringLiteral("YAY!"));
@@ -244,21 +244,21 @@ private:
         QCORO_COMPARE(count, 10);
     }
 
-    QCoro::Task<> testSignalGeneratorTimeout_coro(QCoro::TestContext) {
+    QCoro::Task<> testSignalListenerTimeout_coro(QCoro::TestContext) {
         QObject obj;
 
         // A signal that doesn't get invoked
-        auto generator = qCoroSignalGenerator(&obj, &QObject::destroyed, 1ms);
+        auto generator = qCoroSignalListener(&obj, &QObject::destroyed, 1ms);
         QCORO_FOREACH(const auto &value, generator) {
             Q_UNUSED(value);
             QCORO_FAIL("The signal should time out and the generator should not return invalid iterator.");
         }
     }
 
-    QCoro::Task<> testSignalGeneratorQueue_coro(QCoro::TestContext ctx) {
+    QCoro::Task<> testSignalListenerQueue_coro(QCoro::TestContext ctx) {
         SignalTest test{false};
         // I have a generator
-        auto generator = qCoroSignalGenerator(&test, &SignalTest::voidSignal);
+        auto generator = qCoroSignalListener(&test, &SignalTest::voidSignal);
         // I emit signals that the generator is listening to, the generator
         // should enqueue them.
         for (int i = 0; i < 10; ++i) {
@@ -293,11 +293,11 @@ private Q_SLOTS:
     addThenTest(Triggers)
     addThenTest(ReturnsValue)
     addThenTest(ReturnsTuple)
-    addTest(SignalGeneratorVoid)
-    addTest(SignalGeneratorValue)
-    addTest(SignalGeneratorTuple)
-    addTest(SignalGeneratorTimeout)
-    addTest(SignalGeneratorQueue)
+    addTest(SignalListenerVoid)
+    addTest(SignalListenerValue)
+    addTest(SignalListenerTuple)
+    addTest(SignalListenerTimeout)
+    addTest(SignalListenerQueue)
 };
 
 QTEST_GUILESS_MAIN(QCoroSignalTest)
