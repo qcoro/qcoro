@@ -121,6 +121,8 @@ private:
     std::exception_ptr mException;
 };
 
+} // namespace detail
+
 /**
  * @brief Iterator to loop over values produced by the generator coroutine.
  *
@@ -137,7 +139,7 @@ private:
  */
 template<typename T>
 class GeneratorIterator {
-    using promise_type = GeneratorPromise<T>;
+    using promise_type = detail::GeneratorPromise<T>;
 public:
     using iterator_category = std::input_iterator_tag;
     // Not sure what type should be used for difference_type as we don't
@@ -203,8 +205,6 @@ private:
     std::coroutine_handle<promise_type> mGeneratorCoroutine{nullptr};
 };
 
-} // namespace detail
-
 /**
  * @brief A coroutine generator.
  *
@@ -228,6 +228,7 @@ template<typename T>
 class Generator {
 public:
     using promise_type = detail::GeneratorPromise<T>;
+    using iterator = GeneratorIterator<T>;
 
     explicit Generator() = default;
     Generator(Generator &&) noexcept = default;
@@ -249,12 +250,12 @@ public:
      * If the generator coroutine did not produce any value and finished immediatelly,
      * the returned iterator will be equal to end().
      **/
-    detail::GeneratorIterator<T> begin() {
+    iterator begin() {
         mGeneratorCoroutine.resume(); // generate first value
         if (mGeneratorCoroutine.promise().finished()) { // did not yield anything
-            return detail::GeneratorIterator<T>{nullptr};
+            return iterator{nullptr};
         }
-        return detail::GeneratorIterator<T>{mGeneratorCoroutine};
+        return iterator{mGeneratorCoroutine};
     }
 
     /**
@@ -263,8 +264,8 @@ public:
      * Can be used to check whether the generator have produced another value or
      * whether it has finished.
      **/
-    detail::GeneratorIterator<T> end() {
-        return detail::GeneratorIterator<T>{nullptr};
+    iterator end() {
+        return iterator{nullptr};
     }
 
 private:

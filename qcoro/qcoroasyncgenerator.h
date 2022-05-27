@@ -167,10 +167,12 @@ public:
     }
 };
 
+} // namespace detail
+
 template<typename T>
 class AsyncGeneratorIterator final
 {
-    using promise_type = AsyncGeneratorPromise<T>;
+    using promise_type = detail::AsyncGeneratorPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
 public:
     using iterator_category = std::input_iterator_tag;
@@ -187,10 +189,10 @@ public:
     {}
 
     auto operator++() noexcept {
-        class IncrementIteratorAwaitable final : public IteratorAwaitableBase {
+        class IncrementIteratorAwaitable final : public detail::IteratorAwaitableBase {
         public:
             explicit IncrementIteratorAwaitable(AsyncGeneratorIterator &iterator) noexcept
-                : IteratorAwaitableBase(iterator.m_coroutine.promise(), iterator.m_coroutine)
+                : detail::IteratorAwaitableBase(iterator.m_coroutine.promise(), iterator.m_coroutine)
                 , m_iterator(iterator)
             {}
 
@@ -223,8 +225,6 @@ public:
 private:
     handle_type m_coroutine = {nullptr};
 };
-
-} // namespace detail
 
 /**
  * @brief AsyncGenerator<T> is a return type for a generator coroutine.
@@ -264,7 +264,7 @@ template<typename T>
 class [[nodiscard]] AsyncGenerator {
 public:
     using promise_type = detail::AsyncGeneratorPromise<T>;
-    using iterator = detail::AsyncGeneratorIterator<T>;
+    using iterator = AsyncGeneratorIterator<T>;
 
     /// Constructs an empty asynchronous generator
     AsyncGenerator() noexcept
@@ -321,14 +321,14 @@ public:
                 return m_promise == nullptr || IteratorAwaitableBase::await_ready();
             }
 
-            detail::AsyncGeneratorIterator<T> await_resume() {
+            iterator await_resume() {
                 if (m_promise == nullptr) {
-                    return detail::AsyncGeneratorIterator<T>{nullptr};
+                    return iterator{nullptr};
                 } else if (m_promise->finished()) {
                     m_promise->rethrow_if_unhandled_exception();
-                    return detail::AsyncGeneratorIterator<T>{nullptr};
+                    return iterator{nullptr};
                 }
-                return detail::AsyncGeneratorIterator<T>{
+                return iterator{
                     std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(m_promise))
                 };
             }
