@@ -16,6 +16,7 @@ add_qcoro_library(
     CAMELCASE_HEADERS
         QCoro
         QCoroAsyncGenerator
+        QCoroFwd
         QCoroGenerator
         QCoroTask
     HEADERS
