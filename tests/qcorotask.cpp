@@ -334,6 +334,42 @@ private:
         QCOMPARE(result, QStringLiteral("42"));
     }
 
+    QCoro::Task<> testCompositionAndTwoTasks_coro(QCoro::TestContext ctx) {
+        auto t1 = []() -> QCoro::Task<int> {
+            co_await timer(10ms);
+            co_return 1;
+        };
+        auto t2 = []() -> QCoro::Task<int> {
+            co_await timer(15ms);
+            co_return 2;
+        };
+
+        const auto [r1, r2] = co_await (t1() && t2());
+        QCORO_COMPARE(r1, 1);
+        QCORO_COMPARE(r2, 2);
+    }
+
+    QCoro::Task<> testCompositionAndMultipleTasks_coro(QCoro::TestContext ctx) {
+        auto t1 = []() -> QCoro::Task<int> {
+            co_await timer(15ms);
+            co_return 42;
+        };
+        auto t2 = []() -> QCoro::Task<QString> {
+            co_await timer(5ms);
+            co_return QStringLiteral("FOO");
+        };
+        auto t3 = []() -> QCoro::Task<std::unique_ptr<QString>> {
+            co_await timer(10ms);
+            co_return std::make_unique<QString>(QStringLiteral("Hello world"));
+        };
+
+        const auto [r1, r2, r3] = co_await QCoro::all(t1(), t2(), t3());
+        QCORO_COMPARE(r1, 42);
+        QCORO_COMPARE(r2, QStringLiteral("FOO"));
+        QCORO_VERIFY(r3 != nullptr);
+        QCORO_COMPARE(*r3, QStringLiteral("Hello world"));
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -354,6 +390,8 @@ private Q_SLOTS:
     addTest(ThenExceptionPropagation)
     addTest(ThenError)
     addTest(ThenErrorWithValue)
+    addTest(CompositionAndTwoTasks)
+    addTest(CompositionAndMultipleTasks)
     addThenTest(ImplicitArgumentConversion)
 
     // See https://github.com/danvratil/qcoro/issues/24

@@ -78,6 +78,7 @@ private:
 
         bool called = false;
         qCoro(server).waitForNewConnection(10s).then([&](QTcpSocket *socket) -> QCoro::Task<void> {
+            QCORO_VERIFY(socket != nullptr);
             called = true;
             if (!socket) {
                 el.quit();

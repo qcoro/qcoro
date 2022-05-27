@@ -775,4 +775,189 @@ inline T waitFor(QCoro::Task<T> &&task) {
     return detail::waitFor<T>(task);
 }
 
+
+namespace detail {
+
+template<typename ... Ts>
+class AllTasks {
+public:
+    using result_type = std::tuple<Ts ...>;
+
+    explicit AllTasks(Task<Ts> && ...tasks) {
+        handleTasks<0>(std::forward<Task<Ts>>(tasks) ...);
+    }
+
+    auto operator co_await() noexcept {
+        struct Awaiter {
+            Awaiter(AllTasks &composer): mComposer(composer) {}
+            bool await_ready() const {
+                return mComposer.ready();
+            }
+            void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
+                mComposer.setAwaiter(awaitingCoroutine);
+            }
+            result_type await_resume() {
+                return mComposer.result();
+            }
+        private:
+            AllTasks<Ts ...> &mComposer;
+        };
+
+        return Awaiter{*this};
+    }
+
+    bool ready() const {
+        return mFinished == sizeof ... (Ts);
+    }
+
+    void setAwaiter(std::coroutine_handle<> awaitingCoroutine) {
+        mAwaitingCoroutine = awaitingCoroutine;
+    }
+
+    result_type result() {
+        return std::move(mResults);
+    }
+
+private:
+    template<std::size_t I, typename T, typename ... Tail>
+    void handleTasks(Task<T> &&task, Task<Tail> && ...tail) {
+        task.then([this](T &&t) {
+            taskFinished<I>(std::forward<T>(t));
+        });
+        handleTasks<I + 1>(std::forward<Task<Tail>>(tail) ...);
+    }
+
+    template<std::size_t I>
+    void handleTasks() {
+        static_assert(I == sizeof ...(Ts));
+    };
+
+    template<std::size_t I, typename T>
+    void taskFinished(T &&t) {
+        ++mFinished;
+        std::get<I>(mResults) = std::forward<T>(t);
+        if (ready() && mAwaitingCoroutine) {
+            mAwaitingCoroutine.resume();
+        }
+    }
+
+    std::size_t mFinished = 0;
+    result_type mResults;
+    std::coroutine_handle<> mAwaitingCoroutine;
+};
+
+template<typename ... Ts>
+AllTasks(Task<Ts> && ...) -> AllTasks<Ts ...>;
+
+
+template<typename ... Ts>
+class AnyTask {
+public:
+    using result_type = std::tuple<std::optional<Ts> ...>;
+
+    explicit AnyTask(Task<Ts> && ... tasks):
+        mTasks(std::forward_as_tuple(tasks ...))
+    {
+        handleTasks<0>(std::forward<Task<Ts>>(tasks) ...);
+    }
+
+    auto operator co_await() const {
+        class Awaiter {
+        public:
+            explicit Awaiter(AnyTask &composer)
+                : mComposer(composer)
+            {}
+
+            bool await_ready() const noexcept {
+                return mComposer.ready();
+            }
+
+            void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
+                mComposer.setAwaiter(awaitingCoroutine);
+            }
+
+            result_type await_resume() {
+                return mComposer.result();
+            }
+        private:
+            AnyTask<Ts ...> &mComposer;
+        };
+
+        return Awaiter{*this};
+    }
+
+    bool ready() const {
+        return mReady;
+    }
+
+    void setAwaiter(std::coroutine_handle<> awaitingCoroutine) {
+        mAwaitingCoroutine = awaitingCoroutine;
+    }
+
+    result_type result() {
+        return std::move(mResult);
+    }
+
+private:
+    template<std::size_t I, typename T, typename ... Tail>
+    void handleTasks(Task<T> &&task, Task<Tail> && ... tail) {
+        task.then([this](T &&result) {
+            taskFinished<I>(std::forward<T>(result));
+        });
+
+        handleTasks<I + 1>(std::forward<Task<Tail>>(tail) ...);
+    }
+
+    template<std::size_t I, typename T>
+    void taskFinished(T &&result) {
+        std::get<I>(mResult) = std::move(result);
+        mReady = true;
+        cancelTasksExcept(I);
+    }
+
+    template<std::size_t I = 0>
+    void cancelTasksExcept(std::size_t skipIndex) {
+        if constexpr (I == std::tuple_size_v<decltype(mTasks)>) {
+            return;
+        }
+
+        if (I != skipIndex) {
+            std::get<I>(mTasks).cancel();
+        }
+
+        cancelTasksExcept<I + 1>(skipIndex);
+    }
+
+    bool mReady = false;
+    result_type mResult;
+    std::tuple<Task<Ts> ...> mTasks;
+    std::coroutine_handle<> mAwaitingCoroutine;
+};
+
+template<typename ... Ts>
+AnyTask(Task<Ts> && ...) -> AnyTask<Ts ...>;
+
+} // namespace detail
+
+template<typename T1, typename T2>
+Task<std::tuple<T1, T2>> operator &&(Task<T1> &&t1, Task<T2> &&t2) {
+    co_return co_await detail::AllTasks{std::forward<Task<T1>>(t1), std::forward<Task<T2>>(t2)};
+}
+
+template<typename T1, typename T2>
+Task<std::variant<T1, T2>> operator ||(Task<T1> &&t1, Task<T2> &&t2) {
+    co_return co_await detail::AnyTask{std::forward<Task<T1>>(t1), std::forward<Task<T2>> &t2};
+}
+
+template<typename ... Ts>
+Task<std::tuple<Ts ...>> all(Task<Ts> && ...tasks) {
+    co_return co_await detail::AllTasks{std::forward<Task<Ts>>(tasks) ...};
+}
+
+template<typename ...Ts>
+Task<std::variant<Ts ...>> any(Task<Ts> && ...tasks) {
+    co_return co_await detail::AnyTask{std::forward<Task<Ts>>(tasks) ...};
+}
+
+
 } // namespace QCoro
