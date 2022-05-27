@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "task.h"
+#include "qcorotask.h"
 #include "qcorowebsockets_export.h"
 
 #include <chrono>

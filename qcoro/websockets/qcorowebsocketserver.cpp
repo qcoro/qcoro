@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorowebsocketserver.h"
-#include "core/qcorosignal.h"
+#include "qcorosignal.h"
 
 #include <QWebSocket>
 #include <QWebSocketServer>
