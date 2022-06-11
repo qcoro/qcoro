@@ -6,34 +6,6 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 
 # qCoro()
 
-## Wrapping Qt Signals
-
-```cpp
-Awaitable qCoro(QObject *, QtSignalPtr);
-```
-
-It is possible to `co_await` an emission of a Qt signal. Signal arguments are returned
-as a result of the `co_await` expression:
-
-```cpp
-MyDialog dialog;
-...
-const int result = co_await qCoro(&dialog, &QDialog::finished);
-if (result == QDialog::Accepted) {
-    ...
-}
-```
-
-If the signal has more than one argument, they are returned as a tuple:
-
-```cpp
-QProcess process;
-...
-const auto [exitCode, exitStatus] = co_await qCoro(&process, &QProcess::finished);
-```
-
-If the signal has no arguments, then the result of the `co_await` expression is `void`.
-
 ## Wrapping Qt Types
 
 ```cpp
@@ -86,4 +58,3 @@ wrapped `QProcess` object emits the `started()` signal.
 
 Normally you don't need to concern yourself with anything inside the `QCoro::detail` namespace,
 it's mentioned in the previous paragraph simply to explain how the wrapper works.
-
