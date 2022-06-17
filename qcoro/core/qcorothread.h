@@ -7,6 +7,8 @@
 #include <QPointer>
 #include "qcorocore_export.h"
 
+#include <chrono>
+
 class QThread;
 
 namespace QCoro {
