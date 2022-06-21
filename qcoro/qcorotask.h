@@ -65,8 +65,8 @@ public:
      *
      * \param[in] finishedCoroutine handle of the just finished coroutine
      */
-    template<typename _Promise>
-    void await_suspend(std::coroutine_handle<_Promise> finishedCoroutine) noexcept {
+    template<typename Promise>
+    void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept {
         auto &promise = finishedCoroutine.promise();
 
         if (promise.mResumeAwaiter.exchange(true, std::memory_order_acq_rel)) {
@@ -366,7 +366,7 @@ private:
 };
 
 //! Base-class for Awaiter objects returned by the \c Task<T> operator co_await().
-template<typename _Promise>
+template<typename Promise>
 class TaskAwaiterBase {
 public:
     //! Returns whether to co_await
@@ -415,11 +415,11 @@ protected:
     /*!
      * \param[in] coroutine hande for the coroutine that is being co_awaited.
      */
-    TaskAwaiterBase(std::coroutine_handle<_Promise> awaitedCoroutine)
+    TaskAwaiterBase(std::coroutine_handle<Promise> awaitedCoroutine)
         : mAwaitedCoroutine(awaitedCoroutine) {}
 
     //! Handle of the coroutine that is being co_awaited by this awaiter
-    std::coroutine_handle<_Promise> mAwaitedCoroutine = {};
+    std::coroutine_handle<Promise> mAwaitedCoroutine = {};
 };
 
 } // namespace detail
