@@ -6,7 +6,14 @@
 #include "qcoro/qcorotask.h"
 
 #include <QApplication>
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-enum-enum-conversion" // QSizePolicy seems problematic...
+#endif // __clang__
 #include <QBoxLayout>
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif // __clang__
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QNetworkAccessManager>
