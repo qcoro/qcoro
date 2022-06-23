@@ -19,9 +19,6 @@ const QNetworkReply *reply = co_await networkAccessManager.get(url);
 const auto data = reply->readAll();
 ```
 
-This is a rather experimental library that helps me to understand coroutines
-in C++.
-
 It requires a compiler with support for the couroutines TS.
 
 ## Documentation
