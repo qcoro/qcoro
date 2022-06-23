@@ -17,7 +17,10 @@ qt = [
 platforms = [
     {
         "name": "windows",
-        "compilers": [{ "name": "msvc" }]
+        "compilers": [
+            { "name": "msvc" },
+            { "name": "clang-cl" }
+        ]
     },
     {
         "name": "macos",

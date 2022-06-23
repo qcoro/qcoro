@@ -70,9 +70,13 @@ jobs:
           # Don't built QCoro as .dlls on Windows - making it work with ASAN on Github CI
           # is major PITA...
           EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
-        fi
-        if [[ "${{ matrix.platform }}" == "windows" && "${QT_VERSION_MAJOR}" == "5" ]]; then
-          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+        else
+          if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL"
+          fi
+          if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+          fi
         fi
 
         cmake $GITHUB_WORKSPACE \
