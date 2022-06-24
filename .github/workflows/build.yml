@@ -72,9 +72,13 @@ jobs:
           EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
         else
           if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
+            # Enable Clang-Cl toolset
             EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL"
+            # Clang-Cl only supports ASAN in Release mode as of now
+            BUILD_TYPE=Release
           fi
           if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
+            # Disable ASAN on Windows Qt5 due to weird false positives
             EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
           fi
         fi
@@ -88,18 +92,24 @@ jobs:
 
     - name: Add ASAN DLL directory to PATH
       if: ${{ matrix.platform == 'windows' }}
-      shell: cmd
+      shell: pwsh
       run: |
-        setlocal enabledelayedexpansion
-        for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (set InstallDir=%%i)
-        if exist "%InstallDir%\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" (
-          set /p Version=<"%InstallDir%\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt"
-          set Version=!Version: =!
-        )
-        if not "%Version%" == "" (
-          set /p="%InstallDir%\VC\Tools\MSVC\%Version%\bin\HostX64\x64" < nul > %GITHUB_PATH%
-          exit 0
-        )
+        $installDir=(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+        echo "Detected MSVC install dir: \"${installDir}\""
+        if ("${{ matrix.compiler}}" -eq "msvc") {
+          if (Test-Path -Path "${installDir}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt") {
+            $vctoolsVersion=(Get-Content -Path "${installDir}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt")
+            echo "Detected VCTools version: ${vctoolsVersion}"
+          } else {
+            echo "Failed to detect MSVC version"
+            exit 1
+          }
+          "${installDir}\VC\Tools\MSVC\${vctoolsVersion}\bin\HostX64\x64" >> $env:GITHUB_PATH
+        } else {
+          $clangVersion=((& "${installDir}\VC\Tools\Llvm\x64\bin\clang.exe" --version) | Select-String -Pattern "\d+.\d+.\d+" | % { $_.Matches } | % { $_.Value })
+          echo "Detected clang version: ${clangVersion}"
+          "${installDir}\VC\Tools\Llvm\x64\lib\clang\${clangVersion}\lib\windows" >> $env:GITHUB_PATH
+        }
 
     - name: Build
       shell: bash
