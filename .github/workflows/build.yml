@@ -67,12 +67,16 @@ jobs:
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
 
         if [[ "${{ matrix.platform }}" != "windows" ]]; then
-          # Don't built QCoro as .dlls on Windows - making it work with ASAN on Github CI
-          # is major PITA...
+          # Don't fiddle with dlls in Windows, it makes things complicated...
           EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
-        fi
-        if [[ "${{ matrix.platform }}" == "windows" && "${QT_VERSION_MAJOR}" == "5" ]]; then
-          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+        else
+          if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
+            # FIXME: allow ASAN with clang-cl
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL -DQCORO_ENABLE_ASAN=OFF"
+          fi
+          if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+          fi
         fi
 
         cmake $GITHUB_WORKSPACE \
@@ -84,18 +88,24 @@ jobs:
 
     - name: Add ASAN DLL directory to PATH
       if: ${{ matrix.platform == 'windows' }}
-      shell: cmd
+      shell: pwsh
       run: |
-        setlocal enabledelayedexpansion
-        for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (set InstallDir=%%i)
-        if exist "%InstallDir%\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt" (
-          set /p Version=<"%InstallDir%\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt"
-          set Version=!Version: =!
-        )
-        if not "%Version%" == "" (
-          set /p="%InstallDir%\VC\Tools\MSVC\%Version%\bin\HostX64\x64" < nul > %GITHUB_PATH%
-          exit 0
-        )
+        $installDir=(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+        echo "Detected MSVC install dir: \"${installDir}\""
+        if ("${{ matrix.compiler}}" -eq "msvc") {
+          if (Test-Path -Path "${installDir}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt") {
+            $vctoolsVersion=(Get-Content -Path "${installDir}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt")
+            echo "Detected VCTools version: ${vctoolsVersion}"
+          } else {
+            echo "Failed to detect MSVC version"
+            exit 1
+          }
+          "${installDir}\VC\Tools\MSVC\${vctoolsVersion}\bin\HostX64\x64" >> $env:GITHUB_PATH
+        } else {
+          $clangVersion=((& "${installDir}\VC\Tools\Llvm\x64\bin\clang.exe" --version) | Select-String -Pattern "\d+.\d+.\d+" | % { $_.Matches } | % { $_.Value })
+          echo "Detected clang version: ${clangVersion}"
+          "${installDir}\VC\Tools\Llvm\x64\lib\clang\${clangVersion}\lib\windows" >> $env:GITHUB_PATH
+        }
 
     - name: Build
       shell: bash

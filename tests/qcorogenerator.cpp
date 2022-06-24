@@ -61,7 +61,7 @@ private Q_SLOTS:
             values.emplace_back(*it);
         }
 
-        QCOMPARE(values.size(), 10);
+        QCOMPARE(values.size(), 10U);
         QCOMPARE(values, (std::vector<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}));
     }
 

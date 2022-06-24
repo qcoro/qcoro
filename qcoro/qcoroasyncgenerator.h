@@ -174,6 +174,25 @@ class AsyncGeneratorIterator final
 {
     using promise_type = detail::AsyncGeneratorPromise<T>;
     using handle_type = std::coroutine_handle<promise_type>;
+
+    class IncrementIteratorAwaitable final : public detail::IteratorAwaitableBase {
+    public:
+        explicit IncrementIteratorAwaitable(AsyncGeneratorIterator &iterator) noexcept
+            : detail::IteratorAwaitableBase(iterator.m_coroutine.promise(), iterator.m_coroutine),
+              m_iterator(iterator) {}
+
+        AsyncGeneratorIterator<T> &await_resume() {
+            if (m_promise->finished()) {
+                m_iterator = AsyncGeneratorIterator<T>{nullptr};
+                m_promise->rethrow_if_unhandled_exception();
+            }
+            return m_iterator;
+        }
+
+    private:
+        AsyncGeneratorIterator<T> &m_iterator;
+    };
+
 public:
     using iterator_category = std::input_iterator_tag;
     // Not sure what type should be used for difference_type as we don't
@@ -189,24 +208,6 @@ public:
     {}
 
     auto operator++() noexcept {
-        class IncrementIteratorAwaitable final : public detail::IteratorAwaitableBase {
-        public:
-            explicit IncrementIteratorAwaitable(AsyncGeneratorIterator &iterator) noexcept
-                : detail::IteratorAwaitableBase(iterator.m_coroutine.promise(), iterator.m_coroutine)
-                , m_iterator(iterator)
-            {}
-
-            AsyncGeneratorIterator<T> &await_resume() {
-                if (m_promise->finished()) {
-                    m_iterator = AsyncGeneratorIterator<T>{nullptr};
-                    m_promise->rethrow_if_unhandled_exception();
-                }
-                return m_iterator;
-            }
-        private:
-            AsyncGeneratorIterator<T> &m_iterator;
-        };
-
         return IncrementIteratorAwaitable{*this};
     }
 
