@@ -114,6 +114,7 @@ jobs:
       shell: bash
       working-directory: ${{ github.workspace }}/build
       run: |
+        echo "$PATH"
         QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE \
           --output-on-failure \
           --verbose \
