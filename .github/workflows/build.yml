@@ -66,13 +66,17 @@ jobs:
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
 
-        if [[ "${{ matrix.platform }}" == "windows" ]]; then
+        if [[ "${{ matrix.platform }}" != "windows" ]]; then
+          # Don't fiddle with dlls in Windows, it makes things complicated...
+          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
+        else
           if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL"
+            # FIXME: allow ASAN with clang-cl
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL -DQCORO_ENABLE_ASAN=OFF"
           fi
-          #if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
-          #  EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
-          #fi
+          if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
+            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+          fi
         fi
 
         cmake $GITHUB_WORKSPACE \
@@ -80,7 +84,6 @@ jobs:
           -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
           -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
           -DQCORO_ENABLE_ASAN=ON \
-          -DBUILD_SHARED_LIBS=ON \
           ${EXTRA_CMAKE_FLAGS}
 
     - name: Add ASAN DLL directory to PATH
@@ -114,7 +117,6 @@ jobs:
       shell: bash
       working-directory: ${{ github.workspace }}/build
       run: |
-        echo "$PATH"
         QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE \
           --output-on-failure \
           --verbose \
