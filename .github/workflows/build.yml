@@ -66,21 +66,13 @@ jobs:
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
 
-        if [[ "${{ matrix.platform }}" != "windows" ]]; then
-          # Don't built QCoro as .dlls on Windows - making it work with ASAN on Github CI
-          # is major PITA...
-          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
-        else
+        if [[ "${{ matrix.platform }}" == "windows" ]]; then
           if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
-            # Enable Clang-Cl toolset
             EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL"
-            # Clang-Cl only supports ASAN in Release mode as of now
-            BUILD_TYPE=Release
           fi
-          if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
-            # Disable ASAN on Windows Qt5 due to weird false positives
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
-          fi
+          #if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
+          #  EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+          #fi
         fi
 
         cmake $GITHUB_WORKSPACE \
@@ -88,6 +80,7 @@ jobs:
           -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
           -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
           -DQCORO_ENABLE_ASAN=ON \
+          -DBUILD_SHARED_LIBS=ON \
           ${EXTRA_CMAKE_FLAGS}
 
     - name: Add ASAN DLL directory to PATH
