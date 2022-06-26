@@ -48,10 +48,8 @@ public:
             return;
         }
 
-        {
-            std::scoped_lock lock(mMutex);
-            mUrl = mServer->serverUrl();
-        }
+        std::scoped_lock lock(mMutex);
+        mUrl = mServer->serverUrl();
 
         mTimeout.reset(new QTimer());
         connect(mTimeout.get(), &QTimer::timeout, this, &Server::newConnectionTimeout);
