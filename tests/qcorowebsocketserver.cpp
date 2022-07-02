@@ -64,6 +64,30 @@ private:
         QVERIFY(called);
     }
 
+    QCoro::Task<> testClosingServerResumesAwaiters_coro(QCoro::TestContext ctx) {
+        QWebSocketServer server(QStringLiteral("TestWSServer"), QWebSocketServer::NonSecureMode);
+        QCORO_VERIFY(server.listen(QHostAddress::LocalHost));
+        QCORO_DELAY(server.close());
+
+        auto *socket = co_await qCoro(server).nextPendingConnection();
+        QCORO_COMPARE(socket, nullptr);
+    }
+
+    void testThenClosingServerResumesAwaiters_coro(TestLoop &el) {
+        QWebSocketServer server(QStringLiteral("TestWSServer"), QWebSocketServer::NonSecureMode);
+        QVERIFY(server.listen(QHostAddress::LocalHost));
+        QCORO_DELAY(server.close());
+
+        bool called = false;
+        qCoro(server).nextPendingConnection().then([&el, &called](QWebSocket *socket) {
+            el.quit();
+            called = true;
+            QCOMPARE(socket, nullptr);
+        });
+        el.exec();
+        QVERIFY(called);
+    }
+
     QCoro::Task<> testDoesntCoawaitNonlisteningServer_coro(QCoro::TestContext ctx) {
         ctx.setShouldNotSuspend();
 
@@ -93,6 +117,7 @@ private:
 private Q_SLOTS:
     addCoroAndThenTests(NextPendingConnection)
     addCoroAndThenTests(NextPendingConnectionTimeout)
+    addCoroAndThenTests(ClosingServerResumesAwaiters)
     addTest(DoesntCoawaitNonlisteningServer)
     addTest(DoesntCoawaitWithPendingConnection)
 };
