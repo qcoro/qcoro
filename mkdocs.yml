@@ -72,6 +72,10 @@ nav:
         - reference/dbus/index.md
         - QDBusPendingCall: reference/dbus/qdbuspendingcall.md
         - QDBusPendingReply: reference/dbus/qdbuspendingreply.md
+      - WebSockets:
+        - reference/websockets/index.md
+        - QWebSocket: reference/websockets/qwebsocket.md
+        - QWebSocketServer: reference/websockets/qwebsocketserver.md
     - Changelog: changelog.md
     - About:
         - License: about/license.md
