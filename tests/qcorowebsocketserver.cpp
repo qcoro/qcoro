@@ -64,7 +64,7 @@ private:
         QVERIFY(called);
     }
 
-    QCoro::Task<> testClosingServerResumesAwaiters_coro(QCoro::TestContext ctx) {
+    QCoro::Task<> testClosingServerResumesAwaiters_coro(QCoro::TestContext) {
         QWebSocketServer server(QStringLiteral("TestWSServer"), QWebSocketServer::NonSecureMode);
         QCORO_VERIFY(server.listen(QHostAddress::LocalHost));
         QCORO_DELAY(server.close());
