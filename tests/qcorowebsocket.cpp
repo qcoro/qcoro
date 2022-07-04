@@ -44,6 +44,20 @@ private:
         QCORO_COMPARE(data, gen.end());
     }
 
+    template<typename RecvFunc>
+    QCoro::Task<> testGeneratorEndOnSocketClose(RecvFunc recvFunc) {
+        mServer.setExpectTimeout();
+
+        QWebSocket socket;
+        QCORO_VERIFY(connectSocket(socket));
+
+        QCORO_DELAY(socket.close());
+        auto coroSocket = qCoro(socket);
+        auto gen = std::invoke(recvFunc, &coroSocket, std::chrono::milliseconds{-1});
+        const auto it = co_await gen.begin();
+        QCORO_COMPARE(it, gen.end());
+    }
+
 private:
     QCoro::Task<> testWaitForOpenWithUrl_coro(QCoro::TestContext) {
         QWebSocket socket;
@@ -156,6 +170,10 @@ private:
         co_await testTimeout(&QCoro::detail::QCoroWebSocket::binaryFrames);
     }
 
+    QCoro::Task<> testBinaryFrameGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+        co_await testGeneratorEndOnSocketClose(&QCoro::detail::QCoroWebSocket::binaryFrames);
+    }
+
     QCoro::Task<> testBinaryMessage_coro(QCoro::TestContext) {
         co_await testReceived(QByteArray("TEST MESSAGE"), &QWebSocket::sendBinaryMessage,
                               &QCoro::detail::QCoroWebSocket::binaryMessages);
@@ -163,6 +181,10 @@ private:
 
     QCoro::Task<> testBinaryMessageTimeout_coro(QCoro::TestContext) {
         co_await testTimeout(&QCoro::detail::QCoroWebSocket::binaryMessages);
+    }
+
+    QCoro::Task<> testBinaryMessageGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+        co_await testGeneratorEndOnSocketClose(&QCoro::detail::QCoroWebSocket::binaryMessages);
     }
 
     QCoro::Task<> testTextFrame_coro(QCoro::TestContext) {
@@ -174,6 +196,10 @@ private:
         co_await testTimeout(&QCoro::detail::QCoroWebSocket::textFrames);
     }
 
+    QCoro::Task<> testTextFrameGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+        co_await testGeneratorEndOnSocketClose(&QCoro::detail::QCoroWebSocket::textFrames);
+    }
+
     QCoro::Task<> testTextMessage_coro(QCoro::TestContext) {
         co_await testReceived(QStringLiteral("TEST MESSAGE"), &QWebSocket::sendTextMessage,
                               &QCoro::detail::QCoroWebSocket::textMessages);
@@ -181,6 +207,10 @@ private:
 
     QCoro::Task<> testTextMessageTimeout_coro(QCoro::TestContext) {
         co_await testTimeout(&QCoro::detail::QCoroWebSocket::textMessages);
+    }
+
+    QCoro::Task<> testTextMessageGeneratorEndsOnSocketClose_coro(QCoro::TestContext) {
+        co_await testGeneratorEndOnSocketClose(&QCoro::detail::QCoroWebSocket::textMessages);
     }
 
     QCoro::Task<> testReadFragmentedMessage_coro(QCoro::TestContext) {
@@ -219,12 +249,16 @@ private Q_SLOTS:
     addCoroAndThenTests(Ping)
     addTest(BinaryFrame)
     addTest(BinaryFrameTimeout)
+    addTest(BinaryFrameGeneratorEndsOnSocketClose)
     addTest(BinaryMessage)
     addTest(BinaryMessageTimeout)
+    addTest(BinaryMessageGeneratorEndsOnSocketClose)
     addTest(TextFrame)
     addTest(TextFrameTimeout)
+    addTest(TextFrameGeneratorEndsOnSocketClose)
     addTest(TextMessage)
     addTest(TextMessageTimeout)
+    addTest(TextMessageGeneratorEndsOnSocketClose)
 
     addTest(ReadFragmentedMessage)
 
