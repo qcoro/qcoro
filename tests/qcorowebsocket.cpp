@@ -130,18 +130,18 @@ private:
 
         const auto response = co_await qCoro(socket).ping("PING!");
         QCORO_VERIFY(response.has_value());
-        QCORO_VERIFY(*response >= 0); // the latency will be somewhere around 0
+        QCORO_VERIFY(*response >= 0ms); // the latency will be somewhere around 0
     }
 
     void testThenPing_coro(TestLoop &el) {
         QWebSocket socket;
         QVERIFY(connectSocket(socket));
         bool called = false;
-        qCoro(socket).ping("PING!").then([&el, &called](std::optional<qint64> pong) {
+        qCoro(socket).ping("PING!").then([&el, &called](std::optional<std::chrono::milliseconds> pong) {
             el.quit();
             called = true;
             QVERIFY(pong.has_value());
-            QVERIFY(*pong >= 0);
+            QVERIFY(*pong >= 0ms);
         });
         el.exec();
         QVERIFY(called);

@@ -119,8 +119,8 @@ QCoro::Task<bool> QCoroWebSocket::open(const QNetworkRequest &request, std::chro
     co_return result.value_or(false);
 }
 
-QCoro::Task<std::optional<qint64>> QCoroWebSocket::ping(const QByteArray &payload,
-                                                        std::chrono::milliseconds timeout)
+QCoro::Task<std::optional<std::chrono::milliseconds>> QCoroWebSocket::ping(const QByteArray &payload,
+                                                                           std::chrono::milliseconds timeout)
 {
     if (mWebSocket->state() != QAbstractSocket::ConnectedState) {
         co_return std::nullopt;
@@ -130,7 +130,7 @@ QCoro::Task<std::optional<qint64>> QCoroWebSocket::ping(const QByteArray &payloa
     mWebSocket->ping(payload);
     const auto result = co_await qCoro(&watcher, qOverload<std::optional<std::tuple<qint64, QByteArray>>>(&WebSocketSignalWatcher::ready), timeout);
     if (result.has_value() && (*result).has_value()) {
-        co_return std::get<0>(**result);
+        co_return std::chrono::milliseconds{std::get<0>(**result)};
     }
     co_return std::nullopt;
 }
