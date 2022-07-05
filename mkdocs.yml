@@ -9,6 +9,9 @@ edit_uri: 'https://github.com/danvratil/qcoro/edit/main/docs/'
 theme:
   name: material
   custom_dir: docs/overrides
+  icon:
+    repo:
+      fontawesome/brands/github
   features:
     - navigation.expand
     - navigation.tracking
@@ -72,6 +75,10 @@ nav:
         - reference/dbus/index.md
         - QDBusPendingCall: reference/dbus/qdbuspendingcall.md
         - QDBusPendingReply: reference/dbus/qdbuspendingreply.md
+      - WebSockets:
+        - reference/websockets/index.md
+        - QWebSocket: reference/websockets/qwebsocket.md
+        - QWebSocketServer: reference/websockets/qwebsocketserver.md
     - Changelog: changelog.md
     - About:
         - License: about/license.md

@@ -10,6 +10,26 @@
 
 using namespace QCoro::detail;
 
+namespace {
+
+class QCoroWebSocketServerSignalListener : public QObject {
+    Q_OBJECT
+public:
+    QCoroWebSocketServerSignalListener(QWebSocketServer *server) {
+        connect(server, &QWebSocketServer::closed, this, [this]() {
+            Q_EMIT ready(nullptr);
+        });
+        connect(server, &QWebSocketServer::newConnection, [this, server]() {
+            Q_EMIT ready(server->nextPendingConnection());
+        });
+    }
+
+Q_SIGNALS:
+    void ready(QWebSocket *socket);
+};
+
+} // namespace
+
 QCoroWebSocketServer::QCoroWebSocketServer(QWebSocketServer *server)
     : mServer(server)
 {}
@@ -25,10 +45,9 @@ QCoro::Task<QWebSocket *> QCoroWebSocketServer::nextPendingConnection(std::chron
         co_return server->nextPendingConnection();
     }
 
-    const auto result = co_await qCoro(server, &QWebSocketServer::newConnection, timeout);
-    if (!result.has_value()) {
-        co_return nullptr;
-    }
-
-    co_return server->nextPendingConnection();
+    QCoroWebSocketServerSignalListener listener(server);
+    const auto result = co_await qCoro(&listener, &QCoroWebSocketServerSignalListener::ready, timeout);
+    co_return result.value_or(nullptr);
 }
+
+#include "qcorowebsocketserver.moc"

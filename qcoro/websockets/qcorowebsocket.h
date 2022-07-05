@@ -27,7 +27,7 @@ public:
     Task<bool> open(const QUrl &url, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
     Task<bool> open(const QNetworkRequest &request, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
-    Task<std::optional<qint64>> ping(const QByteArray &payload, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
+    Task<std::optional<std::chrono::milliseconds>> ping(const QByteArray &payload, std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
 
     AsyncGenerator<std::tuple<QByteArray, bool>> binaryFrames(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
     AsyncGenerator<QByteArray> binaryMessages(std::chrono::milliseconds timeout = std::chrono::milliseconds{-1});
