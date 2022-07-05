@@ -105,11 +105,18 @@ function(add_qcoro_library)
     set_target_properties(
         ${target_name}
         PROPERTIES
-        WINDOWS_EXPORT_ALL_SYMBOLS 1
-        VERSION ${qcoro_VERSION}
-        SOVERSION ${qcoro_SOVERSION}
         EXPORT_NAME ${LIB_NAME}
     )
+
+    if (NOT LIB_INTERFACE)
+        set_target_properties(
+            ${target_name}
+            PROPERTIES
+            WINDOWS_EXPORT_ALL_SYMBOLS 1
+            VERSION ${qcoro_VERSION}
+            SOVERSION ${qcoro_SOVERSION}
+        )
+    endif()
 
     generate_headers(
         camelcase_HEADERS
