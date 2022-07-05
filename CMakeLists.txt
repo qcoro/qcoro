@@ -133,6 +133,10 @@ endif()
 include(qcoro/QCoroMacros.cmake)
 qcoro_enable_coroutines()
 
+include(cmake/CodeCoverage.cmake)
+add_code_coverage()
+add_code_coverage_all_targets(EXCLUDE "${CMAKE_BINARY_DIR}" tests/utils/*)
+
 #-----------------------------------------------------------#
 # Definitions
 #-----------------------------------------------------------#

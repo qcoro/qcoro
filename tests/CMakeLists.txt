@@ -45,6 +45,7 @@ function(qcoro_add_test _name)
     add_executable(test-${_name} ${_name}.cpp)
     target_link_libraries(
         test-${_name}
+        PRIVATE
         qcoro_test
         QCoro${QT_VERSION_MAJOR}Core
         Qt${QT_VERSION_MAJOR}::Core
@@ -55,17 +56,19 @@ function(qcoro_add_test _name)
     if (NOT TEST_SKIP_ADD_TEST)
         add_test(NAME test-${_name} COMMAND test-${_name})
     endif()
+    target_code_coverage(test-${_name} AUTO ALL EXCLUDE "${CMAKE_BINARY_DIR}" "tests/utils/*")
 endfunction()
 
 function(qcoro_add_network_test _name)
     qcoro_add_test(${_name} ${ARGN})
     target_link_libraries(
         test-${_name}
+        PRIVATE
         QCoro${QT_VERSION_MAJOR}Network
         Qt${QT_VERSION_MAJOR}::Network
     )
     if(NOT HAVE_CXX_ATOMICS_WITHOUT_LIB)
-        target_link_libraries(test-${_name} atomic)
+        target_link_libraries(test-${_name} PRIVATE atomic)
     endif()
 endfunction()
 
@@ -74,6 +77,7 @@ function(qcoro_add_dbus_test _name)
     add_dependencies(test-${_name} testdbusserver qcoro_test_dbus)
     target_link_libraries(
         test-${_name}
+        PRIVATE
         QCoro${QT_VERSION_MAJOR}DBus
         qcoro_test_dbus
     )
@@ -91,6 +95,7 @@ function(qcoro_add_websockets_test _name)
     qcoro_add_network_test(${_name} ${ARGN})
     target_link_libraries(
         test-${_name}
+        PRIVATE
         QCoro${QT_VERSION_MAJOR}WebSockets
         Qt${QT_VERSION_MAJOR}::WebSockets
         qcoro_test_ws

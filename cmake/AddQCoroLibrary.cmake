@@ -116,7 +116,11 @@ function(add_qcoro_library)
             VERSION ${qcoro_VERSION}
             SOVERSION ${qcoro_SOVERSION}
         )
+        target_code_coverage(${target_name} AUTO)
+    else()
+        target_code_coverage(${target_name} AUTO INTERFACE)
     endif()
+
 
     generate_headers(
         camelcase_HEADERS
