@@ -9,6 +9,9 @@ edit_uri: 'https://github.com/danvratil/qcoro/edit/main/docs/'
 theme:
   name: material
   custom_dir: docs/overrides
+  icon:
+    repo:
+      fontawesome/brands/github
   features:
     - navigation.expand
     - navigation.tracking
