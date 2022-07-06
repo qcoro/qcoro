@@ -1,41 +1,6 @@
+add_subdirectory(testlibs)
+
 include(CMakeParseArguments)
-
-add_library(qcoro_test STATIC testobject.cpp testloop.cpp)
-target_link_libraries(qcoro_test PUBLIC
-    QCoro${QT_VERSION_MAJOR}Core
-    Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::Test
-)
-
-if (QCORO_WITH_QTDBUS)
-    add_executable(testdbusserver EXCLUDE_FROM_ALL testdbusserver.cpp)
-    target_link_libraries(testdbusserver
-        Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::DBus
-    )
-
-    set(qcoro_test_dbus_SRCS)
-    if (${QT_VERSION_MAJOR} EQUAL 5)
-        qt5_add_dbus_interface(qcoro_test_dbus_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
-    else()
-        qt_add_dbus_interface(qcoro_test_dbus_SRCS cz.dvratil.qcorodbustest.xml qcorodbustestinterface)
-    endif()
-    add_library(qcoro_test_dbus OBJECT ${qcoro_test_dbus_SRCS})
-    target_link_libraries(qcoro_test_dbus PUBLIC
-        Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::DBus
-    )
-endif()
-
-if (QCORO_WITH_QTWEBSOCKETS)
-    set(qcoro_test_ws_SRCS testwsserver.cpp)
-    add_library(qcoro_test_ws OBJECT ${qcoro_test_ws_SRCS})
-    target_link_libraries(qcoro_test_ws PUBLIC
-        Qt${QT_VERSION_MAJOR}::Core
-        Qt${QT_VERSION_MAJOR}::Test
-        Qt${QT_VERSION_MAJOR}::WebSockets
-    )
-endif()
 
 function(qcoro_add_test _name)
     set(options SKIP_ADD_TEST)
@@ -56,7 +21,7 @@ function(qcoro_add_test _name)
     if (NOT TEST_SKIP_ADD_TEST)
         add_test(NAME test-${_name} COMMAND test-${_name})
     endif()
-    target_code_coverage(test-${_name} AUTO ALL EXCLUDE "${CMAKE_BINARY_DIR}" "tests/utils/*")
+    target_code_coverage(test-${_name} AUTO ALL EXCLUDE "${CMAKE_BINARY_DIR}" "tests/testlibs/*")
 endfunction()
 
 function(qcoro_add_network_test _name)

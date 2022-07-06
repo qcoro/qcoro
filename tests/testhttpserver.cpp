@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "testhttpserver.h"
+#include "testlibs/testhttpserver.h"
 
 #include <QDebug>
 #include <QEventLoop>
