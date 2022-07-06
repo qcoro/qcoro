@@ -46,7 +46,6 @@ function(qcoro_add_dbus_test _name)
         QCoro${QT_VERSION_MAJOR}DBus
         qcoro_test_dbus
     )
-    target_include_directories(test-${_name} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     target_compile_definitions(test-${_name} PRIVATE TESTDBUSSERVER_EXECUTABLE=\"$<TARGET_FILE:testdbusserver>\")
     if (APPLE)
         # On MacOS dbus-launch doesn't work, so we rely on the session dbus running

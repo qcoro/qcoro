@@ -25,7 +25,10 @@ if (QCORO_WITH_QTDBUS)
     endif()
 
     add_library(qcoro_test_dbus OBJECT ${qcoro_test_dbus_SRCS})
-    target_include_directories(qcoro_test_dbus PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+    target_include_directories(qcoro_test_dbus PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}
+    )
     target_link_libraries(qcoro_test_dbus PUBLIC
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::DBus
