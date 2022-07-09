@@ -92,6 +92,12 @@ if (MSVC)
     # Disable warning C5054: "operator '&': deprecated between enumerations of different types" caused by QtWidgets/qsizepolicy.h
     # Disable warning C4127: "conditional expression is constant" caused by QtCore/qiterable.h
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd5054 /wd4127")
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # Explicitly enable exceptions support for clang-cl (it's only enabled by CMake when targeting the Windows-MSVC platform,
+        # see https://github.com/danvratil/qcoro/issues/90 for details)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")
+    endif()
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -pedantic")
 endif()
