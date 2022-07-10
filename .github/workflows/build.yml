@@ -9,7 +9,7 @@ on:
 
 
 env:
-  BUILD_TYPE: RelWithDebInfo
+  BUILD_TYPE: Debug
   QTEST_FUNCTION_TIMEOUT: 60000
 
 
