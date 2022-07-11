@@ -53,24 +53,13 @@ jobs:
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
 
-        if [[ "${{ matrix.platform }}" != "windows" ]]; then
-          # Don't fiddle with dlls in Windows, it makes things complicated...
-          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
-          # Disable ASAN for clang-11 - we are hitting some bugs in ASAN & generators
-          if [[ "${{ matrix.compiler }}" == "clang" && "${{ matrix.compiler_version }}" == "11" ]]; then
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
-          fi
-        else
-          if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
-            # FIXME: allow ASAN with clang-cl
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL -DQCORO_ENABLE_ASAN=OFF"
-          fi
-          if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
-          fi
+        EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
+        # Disable ASAN for clang-11 - we are hitting some bugs in ASAN & generators
+        if [[ "${{ matrix.compiler }}" == "clang" && "${{ matrix.compiler_version }}" == "11" ]]; then
+          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
         fi
 
-        cmake $GITHUB_WORKSPACE \
+        cmake -S ${{ github.workspace }} -B $GITHUB_WORKSPACE \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
           -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
@@ -79,14 +68,13 @@ jobs:
 
     - name: Build
       shell: bash
-      working-directory: ${{ github.workspace }}/build
       run: |
-        cmake --build . --config $BUILD_TYPE --parallel $(nproc) --verbose
+        cmake -S ${{ github.workspace }} --build ${{ github.workspace }}/build --config $BUILD_TYPE --parallel $(nproc) --verbose
 
     - name: Test
       shell: bash
-      working-directory: ${{ github.workspace }}/build
       run: |
+        cd ${{ github.workspace }}/build
         QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE \
           --output-on-failure \
           --verbose \
