@@ -32,7 +32,7 @@ platforms = [
         "compilers": [
             {
                 "name": "gcc",
-                "versions": [ "10.3.0", "11.3.0", "12" ]
+                "versions": [ "10", "11", "12" ]
             },
             {
                 "name": "clang",
