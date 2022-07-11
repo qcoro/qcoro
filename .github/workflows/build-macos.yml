@@ -25,7 +25,7 @@ jobs:
     - id: set-matrix
       name: Generate matrix
       run: |
-        matrix_json=$(python3 ./.github/workflows/generate-matrix.py)
+        matrix_json=$(python3 ./.github/workflows/generate-matrix.py --platform=macos)
         echo "::set-output name=matrix::${matrix_json}"
 
   build:
@@ -36,15 +36,12 @@ jobs:
 
     runs-on: ${{ matrix.runs_on }}
     name: ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
-    container:
-      image: ghcr.io/${{ github.repository }}/build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}:main
 
     steps:
     - name: Checkout sources
       uses: actions/checkout@v2
 
     - name: Install Qt
-      if: ${{ matrix.platform == 'msvc' || matrix.platform == 'macos' }}
       uses: ./.github/actions/install-qt
       with:
         qt_version: ${{ matrix.qt_version }}
@@ -85,27 +82,6 @@ jobs:
           -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
           -DQCORO_ENABLE_ASAN=ON \
           ${EXTRA_CMAKE_FLAGS}
-
-    - name: Add ASAN DLL directory to PATH
-      if: ${{ matrix.platform == 'windows' }}
-      shell: pwsh
-      run: |
-        $installDir=(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
-        echo "Detected MSVC install dir: \"${installDir}\""
-        if ("${{ matrix.compiler}}" -eq "msvc") {
-          if (Test-Path -Path "${installDir}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt") {
-            $vctoolsVersion=(Get-Content -Path "${installDir}\VC\Auxiliary\Build\Microsoft.VCToolsVersion.default.txt")
-            echo "Detected VCTools version: ${vctoolsVersion}"
-          } else {
-            echo "Failed to detect MSVC version"
-            exit 1
-          }
-          "${installDir}\VC\Tools\MSVC\${vctoolsVersion}\bin\HostX64\x64" >> $env:GITHUB_PATH
-        } else {
-          $clangVersion=((& "${installDir}\VC\Tools\Llvm\x64\bin\clang.exe" --version) | Select-String -Pattern "\d+.\d+.\d+" | % { $_.Matches } | % { $_.Value })
-          echo "Detected clang version: ${clangVersion}"
-          "${installDir}\VC\Tools\Llvm\x64\lib\clang\${clangVersion}\lib\windows" >> $env:GITHUB_PATH
-        }
 
     - name: Build
       shell: bash
