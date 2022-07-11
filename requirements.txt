@@ -6,3 +6,4 @@ mkdocs-material
 mkdocs-section-index
 mkdocs-include-markdown-plugin
 mkdocs-macros-plugin
+mkdocs-blogging-plugin
