@@ -37,7 +37,7 @@ jobs:
     runs-on: ${{ matrix.runs_on }}
     name: ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
     container:
-      image: ghcr.io/${{ github.repository }}/build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
+      image: ghcr.io/${{ github.repository }}/build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}:latest
 
     steps:
     - name: Checkout sources
