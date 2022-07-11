@@ -7,6 +7,7 @@
 #include "qcorosignal.h"
 
 #include <QWebSocket>
+#include <QDebug>
 
 using namespace QCoro::detail;
 
@@ -31,7 +32,8 @@ public:
                 emitReady(true);
             }
         }))
-        , mError(connect(socket, qOverload<QAbstractSocket::SocketError>(&QWebSocket::error), this, [this]() {
+        , mError(connect(socket, qOverload<QAbstractSocket::SocketError>(&QWebSocket::error), this, [this](auto error) {
+            qWarning() << "QWebSocket failed to connect to a websocket server: " << error;
             emitReady(false);
         }))
     {}
