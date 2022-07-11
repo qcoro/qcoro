@@ -1,5 +1,6 @@
 import json
 from socket import create_connection
+from argparse import ArgumentParser
 
 qt = [
     {
@@ -31,11 +32,11 @@ platforms = [
         "compilers": [
             {
                 "name": "gcc",
-                "versions": [ "10.3.0", "11.3.0" ]
+                "versions": [ "10", "11", "12" ]
             },
             {
                 "name": "clang",
-                "versions": [ "11", "14", "15" ]
+                "versions": [ "11", "14", "dev" ]
             }
         ]
     }
@@ -56,6 +57,13 @@ def get_os_for_platform(platform):
         return "macos-11"
     raise RuntimeError(f"Invalid platform '{platform}'.")
 
+def get_base_image_for_compiler(compiler):
+    if compiler == "gcc":
+        return "gcc"
+    elif compiler == "clang":
+        return "silkeh/clang"
+    else:
+        return None
 
 def create_configuration(qt, platform, compiler, compiler_version = ""):
     return {
@@ -64,14 +72,25 @@ def create_configuration(qt, platform, compiler, compiler_version = ""):
         "qt_archives": ' '.join(qt["archives"]),
         "platform": platform,
         "compiler": compiler,
+        "compiler_base_image": get_base_image_for_compiler(compiler),
         "compiler_version": compiler_version,
         "compiler_full": compiler if not compiler_version else f"{compiler}-{compiler_version}",
         "runs_on": get_os_for_platform(platform),
         "with_qtdbus": "OFF" if platform == "macos" else "ON"
     }
 
+
+parser = ArgumentParser()
+parser.add_argument('--linux-only', action='store_true', dest='linux_only')
+args = parser.parse_args()
+
+if args.linux_only:
+    filtered_platforms = filter(lambda p: p['name'] == 'linux', platforms)
+else:
+    filtered_platforms = platforms
+
 for qt_version in qt:
-    for platform in platforms:
+    for platform in filtered_platforms:
         for compiler in platform["compilers"]:
             if "versions" in compiler:
                 for compiler_version in compiler["versions"]:
