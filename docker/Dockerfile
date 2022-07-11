@@ -14,7 +14,7 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         cmake python3-pip \
         dbus dbus-x11 \
-        libgl-dev libegl-dev \
+        libgl-dev \
     && apt-get clean
 
 RUN pip3 install aqtinstall
