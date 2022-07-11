@@ -57,6 +57,13 @@ def get_os_for_platform(platform):
         return "macos-11"
     raise RuntimeError(f"Invalid platform '{platform}'.")
 
+def get_base_image_for_compiler(compiler):
+    if compiler == "gcc":
+        return "gcc"
+    elif compiler == "clang":
+        return "silkeh/clang"
+    else:
+        return None
 
 def create_configuration(qt, platform, compiler, compiler_version = ""):
     return {
@@ -65,6 +72,7 @@ def create_configuration(qt, platform, compiler, compiler_version = ""):
         "qt_archives": ' '.join(qt["archives"]),
         "platform": platform,
         "compiler": compiler,
+        "compiler_base_image": get_base_image_for_compiler(compiler),
         "compiler_version": compiler_version,
         "compiler_full": compiler if not compiler_version else f"{compiler}-{compiler_version}",
         "runs_on": get_os_for_platform(platform),

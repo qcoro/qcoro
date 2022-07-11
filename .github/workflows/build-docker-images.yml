@@ -64,7 +64,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         build-args: |
-          compiler_name=${{ matrix.compiler }}
+          compiler_image=${{ matrix.compiler_base_image }}
           compiler_version=${{ matrix.compiler_version }}
           qt_version=${{ matrix.qt_version }}
           qt_modules=${{ matrix.qt_modules }}
