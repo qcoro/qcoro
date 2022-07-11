@@ -43,9 +43,10 @@ jobs:
     - name: Checkout sources
       uses: actions/checkout@v2
 
+
     - name: Create Build Environment
       run: |
-        cmake -E make_directory ${{ github.workspace }}/build
+        cmake -E make_directory build
 
     - name: Configure CMake
       shell: bash
@@ -58,7 +59,7 @@ jobs:
           EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
         fi
 
-        cmake -S ${{ github.workspace }} -B ${{ github.workspace }}/build \
+        cmake -B build \
           -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
           -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
           -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
@@ -68,12 +69,12 @@ jobs:
     - name: Build
       shell: bash
       run: |
-        cmake -S ${{ github.workspace }} --build ${{ github.workspace }}/build --config $BUILD_TYPE --parallel $(nproc) --verbose
+        cmake --build build --config $BUILD_TYPE --parallel $(nproc) --verbose
 
     - name: Test
       shell: bash
       run: |
-        cd ${{ github.workspace }}/build
+        cd build
         QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE \
           --output-on-failure \
           --verbose \
@@ -85,7 +86,7 @@ jobs:
       with:
         name: Unit Tests Results (${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }})
         path: |
-          ${{ github.workspace }}/build/${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
+          build/${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
 
     - name: Upload build logs on failure
       if: failure()
