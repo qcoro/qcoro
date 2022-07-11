@@ -1,0 +1,72 @@
+name: Build Docker images
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker/**'
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    paths:
+      - 'docker/**'
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: RelWithDebInfo
+  QTEST_FUNCTION_TIMEOUT: 60000
+
+jobs:
+  generate-matrix:
+    name: Generate build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+    - id: set-matrix
+      name: Generate matrix
+      run: |
+        matrix_json=$(python3 ./.github/workflows/generate-matrix.py)
+        echo "::set-output name=matrix::${matrix_json}"
+
+  build:
+    needs: generate-matrix
+    strategy:
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs_on }}
+    name: Build Docker image for ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+    - name: Login to GCR
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ghcr.io/${{ github.repository }}-build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
+
+    - name: Build and push image
+      uses: docker/build-push-action@v3
+      if: ${{ matrix.compiler == 'gcc' || matrix.compiler == 'clang' }}
+      with:
+        build-args: |
+          compiler_name=${{ matrix.compiler }}
+          compiler_version=${{ matrix.compiler_version }}
+          qt_version=${{ matrix.qt_version }}
+          qt_modules=${{ matrix.qt_modules }}
+          qt_archives=${{ matrix.qt_archives }}
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
