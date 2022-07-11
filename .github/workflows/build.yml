@@ -36,19 +36,15 @@ jobs:
 
     runs-on: ${{ matrix.runs_on }}
     name: ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
+    container:
+      image: ghcr.io/${{ github.repository }}/build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
 
     steps:
     - name: Checkout sources
       uses: actions/checkout@v2
 
-    - name: Install compiler
-      if: ${{ matrix.compiler == 'gcc' || matrix.compiler == 'clang' }}
-      uses: ./.github/actions/install-compiler
-      with:
-        compiler: ${{ matrix.compiler }}
-        version: ${{ matrix.compiler_version }}
-
     - name: Install Qt
+      if: ${{ matrix.platform == 'msvc' || matrix.platform == 'macos' }}
       uses: ./.github/actions/install-qt
       with:
         qt_version: ${{ matrix.qt_version }}
