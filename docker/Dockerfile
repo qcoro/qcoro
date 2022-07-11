@@ -12,7 +12,7 @@ ARG qt_archives
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
-        cmake python3-pip python3-setuptools \
+        cmake python3-pip python3-setuptools python3-wheel python3-dev \
         dbus dbus-x11 \
         libgl-dev \
     && apt-get clean
