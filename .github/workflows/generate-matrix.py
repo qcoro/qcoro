@@ -1,5 +1,6 @@
 import json
 from socket import create_connection
+from argparse import ArgumentParser
 
 qt = [
     {
@@ -70,8 +71,18 @@ def create_configuration(qt, platform, compiler, compiler_version = ""):
         "with_qtdbus": "OFF" if platform == "macos" else "ON"
     }
 
+
+parser = ArgumentParser()
+parser.add_argument('--linux-only', action='store_true', dest='linux_only')
+args = parser.parse_args()
+
+if args.linux_only:
+    filtered_platforms = filter(lambda p: p['name'] == 'linux', platforms)
+else:
+    filtered_platforms = platforms
+
 for qt_version in qt:
-    for platform in platforms:
+    for platform in filtered_platforms:
         for compiler in platform["compilers"]:
             if "versions" in compiler:
                 for compiler_version in compiler["versions"]:
