@@ -85,7 +85,7 @@ parser.add_argument('--linux-only', action='store_true', dest='linux_only')
 args = parser.parse_args()
 
 if args.linux_only:
-    filtered_platforms = filter(lambda p: p['name'] == 'linux', platforms)
+    filtered_platforms = list(filter(lambda p: p['name'] == 'linux', platforms))
 else:
     filtered_platforms = platforms
 
