@@ -58,6 +58,16 @@ public:
 
         connect(mServer.get(), &QWebSocketServer::newConnection,
                 this, &Server::newConnection);
+        connect(mServer.get(), &QWebSocketServer::acceptError,
+                this, [this](auto error) {
+                    qCritical() << "WebSocket server failed to accept incoming connection:" << error;
+                    close();
+                });
+        connect(mServer.get(), &QWebSocketServer::serverError,
+                this, [this](auto error) {
+                    qCritical() << "WebSocket server failed to set up WS connection" << error;
+                    close();
+                });
 
         mCond.notify_all();
     }
