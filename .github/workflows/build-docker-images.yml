@@ -58,7 +58,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v4
       with:
-        images: ghcr.io/${{ github.repository }}-build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
+        images: ghcr.io/${{ github.repository }}/build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
 
     - name: Build and push image
       uses: docker/build-push-action@v3
