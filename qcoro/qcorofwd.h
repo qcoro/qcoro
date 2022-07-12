@@ -10,6 +10,6 @@ template<typename T> class Task;
 template<typename T> class Generator;
 template<typename T> class GeneratorIterator;
 template<typename T> class AsyncGenerator;
-template<typename T> class AsyncGeneratorIterator<T>;
+template<typename T> class AsyncGeneratorIterator;
 
 } // namespace QCoro
