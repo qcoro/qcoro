@@ -571,11 +571,20 @@ private Q_SLOTS:
         QVERIFY(thrown);
     }
 
+    void testAbortsOnUnawaitedExceptionOptionThrowsInEventLoopWhenNotCoawaited_data() {
+        QTest::addColumn<bool>("async");
+        QTest::newRow("async") << true;
+        QTest::newRow("sync") << false;
+    }
+
     void testAbortsOnUnawaitedExceptionOptionThrowsInEventLoopWhenNotCoawaited() {
+        QFETCH(bool, async);
         QEventLoop el;
 
-        const auto thrower = [&el]() -> QCoro::Task<void, QCoro::TaskOptions<QCoro::Options::AbortOnException>> {
-            co_await timer(); // Make it an asynchronous coroutine
+        const auto thrower = [&el, async]() -> QCoro::Task<void, QCoro::TaskOptions<QCoro::Options::AbortOnException>> {
+            if (async) {
+                co_await timer(); // Make it an asynchronous coroutine
+            }
             el.quit(); // We don't actually terminate the program in test mode, so make sure the event loop
                        // ends after we've thrown the exception.
             throw std::runtime_error("Ooops, something went wrong.");

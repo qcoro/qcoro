@@ -113,14 +113,14 @@ public:
 
         if (promise.mResumeAwaiter.exchange(true, std::memory_order_acq_rel)) {
             promise.mAwaitingCoroutine.resume();
-        }
-
-        if (promise.setDestroyHandle()) {
+        } else {
             if (mTaskOptions.abortOnException) {
                 try {
                     promise.result();
                 } catch (const std::exception &e) {
-                    finishedCoroutine.destroy();
+                    if (promise.setDestroyHandle()) {
+                        finishedCoroutine.destroy();
+                    }
                     qCritical() << "A QCoro coroutine which wasn't being co_awaited has thrown an unhandled exception."
                                 << "The coroutine had AbortOnExit option set, the program will abort now.\n\n"
                                 << "Exception was:" << e.what();
@@ -128,7 +128,9 @@ public:
                     return;
                 }
             }
+        }
 
+        if (promise.setDestroyHandle()) {
             finishedCoroutine.destroy();
         }
     }
