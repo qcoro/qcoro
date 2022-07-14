@@ -6,15 +6,11 @@
 
 #include <QPointer>
 #include "qcorocore_export.h"
+#include "qcorofwd.h"
 
 #include <chrono>
 
 class QThread;
-
-namespace QCoro {
-template<typename T>
-class Task;
-} // namespace QCoro
 
 namespace QCoro::detail {
 

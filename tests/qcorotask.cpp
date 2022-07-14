@@ -11,12 +11,18 @@
 #include <QScopeGuard>
 #include <QMetaObject>
 #include <QTimer>
+#include <QRegularExpression>
 
 #include <chrono>
+#include <csignal>
 
 using namespace std::chrono_literals;
 
 namespace {
+
+// Used to check whether std::terminate() has been called.
+bool terminateHandlerCalled = false;
+
 
 QCoro::Task<> timer(std::chrono::milliseconds timeout = 10ms) {
     QTimer timer;
@@ -535,6 +541,58 @@ private Q_SLOTS:
         });
 
         el.exec();
+    }
+
+    void testRethrowsExceptionWhenCoawaited() {
+        QEventLoop el;
+        QTimer::singleShot(5s, &el, [&el]() {
+            el.quit();
+            QFAIL("Timeout waiting for coroutine");
+        });
+
+        bool thrown = false;
+        QTimer::singleShot(100ms, [&]() -> QCoro::Task<> {
+            const auto thrower = []() -> QCoro::Task<> {
+                throw std::runtime_error("Ooops, something went wrong.");
+            };
+
+            try {
+                co_await thrower();
+            } catch (const std::runtime_error &e) {
+                el.quit();
+                thrown = true;
+            } catch (const std::exception &) {
+                el.quit();
+                QCORO_FAIL("Unexpected exception was thrown");
+            }
+        });
+
+        el.exec();
+        QVERIFY(thrown);
+    }
+
+    void testAbortsOnUnawaitedExceptionOptionThrowsInEventLoopWhenNotCoawaited() {
+        QEventLoop el;
+
+        const auto thrower = [&el]() -> QCoro::Task<void, QCoro::TaskOptions<QCoro::Options::AbortOnException>> {
+            co_await timer(); // Make it an asynchronous coroutine
+            el.quit(); // We don't actually terminate the program in test mode, so make sure the event loop
+                       // ends after we've thrown the exception.
+            throw std::runtime_error("Ooops, something went wrong.");
+        };
+
+        QTimer::singleShot(100ms, thrower);
+
+        auto oldHandler = QCoro::detail::qcoroSetAbortHandler([]() {
+            terminateHandlerCalled = true;
+        });
+        const auto handlerGuard = qScopeGuard([oldHandler]() {
+            QCoro::detail::qcoroSetAbortHandler(oldHandler);
+        });
+
+        QTest::ignoreMessage(QtCriticalMsg, QRegularExpression(QStringLiteral(R"(^A QCoro coroutine which wasn't being co_awaited has thrown an unhandled exception.\.*)")));
+        el.exec();
+        QVERIFY(terminateHandlerCalled);
     }
 };
 

@@ -6,6 +6,7 @@
 
 #include "coroutine.h"
 #include "concepts_p.h"
+#include "qcorofwd.h"
 
 #include <atomic>
 #include <variant>
@@ -20,8 +21,32 @@
 
 namespace QCoro {
 
-template<typename T = void>
-class Task;
+template<typename>
+struct taskOptions;
+
+template<TaskOption ...Opts>
+struct TaskOptions {
+    using options = std::tuple<Opts ...>;
+};
+
+struct TaskOptionsStorage {
+    bool abortOnException;
+};
+
+template<TaskOption ... Opts>
+struct taskOptions<TaskOptions<Opts ...>> {
+    constexpr operator TaskOptionsStorage() {
+        return TaskOptionsStorage{
+            hasOption<Options::AbortOnException>()
+        };
+    }
+
+private:
+    template<TaskOption Option>
+    constexpr static bool hasOption() {
+        return (... || std::is_same_v<Opts, Option>);
+    }
+};
 
 /*! \cond internal */
 
@@ -33,6 +58,21 @@ struct awaiter_type;
 template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
 
+using AbortHandler = void(*)();
+
+static std::atomic<AbortHandler> qcoroAbortHandler = std::terminate;
+
+inline AbortHandler qcoroSetAbortHandler(AbortHandler newHandler) {
+    if (newHandler == nullptr) {
+        newHandler = std::terminate;
+    }
+    return std::atomic_exchange_explicit(&qcoroAbortHandler, newHandler, std::memory_order_acq_rel);
+}
+
+inline void qcoroAbort() {
+    std::atomic_load_explicit(&qcoroAbortHandler, std::memory_order_acquire)();
+}
+
 //! Continuation that resumes a coroutine co_awaiting on currently finished coroutine.
 class TaskFinalSuspend {
 public:
@@ -41,8 +81,10 @@ public:
      * \param[in] awaitingCoroutine handle of the coroutine that is co_awaiting the current
      * coroutine (continuation).
      */
-    explicit TaskFinalSuspend(std::coroutine_handle<> awaitingCoroutine)
-        : mAwaitingCoroutine(awaitingCoroutine) {}
+    explicit TaskFinalSuspend(std::coroutine_handle<> awaitingCoroutine, TaskOptionsStorage taskOptions)
+        : mAwaitingCoroutine(awaitingCoroutine)
+        , mTaskOptions(taskOptions)
+    {}
 
     //! Returns whether the just finishing coroutine should do final suspend or not
     /*!
@@ -73,8 +115,20 @@ public:
             promise.mAwaitingCoroutine.resume();
         }
 
-        // The handle will be destroyed here only if the associated Task has already been destroyed
         if (promise.setDestroyHandle()) {
+            if (mTaskOptions.abortOnException) {
+                try {
+                    promise.result();
+                } catch (const std::exception &e) {
+                    finishedCoroutine.destroy();
+                    qCritical() << "A QCoro coroutine which wasn't being co_awaited has thrown an unhandled exception."
+                                << "The coroutine had AbortOnExit option set, the program will abort now.\n\n"
+                                << "Exception was:" << e.what();
+                    qcoroAbort();
+                    return;
+                }
+            }
+
             finishedCoroutine.destroy();
         }
     }
@@ -89,6 +143,7 @@ public:
 private:
     //! Handle of the coroutine co_awaiting the current coroutine.
     std::coroutine_handle<> mAwaitingCoroutine;
+    TaskOptionsStorage mTaskOptions;
 };
 
 //! Base class for the \c Task<T> promise_type.
@@ -148,7 +203,7 @@ public:
      * This decides what should happen when the coroutine is finished.
      */
     auto final_suspend() const noexcept {
-        return TaskFinalSuspend{mAwaitingCoroutine};
+        return TaskFinalSuspend{mAwaitingCoroutine, mTaskOptions};
     }
 
     //! Called by co_await to obtain an Awaitable for type \c T.
@@ -238,6 +293,11 @@ public:
         return mDestroyHandle.exchange(true, std::memory_order_acq_rel);
     }
 
+protected:
+    TaskPromiseBase(TaskOptionsStorage taskOptions)
+        : mTaskOptions(taskOptions)
+    {}
+
 private:
     friend class TaskFinalSuspend;
 
@@ -248,20 +308,25 @@ private:
 
     //! Indicates whether we can destroy the coroutine handle
     std::atomic<bool> mDestroyHandle{false};
+
+    TaskOptionsStorage mTaskOptions;
 };
 
 //! The promise_type for Task<T>
 /*!
  * See \ref TaskPromiseBase documentation for explanation about promise_type.
  */
-template<typename T>
+template<typename T, typename TaskOpts>
 class TaskPromise final : public TaskPromiseBase {
 public:
-    explicit TaskPromise() = default;
+    explicit TaskPromise()
+        : TaskPromiseBase(taskOptions<TaskOpts>())
+    {}
+
     ~TaskPromise() = default;
 
     //! Constructs a Task<T> for this promise.
-    Task<T> get_return_object() noexcept;
+    Task<T, TaskOpts> get_return_object() noexcept;
 
     //! Called by the compiler when user code throws an unhandled exception.
     /*!
@@ -328,17 +393,19 @@ private:
 };
 
 //! Specialization of TaskPromise for coroutines returning \c void.
-template<>
-class TaskPromise<void> final : public TaskPromiseBase {
+template<typename TaskOpts>
+class TaskPromise<void, TaskOpts> final : public TaskPromiseBase {
 public:
     // Constructor.
-    explicit TaskPromise() = default;
+    explicit TaskPromise()
+        : TaskPromiseBase(taskOptions<TaskOpts>())
+    {}
 
     //! Destructor.
     ~TaskPromise() = default;
 
     //! \copydoc TaskPromise<T>::get_return_object()
-    Task<void> get_return_object() noexcept;
+    Task<void, TaskOpts> get_return_object() noexcept;
 
     //! \copydoc TaskPromise<T>::unhandled_exception()
     void unhandled_exception() {
@@ -443,11 +510,11 @@ protected:
  * One can think about it as Task being the caller-facing interface and promise being
  * the callee-facing interface.
  */
-template<typename T>
+template<typename T, typename TaskOpts>
 class Task {
 public:
     //! Promise type of the coroutine. This is required by the C++ standard.
-    using promise_type = detail::TaskPromise<T>;
+    using promise_type = detail::TaskPromise<T, TaskOpts>;
     //! The type of the coroutine return value.
     using value_type = T;
 
@@ -458,7 +525,9 @@ public:
     /*!
      * \param[in] coroutine handle of the coroutine that has constructed the task.
      */
-    explicit Task(std::coroutine_handle<promise_type> coroutine) : mCoroutine(coroutine) {}
+    explicit Task(std::coroutine_handle<promise_type> coroutine)
+        : mCoroutine(coroutine)
+    {}
 
     //! Task cannot be copy-constructed.
     Task(const Task &) = delete;
@@ -697,13 +766,14 @@ private:
 
 namespace detail {
 
-template<typename T>
-inline Task<T> TaskPromise<T>::get_return_object() noexcept {
-    return Task<T>{std::coroutine_handle<TaskPromise>::from_promise(*this)};
+template<typename T, typename TaskOpts>
+inline Task<T, TaskOpts> TaskPromise<T, TaskOpts>::get_return_object() noexcept {
+    return Task<T, TaskOpts>{std::coroutine_handle<TaskPromise>::from_promise(*this)};
 }
 
-Task<void> inline TaskPromise<void>::get_return_object() noexcept {
-    return Task<void>{std::coroutine_handle<TaskPromise>::from_promise(*this)};
+template<typename TaskOpts>
+Task<void, TaskOpts> inline TaskPromise<void, TaskOpts>::get_return_object() noexcept {
+    return Task<void, TaskOpts>{std::coroutine_handle<TaskPromise>::from_promise(*this)};
 }
 
 } // namespace detail
