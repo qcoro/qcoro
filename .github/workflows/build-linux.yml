@@ -86,7 +86,7 @@ jobs:
       with:
         name: Unit Tests Results (${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }})
         path: |
-          build/${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
+          ${{ github.workspace }}/build/${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
 
     - name: Upload build logs on failure
       if: failure()
