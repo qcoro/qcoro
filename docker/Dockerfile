@@ -10,11 +10,21 @@ ARG qt_version
 ARG qt_modules
 ARG qt_archives
 
+SHELL ["/bin/bash", "-c"]
+
+RUN source /etc/os-release && \
+    if [[ "${VERSION_ID}" == "10" ]]; then \
+        echo "deb http://deb.debian.org/debian buster-backports main" > /etc/apt/sources.list.d/backports.list; \
+    fi
+
 RUN apt-get update \
+    && apt-get upgrade --yes \
     && apt-get install --yes --no-install-recommends \
-        cmake python3-pip python3-setuptools python3-wheel python3-dev \
+        cmake=3.18.4\* cmake-data=3.18.4\* \
+        python3-pip python3-setuptools python3-wheel python3-dev \
         dbus dbus-x11 \
-        libgl-dev \
+        libglib2.0-dev libxkbcommon-dev \
+        libegl-dev libgl-dev libegl1=1.3.2\* libgl1=1.3.2\* libglx0=1.3.2\* libglvnd0=1.3.2\* \
     && apt-get clean
 
 RUN pip3 install aqtinstall
