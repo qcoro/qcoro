@@ -24,8 +24,14 @@ RUN apt-get update \
         python3-pip python3-setuptools python3-wheel python3-dev \
         dbus dbus-x11 \
         libglib2.0-dev libxkbcommon-dev libfreetype6-dev libfontconfig1-dev \
+        libssl-dev \
         libegl-dev libgl-dev libegl1=1.3.2\* libgl1=1.3.2\* libglx0=1.3.2\* libglvnd0=1.3.2\* \
+        libvulkan-dev \
     && apt-get clean
+
+# Workaround a bug in CMake (?) which tries to look for OpenGL-related libraries
+# in /usr/lib/x86_64-unknown-linux-gnu instead of /usr/lib/x86_64-linux-gnu
+RUN ln -s x86_64-linux-gnu /usr/lib/x86_64-unknown-linux-gnu
 
 RUN pip3 install aqtinstall
 
