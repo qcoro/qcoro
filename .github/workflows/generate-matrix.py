@@ -81,13 +81,10 @@ def create_configuration(qt, platform, compiler, compiler_version = ""):
 
 
 parser = ArgumentParser()
-parser.add_argument('--linux-only', action='store_true', dest='linux_only')
+parser.add_argument('--platform')
 args = parser.parse_args()
 
-if args.linux_only:
-    filtered_platforms = list(filter(lambda p: p['name'] == 'linux', platforms))
-else:
-    filtered_platforms = platforms
+filtered_platforms = list(filter(lambda p: p['name'] == args.platform, platforms))
 
 for qt_version in qt:
     for platform in filtered_platforms:

@@ -1,4 +1,4 @@
-name: Build and Test
+name: Build and Test (Windows)
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
     - id: set-matrix
       name: Generate matrix
       run: |
-        matrix_json=$(python3 ./.github/workflows/generate-matrix.py)
+        matrix_json=$(python3 ./.github/workflows/generate-matrix.py --platform=windows)
         echo "::set-output name=matrix::${matrix_json}"
 
   build:
@@ -40,13 +40,6 @@ jobs:
     steps:
     - name: Checkout sources
       uses: actions/checkout@v2
-
-    - name: Install compiler
-      if: ${{ matrix.compiler == 'gcc' || matrix.compiler == 'clang' }}
-      uses: ./.github/actions/install-compiler
-      with:
-        compiler: ${{ matrix.compiler }}
-        version: ${{ matrix.compiler_version }}
 
     - name: Install Qt
       uses: ./.github/actions/install-qt
@@ -66,21 +59,12 @@ jobs:
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
 
-        if [[ "${{ matrix.platform }}" != "windows" ]]; then
-          # Don't fiddle with dlls in Windows, it makes things complicated...
-          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
-          # Disable ASAN for clang-11 - we are hitting some bugs in ASAN & generators
-          if [[ "${{ matrix.compiler }}" == "clang" && "${{ matrix.compiler_version }}" == "11" ]]; then
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
-          fi
-        else
-          if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
-            # FIXME: allow ASAN with clang-cl
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL -DQCORO_ENABLE_ASAN=OFF"
-          fi
-          if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
-            EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
-          fi
+        if [[ "${{ matrix.compiler }}" == "clang-cl" ]]; then
+          # FIXME: allow ASAN with clang-cl
+          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -T ClangCL -DQCORO_ENABLE_ASAN=OFF"
+        fi
+        if [[ "${QT_VERSION_MAJOR}" == "5" ]]; then
+          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
         fi
 
         cmake $GITHUB_WORKSPACE \
@@ -91,7 +75,6 @@ jobs:
           ${EXTRA_CMAKE_FLAGS}
 
     - name: Add ASAN DLL directory to PATH
-      if: ${{ matrix.platform == 'windows' }}
       shell: pwsh
       run: |
         $installDir=(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)

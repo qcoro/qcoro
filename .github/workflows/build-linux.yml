@@ -1,0 +1,106 @@
+name: Build and Test (Linux)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+
+env:
+  BUILD_TYPE: Debug
+  QTEST_FUNCTION_TIMEOUT: 60000
+
+
+jobs:
+  generate-matrix:
+    name: Generate build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+    - id: set-matrix
+      name: Generate matrix
+      run: |
+        matrix_json=$(python3 ./.github/workflows/generate-matrix.py --platform=linux)
+        echo "::set-output name=matrix::${matrix_json}"
+
+  build:
+    needs: generate-matrix
+    strategy:
+      matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
+      fail-fast: false
+
+    runs-on: ${{ matrix.runs_on }}
+    name: ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
+    container:
+      image: ghcr.io/${{ github.repository }}/build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}:main
+
+    steps:
+    - name: Checkout sources
+      uses: actions/checkout@v2
+
+
+    - name: Create Build Environment
+      run: |
+        cmake -E make_directory build
+
+    - name: Configure CMake
+      shell: bash
+      run: |
+        QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
+
+        EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DBUILD_SHARED_LIBS=ON"
+        # Disable ASAN for clang-11 - we are hitting some bugs in ASAN & generators
+        if [[ "${{ matrix.compiler }}" == "clang" && "${{ matrix.compiler_version }}" == "11" ]]; then
+          EXTRA_CMAKE_FLAGS="${EXTRA_CMAKE_FLAGS} -DQCORO_ENABLE_ASAN=OFF"
+        fi
+
+        cmake -B build \
+          -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+          -DUSE_QT_VERSION=$QT_VERSION_MAJOR \
+          -DQCORO_WITH_QTDBUS=${{ matrix.with_qtdbus }} \
+          -DQCORO_ENABLE_ASAN=ON \
+          ${EXTRA_CMAKE_FLAGS}
+
+    - name: Build
+      shell: bash
+      run: |
+        cmake --build build --config $BUILD_TYPE --parallel $(nproc) --verbose
+
+    - name: Test
+      shell: bash
+      run: |
+        cd build
+        QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE \
+          --output-on-failure \
+          --verbose \
+          --output-junit ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unit Tests Results (${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }})
+        path: |
+          ${{ github.workspace }}/build/${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
+
+    - name: Upload build logs on failure
+      if: failure()
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
+        path: build/**
+
+  event_file:
+    name: "Event File"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Upload
+      uses: actions/upload-artifact@v2
+      with:
+        name: Event File
+        path: ${{ github.event_path }}
