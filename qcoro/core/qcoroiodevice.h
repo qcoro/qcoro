@@ -228,11 +228,11 @@ inline auto qCoro(QIODevice *d) noexcept {
     return QCoro::detail::QCoroIODevice{d};
 }
 
-// If you've got here due to a compile error, make sure to #include the QCoro header
-// for the corresponding class, so that the qCoro() overload that wraps the QIODevice-dervied
+// If you got here due to a compile error, make sure to #include the QCoro header
+// for the corresponding class, so that the qCoro() overload that wraps the QIODevice-derived
 // classes in their respective QCoroIODevice-derived wrappers is used.
 //
-// Wrapping those classes into QCoroIODevice will cause co_awaiting certain operations to not
+// Wrapping those classes directly into QCoroIODevice will cause co_awaiting certain operations to not
 // work as expected.
 class QAbstractSocket;
 auto qCoro(QAbstractSocket *) noexcept; // You are likely missing "#include <QCoroAbstractSocket>"
