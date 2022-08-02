@@ -94,3 +94,7 @@ endif()
 if (QCORO_WITH_QML)
     add_subdirectory(qml)
 endif()
+
+if (QCORO_WITH_QTWEBENGINE)
+    add_subdirectory(webengine)
+endif()

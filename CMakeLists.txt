@@ -33,6 +33,8 @@ option(QCORO_WITH_QTQUICK "Build QtQuick support" ON)
 add_feature_info(QtQuick QCORO_WITH_QTQUICK "Build QtQuick support")
 option(QCORO_WITH_QML "Build QML integration features" ON)
 add_feature_info(QtQml QCORO_WITH_QML "Build QML integration features")
+option(QCORO_WITH_QTWEBENGINE "Build QtWebEngine support" ON)
+add_feature_info(QtWebEngine QCORO_WITH_QTWEBENGINE "Build QtWebEngine support")
 
 #-----------------------------------------------------------#
 # Dependencies
@@ -58,6 +60,9 @@ if (QCORO_WITH_QTQUICK)
 endif()
 if (QCORO_WITH_QML)
     list(APPEND REQUIRED_QT_COMPONENTS Qml)
+endif()
+if (QCORO_WITH_QTWEBENGINE)
+    list(APPEND REQUIRED_QT_COMPONENTS WebEngineCore WebEngineWidgets)
 endif()
 if (QCORO_BUILD_EXAMPLES)
     list(APPEND REQUIRED_QT_COMPONENTS Widgets Concurrent)
