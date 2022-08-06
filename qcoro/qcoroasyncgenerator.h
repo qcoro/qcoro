@@ -207,10 +207,23 @@ public:
         : m_coroutine(coroutine)
     {}
 
+    /**
+     * @brief Asynchronously increments the iterator
+     *
+     * Resume the generator coroutine and asynchonously waits for it
+     * to yield a value. Resolves to a new iterator with the new value.
+     *
+     * If the generator coroutine throws an exception, co_awaiting on the
+     * returned awaitable will re-throw the exception and the returned iterator
+     * will be invalid (past-the-end iterator).
+     **/
     auto operator++() noexcept {
         return IncrementIteratorAwaitable{*this};
     }
 
+    /**
+     * Returns reference to the value yielded by the generator coroutine.
+     */
     reference operator *() const noexcept {
         return m_coroutine.promise().value();
     }
@@ -309,6 +322,8 @@ public:
      *
      * The asynchronout iterator can be used like a regular iterator, except that incrementing
      * the iterator returns an awaitable that must be co_awaited.
+     *
+     * If the generator coroutine throws an exception, it will be rethrown here.
      */
     auto begin() noexcept {
         class BeginIteratorAwaitable final : public detail::IteratorAwaitableBase {

@@ -146,6 +146,37 @@ private Q_SLOTS:
         }
         QCOMPARE(testval, 4);
     }
+
+    void testException() {
+        const auto createGenerator = []() -> QCoro::Generator<int> {
+            for (int i = 0; i < 10; ++i) {
+                if (i == 2) {
+                    throw std::runtime_error("Two?! I can't handle two!!");
+                }
+                co_yield i;
+            }
+        };
+
+        auto generator = createGenerator();
+        auto it = generator.begin();
+        QVERIFY(it != generator.end());
+        QCOMPARE(*it, 0);
+        ++it;
+        QVERIFY(it != generator.end());
+        QCOMPARE(*it, 1);
+
+        QVERIFY_EXCEPTION_THROWN(++it, std::runtime_error);
+        QCOMPARE(it, generator.end());
+    }
+
+    void testExceptionInBegin() {
+        auto generator = []() -> QCoro::Generator<int> {
+            throw std::runtime_error("Zero is too small!");
+            co_yield 1;
+        }();
+
+        QVERIFY_EXCEPTION_THROWN(generator.begin(), std::runtime_error);
+    }
 };
 
 QTEST_GUILESS_MAIN(GeneratorTest)

@@ -28,7 +28,7 @@ QCoro::AsyncGenerator<uint8_t> lottoNumbersGenerator(int count) {
     }
 }
 
-void winningLottoNumbers() {
+QCoro::Task<> winningLottoNumbers() {
     const auto makeMeRich = lottoNumbersGenerator(10);
     // We must co_await begin() to obtain the initial iterator
     auto winningNumber = co_await makeMeRich.begin();
@@ -50,6 +50,41 @@ iterator, we must check whether it's valid or not, because paste-the-end iterato
 not dereferencable. That's why the `AsyncGenerator<T>::begin()` and
 `AsyncGeneratorIterator<T>::operator++()` operations are asynchronous, rather than
 `AsyncGeneratorIterator<T>::operator*()`.
+
+#### Exceptions
+
+When the generator coroutine throws an exception, the exception will be rethrown from
+the `operator++()` (or from generator's `begin()`) function when they are `co_await`ed.
+
+Afterwards, the iterator is considered invalid and the generator is finished and may not
+be used anymore.
+
+```cpp
+QCoro::AsyncGenerator<int> generatorThatThrows() {
+    while (true) {
+        const int val = co_await generateRandomNumber();
+        if (val == 0) {
+            throw std::runtime("Division by zero!");
+        }
+        co_yield 42 / val;
+    }
+}
+
+QCoro::Task<> divide42ForNoReason(std::size_t count) {
+    auto generator = generatorThatThrows();
+    std::vector<int> numbers;
+    try {
+        // Might throw if generator generates 0 immediatelly.
+        auto it = co_await generator.begin();
+        while (numbers.size() < count) {
+            numbers.push_back(*it);
+            co_await ++it; // might throw
+        }
+    } catch (const std::runtime_error &e) {
+        // We were unable to generate all numbers
+    }
+}
+```
 
 ### QCORO_FOREACH
 
