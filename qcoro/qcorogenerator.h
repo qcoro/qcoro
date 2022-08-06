@@ -108,6 +108,12 @@ public:
         return mValue == nullptr;
     }
 
+    void rethrowIfException() {
+        if (mException) {
+            std::rethrow_exception(mException);
+        }
+    }
+
     /**
      * @brief Prevent use of `co_await` inside the generator coroutine
      *
@@ -154,15 +160,19 @@ public:
      *
      * Returns an iterator holding the next value produced by the generator coroutine
      * or an invalid iterator, indicating the generator coroutine has finishes.
+     *
+     * If the generator coroutine throws an exception, it will be rethrown from here.
      **/
-    GeneratorIterator operator++() noexcept {
+    GeneratorIterator operator++() {
         if (!mGeneratorCoroutine) {
             return *this;
         }
 
         mGeneratorCoroutine.resume(); // generate next value
-        if (mGeneratorCoroutine.promise().finished()) {
+        auto &promise = mGeneratorCoroutine.promise();
+        if (promise.finished()) {
             mGeneratorCoroutine = nullptr;
+            promise.rethrowIfException();
         }
 
         return *this;
@@ -170,13 +180,8 @@ public:
 
     /**
      * @brief Returns value produced by the generator coroutine.
-     *
-     * If the generator has thrown an exception it will be rethrown here.
      **/
     reference operator *() const noexcept {
-        if (mGeneratorCoroutine.promise().exception()) {
-            std::rethrow_exception(mGeneratorCoroutine.promise().exception());
-        }
         return mGeneratorCoroutine.promise().value();
     }
 
@@ -249,10 +254,13 @@ public:
      *
      * If the generator coroutine did not produce any value and finished immediatelly,
      * the returned iterator will be equal to end().
+     *
+     * If the generator coroutine has thrown an exception if will be rethrown from here.
      **/
     iterator begin() {
         mGeneratorCoroutine.resume(); // generate first value
         if (mGeneratorCoroutine.promise().finished()) { // did not yield anything
+            mGeneratorCoroutine.promise().rethrowIfException();
             return iterator{nullptr};
         }
         return iterator{mGeneratorCoroutine};

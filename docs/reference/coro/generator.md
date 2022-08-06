@@ -118,3 +118,11 @@ it in `std::unique_ptr` or `QScopeGuard`.
     Keep in mind, that that generator coroutine will keep occupying
     memory even when not used until it finishes or until the
     associated `QCoro::Generator<T>` is destroyed.
+
+## Exceptions
+
+When a generator coroutine throws an exception, it will be rethrown
+from `operator++()` or from generator's `begin()` method.
+
+Afterwards the iterator is considered invalid and the generator
+is finished and may not be used anymore.

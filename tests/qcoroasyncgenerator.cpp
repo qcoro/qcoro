@@ -168,6 +168,73 @@ private:
         QCORO_COMPARE(testvalue, 4);
     }
 
+    QCoro::Task<> testException_coro(QCoro::TestContext) {
+        const auto createGenerator = []() -> QCoro::AsyncGenerator<int> {
+            for (int i = 0; i < 4; ++i) {
+                co_await sleep(10ms);
+                if (i == 2) {
+                    throw std::runtime_error("Two?! I can't handle that much!");
+                }
+                co_yield i;
+            }
+        };
+
+        auto generator = createGenerator();
+        auto it = co_await generator.begin();
+        QCORO_VERIFY(it != generator.end());
+        QCORO_COMPARE(*it, 0);
+        co_await ++it;
+        QCORO_VERIFY(it != generator.end());
+        QCORO_COMPARE(*it, 1);
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await ++it, std::runtime_error);
+        QCORO_COMPARE(it, generator.end());
+    }
+
+    QCoro::Task<> testExceptionInDereference_coro(QCoro::TestContext) {
+        const auto createGenerator = []() -> QCoro::AsyncGenerator<int> {
+            for (int i = 0; i < 4; ++i) {
+                co_await sleep(10ms);
+                if (i == 2) {
+                    throw std::runtime_error("I already told you two is too much");
+                }
+                co_yield i;
+            }
+        };
+
+        auto generator = createGenerator();
+        auto it = co_await generator.begin();
+        QCORO_VERIFY(it != generator.end());
+        QCORO_COMPARE(*it, 0);
+        co_await ++it;
+        QCORO_VERIFY(it != generator.end());
+        QCORO_COMPARE(*it, 1);
+        co_await ++it;
+        QCORO_VERIFY_EXCEPTION_THROWN(*it, std::runtime_error);
+        QCORO_COMPARE(it, generator.end());
+    }
+
+    QCoro::Task<> testExceptionInBegin_coro(QCoro::TestContext) {
+        auto generator = []() -> QCoro::AsyncGenerator<int> {
+            co_await sleep(10ms);
+            throw std::runtime_error("I can't even zero!");
+            co_yield 1;
+        }();
+
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await generator.begin(), std::runtime_error);
+    }
+
+    QCoro::Task<> testExceptionInBeginSync_coro(QCoro::TestContext context) {
+        context.setShouldNotSuspend();
+
+        auto generator = []() -> QCoro::AsyncGenerator<int> {
+            throw std::runtime_error("I can't even zero!");
+            co_yield 1;
+        }();
+
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await generator.begin(), std::runtime_error);
+    }
+
+
 private Q_SLOTS:
     addTest(Generator)
     addTest(SyncGenerator)
@@ -176,6 +243,10 @@ private Q_SLOTS:
     addTest(ReferenceGenerator)
     addTest(ConstReferenceGenerator)
     addTest(MoveonlyGenerator)
+    addTest(Exception)
+    addTest(ExceptionInDereference)
+    addTest(ExceptionInBegin)
+    addTest(ExceptionInBeginSync)
 };
 
 QTEST_GUILESS_MAIN(AsyncGeneratorTest)
