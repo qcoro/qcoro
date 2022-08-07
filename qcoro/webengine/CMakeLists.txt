@@ -24,9 +24,9 @@ add_qcoro_library(
     CAMELCASE_HEADERS
         ${core_HDRS}
     QCORO_LINK_LIBRARIES
-        PUBLIC Coro
+        PUBLIC Coro Core
     QT_LINK_LIBRARIES
-    PUBLIC Core WebEngineCore
+        PUBLIC Core WebEngineCore
 )
 
 add_qcoro_library(
@@ -36,7 +36,7 @@ add_qcoro_library(
     CAMELCASE_HEADERS
         ${widgets_HDRS}
     QCORO_LINK_LIBRARIES
-        PUBLIC Coro
+        PUBLIC Coro Core
     QT_LINK_LIBRARIES
         PUBLIC Core WebEngineWidgets
 )
