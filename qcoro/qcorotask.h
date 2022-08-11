@@ -234,6 +234,10 @@ public:
         return mAwaitingCoroutine != nullptr;
     }
 
+    std::coroutine_handle<> awaitingCoroutine() const {
+        return mAwaitingCoroutine;
+    }
+
     bool setDestroyHandle() noexcept {
         return mDestroyHandle.exchange(true, std::memory_order_acq_rel);
     }
@@ -495,6 +499,18 @@ public:
             mCoroutine.destroy();
         }
     };
+
+    void cancel() {
+        if (!mCoroutine) {
+            return;
+        }
+
+        auto &promise = mCoroutine.promise();
+        if (!promise.setDestroyHandle()) {
+            mCoroutine.destroy();
+        }
+        mCoroutine = nullptr;
+    }
 
     //! Returns whether the task has finished.
     /*!

@@ -536,6 +536,73 @@ private Q_SLOTS:
 
         el.exec();
     }
+
+
+    void testCancel() {
+        bool called = false;
+        bool notCalled = true;
+        bool destroyed = false;
+
+        const auto testCoro = [&called, &notCalled, &destroyed]() -> QCoro::Task<> {
+            const auto guard = qScopeGuard([&destroyed]() {
+                destroyed = true;
+            });
+            auto str = new QString();
+            called = true;
+            co_await timer(10s);
+            notCalled = false;
+            delete str;
+        };
+
+        auto task = testCoro();
+
+        QTest::qWait((100ms).count());
+
+        task.cancel();
+
+        QVERIFY(called);
+        QVERIFY(notCalled);
+        QVERIFY(destroyed);
+    }
+
+    void testCancelCascades() {
+        bool called = false;
+        bool innerCalled = false;
+        bool destroyed = false;
+        bool innerDestroyed = false;
+        bool notCalled = true;
+        bool innerNotCalled = true;
+
+        const auto inner = [&]() -> QCoro::Task<> {
+            const auto guard = qScopeGuard([&]() {
+                innerDestroyed = true;
+            });
+            innerCalled = true;
+            co_await timer(10s);
+            innerNotCalled = false;
+        };
+        const auto outter = [&]() -> QCoro::Task<> {
+            const auto guard = qScopeGuard([&]() {
+                destroyed = true;
+            });
+            called = true;
+            co_await inner();
+            notCalled = false;
+        };
+
+        auto task = outter();
+
+        QTest::qWait((100ms).count());
+
+        task.cancel();
+
+        QVERIFY(called);
+        QVERIFY(innerCalled);
+        QVERIFY(destroyed);
+        QVERIFY(innerDestroyed);
+        QVERIFY(notCalled);
+        QVERIFY(innerNotCalled);
+    }
 };
 
 QTEST_GUILESS_MAIN(QCoroTaskTest)
