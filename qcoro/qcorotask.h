@@ -27,6 +27,8 @@ class Task;
 
 namespace detail {
 
+class TaskBase;
+
 template<typename T>
 struct awaiter_type;
 
@@ -193,13 +195,15 @@ public:
      * as an Awaitable type.
      */
     template<typename T>
-    auto await_transform(QCoro::Task<T> &&task) {
-        return std::forward<QCoro::Task<T>>(task);
+    QCoro::Task<T> & await_transform(QCoro::Task<T> &&task) {
+        setAwaitedTask(std::move(task));
+        return static_cast<QCoro::Task<T> &>(*awaitedTask());
     }
 
     //! \copydoc template<typename T> QCoro::TaskPromiseBase::await_transform(QCoro::Task<T> &&)
     template<typename T>
     auto &await_transform(QCoro::Task<T> &task) {
+        setAwaitedTask(task);
         return task;
     }
 
@@ -242,6 +246,25 @@ public:
         return mDestroyHandle.exchange(true, std::memory_order_acq_rel);
     }
 
+    void setAwaitedTask(detail::TaskBase &task) {
+        mAwaitedTask = task;
+    }
+
+    template<typename T>
+    void setAwaitedTask(Task<T> &&t) {
+        mAwaitedTask = std::make_unique<Task<T>>(std::move(t));
+    }
+
+    TaskBase *awaitedTask() const {
+        if (std::holds_alternative<std::monostate>(mAwaitedTask)) {
+            return nullptr;
+        } else if (std::holds_alternative<std::reference_wrapper<detail::TaskBase>>(mAwaitedTask)) {
+            return std::addressof(std::get<std::reference_wrapper<detail::TaskBase>>(mAwaitedTask).get());
+        } else {
+            return std::get<std::unique_ptr<detail::TaskBase>>(mAwaitedTask).get();
+        }
+    }
+
 private:
     friend class TaskFinalSuspend;
 
@@ -249,9 +272,10 @@ private:
     std::coroutine_handle<> mAwaitingCoroutine;
     //! Indicates whether the awaiter should be resumed when it tries to co_await on us.
     std::atomic<bool> mResumeAwaiter{false};
-
     //! Indicates whether we can destroy the coroutine handle
     std::atomic<bool> mDestroyHandle{false};
+
+    std::variant<std::monostate, std::reference_wrapper<detail::TaskBase>, std::unique_ptr<detail::TaskBase>> mAwaitedTask;
 };
 
 //! The promise_type for Task<T>
@@ -426,6 +450,46 @@ protected:
     std::coroutine_handle<Promise> mAwaitedCoroutine = {};
 };
 
+class TaskBase {
+protected:
+    explicit TaskBase() noexcept = default;
+    explicit TaskBase(std::coroutine_handle<> coroutine)
+        : mCoroutine(coroutine)
+    {}
+
+    //! Task cannot be copy-constructed.
+    TaskBase(const TaskBase &) = delete;
+    //! Task cannot be copy-assigned.
+    TaskBase &operator=(const TaskBase &) = delete;
+
+    //! The task can be move-constructed.
+    TaskBase(TaskBase &&other) noexcept : mCoroutine(other.mCoroutine) {
+        other.mCoroutine = nullptr;
+    }
+
+public:
+    virtual ~TaskBase() = default;
+
+    //! Returns whether the task has finished.
+    /*!
+     * A task that is ready (represents a finished coroutine) must not attempt
+     * to suspend the coroutine again.
+     */
+    bool isReady() const {
+        return !mCoroutine || mCoroutine.done();
+    }
+
+    virtual void cancel() = 0;
+
+protected:
+    //! The coroutine represented by this task
+    /*!
+     * In other words, this is a handle to the coroutine that has constructed and
+     * returned this Task<T>.
+     **/
+    std::coroutine_handle<> mCoroutine;
+};
+
 } // namespace detail
 
 /*! \endcond */
@@ -448,7 +512,7 @@ protected:
  * the callee-facing interface.
  */
 template<typename T>
-class Task {
+class Task : public detail::TaskBase {
 public:
     //! Promise type of the coroutine. This is required by the C++ standard.
     using promise_type = detail::TaskPromise<T>;
@@ -458,28 +522,25 @@ public:
     //! Constructs a new empty task.
     explicit Task() noexcept = default;
 
+    Task(const Task &) = delete;
+    Task &operator=(const Task &) = delete;
+
+    Task(Task &&) noexcept = default;
+
     //! Constructs a task bound to a coroutine.
     /*!
      * \param[in] coroutine handle of the coroutine that has constructed the task.
      */
-    explicit Task(std::coroutine_handle<promise_type> coroutine) : mCoroutine(coroutine) {}
-
-    //! Task cannot be copy-constructed.
-    Task(const Task &) = delete;
-    //! Task cannot be copy-assigned.
-    Task &operator=(const Task &) = delete;
-
-    //! The task can be move-constructed.
-    Task(Task &&other) noexcept : mCoroutine(other.mCoroutine) {
-        other.mCoroutine = nullptr;
-    }
+    explicit Task(std::coroutine_handle<promise_type> coroutine) :
+        detail::TaskBase(std::coroutine_handle<>::from_address(coroutine.address()))
+    {}
 
     //! The task can be move-assigned.
     Task &operator=(Task &&other) noexcept {
         if (std::addressof(other) != this) {
             if (mCoroutine) {
                 // The coroutine handle will be destroyed only after TaskFinalSuspend
-                if (mCoroutine.promise().setDestroyHandle()) {
+                if (promise().setDestroyHandle()) {
                     mCoroutine.destroy();
                 }
             }
@@ -491,34 +552,47 @@ public:
     }
 
     //! Destructor.
-    ~Task() {
+    ~Task() override {
         if (!mCoroutine) return;
 
         // The coroutine handle will be destroyed only after TaskFinalSuspend
-        if (mCoroutine.promise().setDestroyHandle()) {
+        if (promise().setDestroyHandle()) {
             mCoroutine.destroy();
         }
-    };
+    }
 
-    void cancel() {
+    //! Cancels the coroutine
+    /*!
+     * Cancels the coroutine. The coroutine state is destroyed, all objects on stack
+     * are destroyed properly. To prevent memory leaks, avoid allocating dynamic resources
+     * which lifetime crosses the suspension point. In otherwords, don't allocate on heap
+     * before a co_await with the intention of freeing the memory after the co_await. If
+     * the coroutine is canceled, the freeing code will never be executed. Use smart pointers,
+     * std::scope_guard or some other mechanism to ensure that all resources are freed when
+     * the coroutine's stack is desroyed.
+     *
+     * If the coroutine is currently suspended because it's co_awaiting another coroutine, that
+     * coroutine will be canceled as well, recursing until the whole coroutine chain is cancelled.
+     *
+     * Cancelling a coroutine is not thread-safe: you must not cancel the coroutine from another thread,
+     * because there's no guarantee the coroutine isn't running in some other thread than the cancellation
+     * thread. Only on a single thread, if the current code that's issuing the cancel() is running, it
+     * is guaranteed that the cancelled coroutine is suspended at that time.
+     *
+     * Destroying a non-suspended coroutine is undefiend behavior.
+     */
+    void cancel() override {
         if (!mCoroutine) {
             return;
         }
 
-        auto &promise = mCoroutine.promise();
-        if (!promise.setDestroyHandle()) {
+        if (auto *awaitedTask = promise().awaitedTask(); awaitedTask != nullptr) {
+            awaitedTask->cancel();
+        }
+        if (!promise().setDestroyHandle()) {
             mCoroutine.destroy();
         }
         mCoroutine = nullptr;
-    }
-
-    //! Returns whether the task has finished.
-    /*!
-     * A task that is ready (represents a finished coroutine) must not attempt
-     * to suspend the coroutine again.
-     */
-    bool isReady() const {
-        return !mCoroutine || mCoroutine.done();
     }
 
     //! Provides an Awaiter for the coroutine machinery.
@@ -550,7 +624,7 @@ public:
             }
         };
 
-        return TaskAwaiter{mCoroutine};
+        return TaskAwaiter{std::coroutine_handle<promise_type>::from_address(mCoroutine.address())};
     }
 
     //! A callback to be invoked when the asynchronous task finishes.
@@ -583,6 +657,10 @@ public:
     }
 
 private:
+    promise_type &promise() {
+        return std::coroutine_handle<promise_type>::from_address(mCoroutine.address()).promise();
+    }
+
     template<typename ThenCallback, typename ... Args>
     requires (std::is_invocable_v<ThenCallback>)
     auto invoke(ThenCallback &&callback, Args && ...) {
@@ -701,14 +779,6 @@ private:
             co_return invoke(thenCb, std::move(*v));
         }
     }
-
-private:
-    //! The coroutine represented by this task
-    /*!
-     * In other words, this is a handle to the coroutine that has constructed and
-     * returned this Task<T>.
-     * */
-    std::coroutine_handle<promise_type> mCoroutine = {};
 };
 
 namespace detail {

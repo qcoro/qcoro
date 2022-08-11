@@ -536,8 +536,6 @@ private Q_SLOTS:
 
         el.exec();
     }
-
-
     void testCancel() {
         bool called = false;
         bool notCalled = true;
@@ -547,11 +545,9 @@ private Q_SLOTS:
             const auto guard = qScopeGuard([&destroyed]() {
                 destroyed = true;
             });
-            auto str = new QString();
             called = true;
             co_await timer(10s);
             notCalled = false;
-            delete str;
         };
 
         auto task = testCoro();
@@ -602,6 +598,39 @@ private Q_SLOTS:
         QVERIFY(innerDestroyed);
         QVERIFY(notCalled);
         QVERIFY(innerNotCalled);
+    }
+
+    void testCancelGenericAwaitable() {
+        class Awaitable {
+        public:
+            explicit Awaitable(bool &destroyed): mDestroyed(destroyed) {}
+            ~Awaitable() { mDestroyed = true; }
+            bool await_ready() const { return false; }
+            void await_suspend(std::coroutine_handle<>) {}
+            void await_resume() {}
+        private:
+            bool &mDestroyed;
+        };
+
+        bool called = false;
+        bool notCalled = true;
+        bool destroyed = false;
+
+        const auto outter = [&]() -> QCoro::Task<> {
+            called = true;
+            co_await Awaitable{destroyed};
+            notCalled = false;
+        };
+
+        auto task = outter();
+
+        QTest::qWait((100ms).count());
+
+        task.cancel();
+
+        QVERIFY(called);
+        QVERIFY(notCalled);
+        QVERIFY(destroyed);
     }
 };
 
