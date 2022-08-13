@@ -583,15 +583,12 @@ public:
 
 private:
     template<typename ThenCallback, typename ... Args>
-    requires (std::is_invocable_v<ThenCallback>)
-    auto invoke(ThenCallback &&callback, Args && ...) {
-        return callback();
-    }
-
-    template<typename ThenCallback, typename Arg>
-    requires (std::is_invocable_v<ThenCallback, Arg>)
-    auto invoke(ThenCallback &&callback, Arg && arg) {
-        return callback(std::forward<Arg>(arg));
+    auto invoke(ThenCallback &&callback, Args && ... args) {
+        if constexpr (std::is_invocable_v<ThenCallback, Args ...>) {
+            return callback(std::forward<Args>(args) ...);
+        } else {
+            return callback();
+        }
     }
 
     template<typename ThenCallback, typename Arg>
@@ -605,7 +602,6 @@ private:
     struct invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
 
     template<typename ThenCallback, typename Arg>
-
     using invoke_result_t = typename invoke_result<ThenCallback, Arg>::type;
 
     template<typename R, typename ErrorCallback,
