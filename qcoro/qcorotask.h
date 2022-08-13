@@ -422,6 +422,20 @@ protected:
     std::coroutine_handle<Promise> mAwaitedCoroutine = {};
 };
 
+template<typename T>
+struct isTask : std::false_type {
+    using return_type = T;
+};
+
+template<typename T>
+struct isTask<QCoro::Task<T>> : std::true_type {
+    using return_type = typename QCoro::Task<T>::value_type;
+};
+
+template<typename T>
+constexpr bool isTask_v = isTask<T>::value;
+
+
 } // namespace detail
 
 /*! \endcond */
@@ -593,6 +607,15 @@ private:
 
     using invoke_result_t = typename invoke_result<ThenCallback, Arg>::type;
 
+    template<typename R, typename ErrorCallback,
+             typename U = typename detail::isTask<R>::return_type>
+    auto handleException(ErrorCallback &errCb, const std::exception &exception) -> U {
+        errCb(exception);
+        if constexpr (!std::is_void_v<U>) {
+            return U{};
+        }
+    }
+
     // Implementation of then() for callbacks that return Task<R>
     template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
     requires QCoro::Awaitable<R>
@@ -615,12 +638,7 @@ private:
             try {
                 co_await *this;
             } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<typename R::value_type>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
+                co_return handleException<R>(errCb, e);
             }
             co_return co_await invoke(thenCb);
         } else {
@@ -628,12 +646,7 @@ private:
             try {
                 v = co_await *this;
             } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<typename R::value_type>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
+                co_return handleException<R>(errCb, e);
             }
             co_return co_await invoke(thenCb, std::move(*v));
         }
@@ -662,12 +675,7 @@ private:
             try {
                 co_await *this;
             } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<R>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
+                co_return handleException<R>(errCb, e);
             }
             co_return invoke(thenCb);
         } else {
@@ -675,12 +683,7 @@ private:
             try {
                 v = co_await *this;
             } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<R>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
+                co_return handleException<R>(errCb, e);
             }
             co_return invoke(thenCb, std::move(*v));
         }
