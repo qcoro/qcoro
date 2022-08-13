@@ -577,7 +577,7 @@ public:
      * Destroying a non-suspended coroutine is undefiend behavior.
      */
     void cancel() override {
-        if (!mCoroutine) {
+        if (!mCoroutine || isReady()) {
             return;
         }
 
