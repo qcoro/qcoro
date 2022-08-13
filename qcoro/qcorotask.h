@@ -583,7 +583,7 @@ public:
 
 private:
     template<typename ThenCallback, typename ... Args>
-    auto invoke(ThenCallback &&callback, Args && ... args) {
+    auto invokeCb(ThenCallback &&callback, Args && ... args) {
         if constexpr (std::is_invocable_v<ThenCallback, Args ...>) {
             return callback(std::forward<Args>(args) ...);
         } else {
@@ -592,17 +592,17 @@ private:
     }
 
     template<typename ThenCallback, typename Arg>
-    struct invoke_result: std::conditional_t<
+    struct cb_invoke_result: std::conditional_t<
         std::is_invocable_v<ThenCallback>,
             std::invoke_result<ThenCallback>,
             std::invoke_result<ThenCallback, Arg>
         > {};
 
     template<typename ThenCallback>
-    struct invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
+    struct cb_invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
 
     template<typename ThenCallback, typename Arg>
-    using invoke_result_t = typename invoke_result<ThenCallback, Arg>::type;
+    using cb_invoke_result_t = typename cb_invoke_result<ThenCallback, Arg>::type;
 
     template<typename R, typename ErrorCallback,
              typename U = typename detail::isTask<R>::return_type>
@@ -613,7 +613,7 @@ private:
         }
     }
 
-    template<typename ThenCallback, typename ErrorCallback, typename R = invoke_result_t<ThenCallback, T>>
+    template<typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
     auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, Task<R>> {
         const auto thenCb = std::forward<ThenCallback>(thenCallback);
         const auto errCb = std::forward<ErrorCallback>(errorCallback);
@@ -624,9 +624,9 @@ private:
                 co_return handleException<R>(errCb, e);
             }
             if constexpr (detail::isTask_v<R>) {
-                co_return co_await invoke(thenCb);
+                co_return co_await invokeCb(thenCb);
             } else {
-                co_return invoke(thenCb);
+                co_return invokeCb(thenCb);
             }
         } else {
             std::optional<T> value;
@@ -636,9 +636,9 @@ private:
                 co_return handleException<R>(errCb, e);
             }
             if constexpr (detail::isTask_v<R>) {
-                co_return co_await invoke(thenCb, std::move(*value));
+                co_return co_await invokeCb(thenCb, std::move(*value));
             } else {
-                co_return invoke(thenCb, std::move(*value));
+                co_return invokeCb(thenCb, std::move(*value));
             }
         }
     }
