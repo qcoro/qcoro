@@ -570,7 +570,8 @@ public:
     template<typename ThenCallback>
     requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
     auto then(ThenCallback &&callback) {
-        return thenImpl(std::forward<ThenCallback>(callback));
+        // Provide a custom error handler that simply re-throws the current exception
+        return thenImpl(std::forward<ThenCallback>(callback), [](const auto &) { throw; });
     }
 
     template<typename ThenCallback, typename ErrorCallback>
@@ -616,22 +617,8 @@ private:
         }
     }
 
-    // Implementation of then() for callbacks that return Task<R>
-    template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires QCoro::Awaitable<R>
-    auto thenImpl(ThenCallback &&callback) -> R {
-        const auto thenCb = std::forward<ThenCallback>(callback);
-        if constexpr (std::is_void_v<value_type>) {
-            co_await *this;
-            co_return co_await invoke(thenCb);
-        } else {
-            co_return co_await invoke(thenCb, co_await *this);
-        }
-    }
-
     template<typename ThenCallback, typename ErrorCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires QCoro::Awaitable<R>
-    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> R {
+    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, Task<R>> {
         const auto thenCb = std::forward<ThenCallback>(thenCallback);
         const auto errCb = std::forward<ErrorCallback>(errorCallback);
         if constexpr (std::is_void_v<value_type>) {
@@ -640,7 +627,11 @@ private:
             } catch (const std::exception &e) {
                 co_return handleException<R>(errCb, e);
             }
-            co_return co_await invoke(thenCb);
+            if constexpr (detail::isTask_v<R>) {
+                co_return co_await invoke(thenCb);
+            } else {
+                co_return invoke(thenCb);
+            }
         } else {
             std::optional<T> value;
             try {
@@ -648,44 +639,11 @@ private:
             } catch (const std::exception &e) {
                 co_return handleException<R>(errCb, e);
             }
-            co_return co_await invoke(thenCb, std::move(*value));
-        }
-    }
-
-
-    // Implementation of then() for callbacks that return R, which is not Task<S>
-    template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires (!QCoro::Awaitable<R>)
-    auto thenImpl(ThenCallback &&callback) -> Task<R> {
-        const auto thenCb = std::forward<ThenCallback>(callback);
-        if constexpr (std::is_void_v<value_type>) {
-            co_await *this;
-            co_return invoke(thenCb);
-        } else {
-            co_return invoke(thenCb, co_await *this);
-        }
-    }
-
-    template<typename ThenCallback, typename ErrorCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires (!QCoro::Awaitable<R>)
-    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> Task<R> {
-        const auto thenCb = std::forward<ThenCallback>(thenCallback);
-        const auto errCb = std::forward<ErrorCallback>(errorCallback);
-        if constexpr (std::is_void_v<value_type>) {
-            try {
-                co_await *this;
-            } catch (const std::exception &e) {
-                co_return handleException<R>(errCb, e);
+            if constexpr (detail::isTask_v<R>) {
+                co_return co_await invoke(thenCb, std::move(*value));
+            } else {
+                co_return invoke(thenCb, std::move(*value));
             }
-            co_return invoke(thenCb);
-        } else {
-            std::optional<T> value;
-            try {
-                value = co_await *this;
-            } catch (const std::exception &e) {
-                co_return handleException<R>(errCb, e);
-            }
-            co_return invoke(thenCb, std::move(*value));
         }
     }
 
