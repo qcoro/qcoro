@@ -180,11 +180,18 @@ private:
     std::exception_ptr mException;
 };
 
-template<typename>
-struct isCancellableTask : public std::false_type {};
+template<typename T>
+struct isCancellableTask : std::false_type {
+    using return_type = T;
+};
 
 template<typename T>
-struct isCancellableTask<QCoro::CancellableTask<T>> : public std::true_type {};
+struct isCancellableTask<QCoro::CancellableTask<T>> : std::true_type {
+    using return_type = typename QCoro::CancellableTask<T>::value_type;
+};
+
+template<typename T>
+constexpr bool isCancellableTask_v = isCancellableTask<T>::value;
 
 } // namespace detail
 
@@ -296,7 +303,7 @@ public:
         class CancellableTaskAwaiter : public detail::TaskAwaiterBase<promise_type> {
         public:
             explicit CancellableTaskAwaiter(std::coroutine_handle<promise_type> awaitedCoroutine)
-                : detail::CancellableTaskAwaiterBase<promise_type>{awaitedCoroutine} {}
+                : detail::TaskAwaiterBase<promise_type>{awaitedCoroutine} {}
 
             //! Called when the co_awaited coroutine is resumed.
             /*!
@@ -327,10 +334,11 @@ public:
      * result of the then() action can be co_awaited, if desired. If the callback
      * returns an awaitable (Task<R>) then the result of then is the awaitable.
      */
-    template<typename ThenCallback>
+  template<typename ThenCallback>
     requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
     auto then(ThenCallback &&callback) {
-        return thenImpl(std::forward<ThenCallback>(callback));
+        // Provide a custom error handler that simply re-throws the current exception
+        return thenImpl(std::forward<ThenCallback>(callback), [](const auto &) { throw; });
     }
 
     template<typename ThenCallback, typename ErrorCallback>
@@ -341,142 +349,64 @@ public:
     }
 
 private:
-    template<typename ThenCallback, typename ... Args>
-    requires (std::is_invocable_v<ThenCallback>)
-    auto invoke(ThenCallback &&callback, Args && ...) {
-        return callback();
+     template<typename ThenCallback, typename ... Args>
+    auto invokeCb(ThenCallback &&callback, Args && ... args) {
+        if constexpr (std::is_invocable_v<ThenCallback, Args ...>) {
+            return callback(std::forward<Args>(args) ...);
+        } else {
+            return callback();
+        }
     }
 
     template<typename ThenCallback, typename Arg>
-    requires (std::is_invocable_v<ThenCallback, Arg>)
-    auto invoke(ThenCallback &&callback, Arg && arg) {
-        return callback(std::forward<Arg>(arg));
-    }
-
-    template<typename ThenCallback, typename Arg>
-    struct invoke_result: std::conditional_t<
+    struct cb_invoke_result: std::conditional_t<
         std::is_invocable_v<ThenCallback>,
             std::invoke_result<ThenCallback>,
             std::invoke_result<ThenCallback, Arg>
         > {};
 
     template<typename ThenCallback>
-    struct invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
+    struct cb_invoke_result<ThenCallback, void>: std::invoke_result<ThenCallback> {};
 
     template<typename ThenCallback, typename Arg>
+    using cb_invoke_result_t = typename cb_invoke_result<ThenCallback, Arg>::type;
 
-    using invoke_result_t = typename invoke_result<ThenCallback, Arg>::type;
-
-    // Implementation of then() for callbacks that return Task<R>
-    template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires detail::isCancellableTask<R>::value
-    auto thenImpl(ThenCallback &&callback) -> R {
-        const auto cb = std::move(callback);
-        auto result = co_await *this;
-        if (result.isCancelled()) {
-            co_return detail::cancellation();
-        }
-        if constexpr (std::is_void_v<value_type>) {
-            co_return co_await invoke(cb);
-        } else {
-            co_return co_await invoke(cb, std::move(*result));
+    template<typename R, typename ErrorCallback,
+             typename U = typename detail::isCancellableTask<R>::return_type>
+    auto handleException(ErrorCallback &errCb, const std::exception &exception) -> U {
+        errCb(exception);
+        if constexpr (!std::is_void_v<U>) {
+            return U{};
         }
     }
 
-    template<typename ThenCallback, typename ErrorCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires detail::isCancellableTask<R>::value
-    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> R {
-        const auto thenCb = std::move(thenCallback);
-        const auto errCb = std::move(errorCallback);
+    template<typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
+    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isCancellableTask_v<R>, R, Task<R>> {
+        const auto thenCb = std::forward<ThenCallback>(thenCallback);
+        const auto errCb = std::forward<ErrorCallback>(errorCallback);
         if constexpr (std::is_void_v<value_type>) {
             try {
-                auto result = co_await *this;
-                if (result.isCancelled()) {
-                    co_return detail::cancellation();
-                }
+                co_await *this;
             } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<typename R::value_type>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
+                co_return handleException<R>(errCb, e);
             }
-            co_return co_await invoke(thenCb);
+            if constexpr (detail::isCancellableTask_v<R>) {
+                co_return co_await invokeCb(thenCb);
+            } else {
+                co_return invokeCb(thenCb);
+            }
         } else {
-            std::optional<T> v;
+            std::optional<T> value;
             try {
-                auto result = co_await *this;
-                if (result.isCancelled()) {
-                    co_return detail::cancellation();
-                }
-                v = std::move(*result);
+                value = co_await *this;
             } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<typename R::value_type>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
+                co_return handleException<R>(errCb, e);
             }
-            co_return co_await invoke(thenCb, std::move(*v));
-        }
-    }
-
-
-    // Implementation of then() for callbacks that return R, which is not Task<S>
-    template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires (!detail::isCancellableTask<R>::value)
-    auto thenImpl(ThenCallback &&callback) -> Task<R> {
-        const auto cb = std::move(callback);
-        auto result = co_await *this;
-        if (result.isCancelled()) {
-            co_return detail::cancellation();
-        }
-        if constexpr (std::is_void_v<value_type>) {
-            co_return invoke(cb);
-        } else {
-            co_return invoke(cb, std::move(*result));
-        }
-    }
-
-    template<typename ThenCallback, typename ErrorCallback, typename R = invoke_result_t<ThenCallback, T>>
-    requires (!detail::isCancellableTask<R>::value)
-    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> Task<R> {
-        const auto thenCb = std::move(thenCallback);
-        const auto errCb = std::move(errorCallback);
-        if constexpr (std::is_void_v<value_type>) {
-            try {
-                auto result = co_await *this;
-                if (result.isCancelled()) {
-                    co_return detail::cancellation();
-                }
-            } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<R>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
+            if constexpr (detail::isCancellableTask_v<R>) {
+                co_return co_await invokeCb(thenCb, std::move(*value));
+            } else {
+                co_return invokeCb(thenCb, std::move(*value));
             }
-            co_return invoke(thenCb);
-        } else {
-            std::optional<T> v;
-            try {
-                auto result = co_await *this;
-                if (result.isCancelled()) {
-                    co_return detail::cancellation();
-                }
-                v = std::move(*result);
-            } catch (const std::exception &e) {
-                errCb(e);
-                if constexpr (!std::is_void_v<R>) {
-                    co_return {};
-                } else {
-                    co_return;
-                }
-            }
-            co_return invoke(thenCb, std::move(*v));
         }
     }
 

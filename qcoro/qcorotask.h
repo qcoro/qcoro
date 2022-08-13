@@ -38,14 +38,17 @@ template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
 
 template<typename T>
-struct isTask: std::false_type {};
+struct isTask: std::false_type {
+    using return_type = T;
+};
 
 template<typename T>
-struct isTask<QCoro::Task<T>> : std::true_type {};
+struct isTask<QCoro::Task<T>> : std::true_type {
+    using return_type = T;
+};
 
 template<typename T>
 constexpr bool isTask_v = isTask<T>::value;
-
 
 //! Base class for the \c Task<T> promise_type.
 /*!
@@ -270,21 +273,6 @@ private:
     //! Exception thrown by the coroutine.
     std::exception_ptr mException;
 };
-
-
-template<typename T>
-struct isTask : std::false_type {
-    using return_type = T;
-};
-
-template<typename T>
-struct isTask<QCoro::Task<T>> : std::true_type {
-    using return_type = typename QCoro::Task<T>::value_type;
-};
-
-template<typename T>
-constexpr bool isTask_v = isTask<T>::value;
-
 
 } // namespace detail
 
