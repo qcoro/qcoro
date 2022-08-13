@@ -565,19 +565,14 @@ public:
     /*!
      * Cancels the coroutine. The coroutine state is destroyed, all objects on stack
      * are destroyed properly. To prevent memory leaks, avoid allocating dynamic resources
-     * which lifetime crosses the suspension point. In otherwords, don't allocate on heap
+     * which lifetime crosses the suspension point. In other words, don't allocate on heap
      * before a co_await with the intention of freeing the memory after the co_await. If
      * the coroutine is canceled, the freeing code will never be executed. Use smart pointers,
      * std::scope_guard or some other mechanism to ensure that all resources are freed when
-     * the coroutine's stack is desroyed.
+     * the coroutine's stack is destroyed while suspended.
      *
      * If the coroutine is currently suspended because it's co_awaiting another coroutine, that
      * coroutine will be canceled as well, recursing until the whole coroutine chain is cancelled.
-     *
-     * Cancelling a coroutine is not thread-safe: you must not cancel the coroutine from another thread,
-     * because there's no guarantee the coroutine isn't running in some other thread than the cancellation
-     * thread. Only on a single thread, if the current code that's issuing the cancel() is running, it
-     * is guaranteed that the cancelled coroutine is suspended at that time.
      *
      * Destroying a non-suspended coroutine is undefiend behavior.
      */
