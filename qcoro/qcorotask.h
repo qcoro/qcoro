@@ -620,20 +620,20 @@ private:
     template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
     requires QCoro::Awaitable<R>
     auto thenImpl(ThenCallback &&callback) -> R {
-        const auto cb = std::move(callback);
+        const auto thenCb = std::forward<ThenCallback>(callback);
         if constexpr (std::is_void_v<value_type>) {
             co_await *this;
-            co_return co_await invoke(cb);
+            co_return co_await invoke(thenCb);
         } else {
-            co_return co_await invoke(cb, co_await *this);
+            co_return co_await invoke(thenCb, co_await *this);
         }
     }
 
     template<typename ThenCallback, typename ErrorCallback, typename R = invoke_result_t<ThenCallback, T>>
     requires QCoro::Awaitable<R>
     auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> R {
-        const auto thenCb = std::move(thenCallback);
-        const auto errCb = std::move(errorCallback);
+        const auto thenCb = std::forward<ThenCallback>(thenCallback);
+        const auto errCb = std::forward<ErrorCallback>(errorCallback);
         if constexpr (std::is_void_v<value_type>) {
             try {
                 co_await *this;
@@ -642,13 +642,13 @@ private:
             }
             co_return co_await invoke(thenCb);
         } else {
-            std::optional<T> v;
+            std::optional<T> value;
             try {
-                v = co_await *this;
+                value = co_await *this;
             } catch (const std::exception &e) {
                 co_return handleException<R>(errCb, e);
             }
-            co_return co_await invoke(thenCb, std::move(*v));
+            co_return co_await invoke(thenCb, std::move(*value));
         }
     }
 
@@ -657,20 +657,20 @@ private:
     template<typename ThenCallback, typename R = invoke_result_t<ThenCallback, T>>
     requires (!QCoro::Awaitable<R>)
     auto thenImpl(ThenCallback &&callback) -> Task<R> {
-        const auto cb = std::move(callback);
+        const auto thenCb = std::forward<ThenCallback>(callback);
         if constexpr (std::is_void_v<value_type>) {
             co_await *this;
-            co_return invoke(cb);
+            co_return invoke(thenCb);
         } else {
-            co_return invoke(cb, co_await *this);
+            co_return invoke(thenCb, co_await *this);
         }
     }
 
     template<typename ThenCallback, typename ErrorCallback, typename R = invoke_result_t<ThenCallback, T>>
     requires (!QCoro::Awaitable<R>)
     auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> Task<R> {
-        const auto thenCb = std::move(thenCallback);
-        const auto errCb = std::move(errorCallback);
+        const auto thenCb = std::forward<ThenCallback>(thenCallback);
+        const auto errCb = std::forward<ErrorCallback>(errorCallback);
         if constexpr (std::is_void_v<value_type>) {
             try {
                 co_await *this;
@@ -679,13 +679,13 @@ private:
             }
             co_return invoke(thenCb);
         } else {
-            std::optional<T> v;
+            std::optional<T> value;
             try {
-                v = co_await *this;
+                value = co_await *this;
             } catch (const std::exception &e) {
                 co_return handleException<R>(errCb, e);
             }
-            co_return invoke(thenCb, std::move(*v));
+            co_return invoke(thenCb, std::move(*value));
         }
     }
 
