@@ -24,6 +24,7 @@ add_qcoro_library(
         coroutine.h
         macros_p.h
         waitoperationbase_p.h
+        qcorotask.h
     QT_LINK_LIBRARIES
         INTERFACE Core
 )
@@ -89,4 +90,8 @@ endif()
 
 if (QCORO_WITH_QTQUICK)
     add_subdirectory(quick)
+endif()
+
+if (QCORO_WITH_QML)
+    add_subdirectory(qml)
 endif()
