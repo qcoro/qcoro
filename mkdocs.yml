@@ -93,6 +93,9 @@ nav:
         - reference/websockets/index.md
         - QWebSocket: reference/websockets/qwebsocket.md
         - QWebSocketServer: reference/websockets/qwebsocketserver.md
+      - Quick:
+        - reference/quick/index.md
+        - QCoro::ImageProvider: reference/quick/imageprovider.md
     - Changelog: changelog.md
     - About:
         - License: about/license.md
