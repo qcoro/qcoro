@@ -25,13 +25,13 @@ private:
 };
 
 template<typename T>
-QCoro::Task<> savePage(QWebEnginePage *page, T::SavePageFormat saveFormat) {
-    auto downloadStart = qCoro(mPage->profile(), &QWebEngineProfile::downloadRequested);
-    mPage->action(QWebEnginePage::SavePage)->trigger();
+QCoro::Task<> savePage(QWebEnginePage *page, const QString &filePath, typename T::SavePageFormat saveFormat) {
+    auto downloadStart = qCoro(page->profile(), &QWebEngineProfile::downloadRequested);
+    page->action(QWebEnginePage::SavePage)->trigger();
     auto *download = co_await downloadStart;
     auto downloadFinished = qCoro(download, &T::finished);
-    download->setSavePageFormat(format);
-    switch (format) {
+    download->setSavePageFormat(saveFormat);
+    switch (saveFormat) {
         case T::UnknownSaveFormat:
         case T::SingleHtmlSaveFormat:
         case T::MimeHtmlSaveFormat:
