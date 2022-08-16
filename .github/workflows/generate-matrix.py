@@ -5,13 +5,13 @@ from argparse import ArgumentParser
 qt = [
     {
         "version": "5.15.2",
-        "archives": [ "qtbase", "icu", "qtwebsockets", "qtdeclarative" ],
+        "archives": [ "qtbase", "icu", "qtwebsockets", "qtdeclarative", "qtwebchannel" ],
         "modules": [ "qtwebengine" ]
     },
     {
         "version": "6.2.0",
         "archives": [ "qtbase", "icu", "qtdeclarative" ],
-        "modules": [ "qtwebsockets", "qtwebengine" ]
+        "modules": [ "qtwebsockets", "qtwebengine", "qtwebchannel" ]
     }
 ]
 
