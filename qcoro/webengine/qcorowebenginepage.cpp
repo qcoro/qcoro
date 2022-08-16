@@ -24,12 +24,12 @@ private:
     T mResult;
 };
 
-template<typename T>
-QCoro::Task<> savePage(QWebEnginePage *page, const QString &filePath, typename T::SavePageFormat saveFormat) {
+template<typename T, typename FinishedSignal>
+QCoro::Task<> savePage(QWebEnginePage *page, const QString &filePath, typename T::SavePageFormat saveFormat, FinishedSignal finishedSignal) {
     auto downloadStart = qCoro(page->profile(), &QWebEngineProfile::downloadRequested);
     page->action(QWebEnginePage::SavePage)->trigger();
     auto *download = co_await downloadStart;
-    auto downloadFinished = qCoro(download, &T::finished);
+    auto downloadFinished = qCoro(download, finishedSignal);
     download->setSavePageFormat(saveFormat);
     switch (saveFormat) {
         case T::UnknownSaveFormat:
@@ -122,15 +122,15 @@ QCoro::Task<QByteArray> QCoroWebEnginePage::printToPdf(const QPageLayout &layout
 }
 
 QCoro::Task<> QCoroWebEnginePage::save(const QString &filePath, QWebEngineDownloadItem::SavePageFormat format) const {
-    return savePage<QWebEngineDownloadItem>(mPage.data(), filePath, format);
+    return savePage<QWebEngineDownloadItem>(mPage.data(), filePath, format, &QWebEngineDownloadItem::finished);
 }
 
-#else
+#else // QT_VERSION_MAJOR
 
 namespace {
 
 QCoro::Task<QWebEngineLoadingInfo> handleLoadResult(QCoro::AsyncGenerator<QWebEngineLoadingInfo> &gen) {
-    QCORO_FOREACH(const auto &info, changeGenerator) {
+    QCORO_FOREACH(const auto &info, gen) {
         switch (info.status()) {
         case QWebEngineLoadingInfo::LoadStartedStatus:
             continue;
@@ -138,25 +138,22 @@ QCoro::Task<QWebEngineLoadingInfo> handleLoadResult(QCoro::AsyncGenerator<QWebEn
         case QWebEngineLoadingInfo::LoadSucceededStatus:
         case QWebEngineLoadingInfo::LoadFailedStatus:
             co_return info;
+        }
     }
 
-#if defined(__GNUC__)
-    __builtin_unreachable();
-#elif defined(_MSVC_VER)
-    __assume(false);
-#endif
+    Q_UNREACHABLE();
 }
 
 } // namespace
 
 QCoro::Task<QWebEngineLoadingInfo> QCoroWebEnginePage::load(const QUrl &url) {
-    auto changeGenerator = qCoroListener(mPage, &QWebEnginePage::loadingChanged);
+    auto changeGenerator = qCoroSignalListener(mPage.get(), &QWebEnginePage::loadingChanged);
     mPage->load(url);
     return handleLoadResult(changeGenerator);
 }
 
 QCoro::Task<QWebEngineLoadingInfo> QCoroWebEnginePage::load(const QWebEngineHttpRequest &request) {
-    auto changeGenerator = qCoroListener(mPage, &QWebEnginePage::loadingChanged);
+    auto changeGenerator = qCoroSignalListener(mPage.get(), &QWebEnginePage::loadingChanged);
     mPage->load(request);
     return handleLoadResult(changeGenerator);
 }
@@ -170,8 +167,8 @@ QCoro::Task<QByteArray> QCoroWebEnginePage::printToPdf(const QPageLayout &layout
 }
 
 QCoro::Task<> QCoroWebEnginePage::save(const QString &filePath, QWebEngineDownloadRequest::SavePageFormat saveFormat) const {
-    return savePage<QWebEngineDownloadRequest>(mPage.get(), filePath, saveFormat);
+    return savePage<QWebEngineDownloadRequest>(mPage.get(), filePath, saveFormat, &QWebEngineDownloadRequest::isFinishedChanged);
 }
 
-#endif
+#endif // QT_VERSION_MAJOR
 
