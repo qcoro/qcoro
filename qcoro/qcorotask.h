@@ -16,6 +16,7 @@
 #include <QDebug>
 #include <QEventLoop>
 #include <QObject>
+#include <QScopeGuard>
 #include <QCoreApplication>
 
 namespace QCoro {
@@ -571,14 +572,36 @@ public:
     requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
     auto then(ThenCallback &&callback) {
         // Provide a custom error handler that simply re-throws the current exception
-        return thenImpl(std::forward<ThenCallback>(callback), [](const auto &) { throw; });
+        return thenImpl(nullptr, std::forward<ThenCallback>(callback), [](const auto &) { throw; });
+    }
+
+    // Context overload
+    template<typename ThenCallback>
+    requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
+    auto then(QObject *context, ThenCallback &&callback) {
+        // Provide a custom error handler that simply re-throws the current exception
+        return thenImpl(context, std::forward<ThenCallback>(callback), [](const auto &) { throw; });
     }
 
     template<typename ThenCallback, typename ErrorCallback>
     requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
                std::is_invocable_v<ErrorCallback, const std::exception &>)
     auto then(ThenCallback &&callback, ErrorCallback &&errorCallback) {
-        return thenImpl(std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback));
+        return thenImpl(nullptr, std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback));
+    }
+
+    // Context overload
+    template<typename ThenCallback, typename ErrorCallback>
+    requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
+               std::is_invocable_v<ErrorCallback, const std::exception &>)
+    auto then(QObject *context, ThenCallback &&callback, ErrorCallback &&errorCallback) {
+        return thenImpl(context, std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback));
+    }
+
+    Task<T> withContext(QObject *contextObject) {
+        return then(contextObject, [](auto &&result) {
+            return std::forward<decltype(result)>(result);
+        });
     }
 
 private:
@@ -614,31 +637,60 @@ private:
     }
 
     template<typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, Task<R>> {
+    auto thenImpl(QObject *context, ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, Task<R>> {
+        bool contextDeleted = false;
+        QMetaObject::Connection contextConn;
+        if (context) {
+            // Listen for the deletion of the context object.
+            // If the context object is deleted before the awaited task finishes,
+            // don't call the callback.
+            contextConn = QObject::connect(context, &QObject::destroyed, [&] {
+                contextDeleted = true;
+            });
+            // If we don't disconnect before returning,
+            // we create another problem like the one we are trying to fix.
+            // Then the lambda above would mutate contextDeleted in a deleted stack frame.
+        }
+
+        QScopeGuard cleanup([contextConn]() {
+            QObject::disconnect(contextConn);
+        });
+
         const auto thenCb = std::forward<ThenCallback>(thenCallback);
         const auto errCb = std::forward<ErrorCallback>(errorCallback);
         if constexpr (std::is_void_v<value_type>) {
             try {
                 co_await *this;
             } catch (const std::exception &e) {
-                co_return handleException<R>(errCb, e);
+                if (!contextDeleted) {
+                    co_return handleException<R>(errCb, e);
+                }
             }
             if constexpr (detail::isTask_v<R>) {
-                co_return co_await invokeCb(thenCb);
+                if (!contextDeleted)
+                    co_return co_await invokeCb(thenCb);
             } else {
-                co_return invokeCb(thenCb);
+                if (!contextDeleted) {
+                    co_return invokeCb(thenCb);
+                }
             }
         } else {
             std::optional<T> value;
             try {
                 value = co_await *this;
             } catch (const std::exception &e) {
-                co_return handleException<R>(errCb, e);
+                if (!contextDeleted) {
+                    co_return handleException<R>(errCb, e);
+                }
             }
             if constexpr (detail::isTask_v<R>) {
-                co_return co_await invokeCb(thenCb, std::move(*value));
+                if (!contextDeleted) {
+                    co_return co_await invokeCb(thenCb, std::move(*value));
+                }
             } else {
-                co_return invokeCb(thenCb, std::move(*value));
+                if (!contextDeleted) {
+                    co_return invokeCb(thenCb, std::move(*value));
+                }
             }
         }
     }
