@@ -28,7 +28,7 @@ jobs:
     - id: set-matrix
       name: Generate matrix
       run: |
-        matrix_json=$(python3 ./.github/workflows/generate-matrix.py --linux-only)
+        matrix_json=$(python3 ./.github/workflows/generate-matrix.py --platform linux)
         echo "::set-output name=matrix::${matrix_json}"
 
   build:
