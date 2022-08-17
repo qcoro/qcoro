@@ -1,6 +1,6 @@
 setuptools
 wheel
-pymdown-extensions~=9.4
+pymdown-extensions~=9.5
 pygments~=2.13
 mkdocs
 mkdocs-material
