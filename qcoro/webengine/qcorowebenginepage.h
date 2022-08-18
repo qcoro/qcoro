@@ -59,10 +59,10 @@ private:
 
 } // namespace QCoro
 
-auto qCoro(QWebEnginePage *page) {
+inline auto qCoro(QWebEnginePage *page) {
     return QCoro::detail::QCoroWebEnginePage(page);
 }
 
-auto qCoro(QWebEnginePage &page) {
+inline auto qCoro(QWebEnginePage &page) {
     return QCoro::detail::QCoroWebEnginePage(&page);
 }

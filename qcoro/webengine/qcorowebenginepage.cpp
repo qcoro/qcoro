@@ -4,24 +4,37 @@
 #include <QAction>
 #include <QWebEngineProfile>
 
+#include <optional>
+
 using namespace QCoro::detail;
 
 namespace {
 
 template<typename T>
 struct WebEngineAwaitable {
-    bool await_ready() const noexcept { return false; }
-    void await_suspend(std::coroutine_handle<> awaiter) noexcept { mAwaiter = awaiter; }
-    T await_resume() noexcept { return mResult; }
+    explicit WebEngineAwaitable() = default;
+    Q_DISABLE_COPY_MOVE(WebEngineAwaitable)
+
+    bool await_ready() const noexcept {
+        return mResult.has_value();
+    }
+    void await_suspend(std::coroutine_handle<> awaiter) noexcept {
+        mAwaiter = awaiter;
+    }
+    T await_resume() noexcept {
+        return std::move(*mResult);
+    }
 
     void resume(const T &result) {
         mResult = result;
-        mAwaiter.resume();
+        if (mAwaiter) {
+            mAwaiter.resume();
+        }
     }
 
 private:
     std::coroutine_handle<> mAwaiter;
-    T mResult;
+    std::optional<T> mResult;
 };
 
 template<typename T, typename FinishedSignal>
@@ -52,9 +65,17 @@ QCoroWebEnginePage::QCoroWebEnginePage(QWebEnginePage *page)
 {}
 
 QCoro::Task<QWebEngineFindTextResult> QCoroWebEnginePage::findText(const QString &subString, QWebEnginePage::FindFlags options) {
+#if QT_VERSION_MAJOR == 6
+    WebEngineAwaitable<QWebEngineFindTextResult> awaitable;
+    mPage->findText(subString, options, [&awaitable](const auto &result) {
+        awaitable.resume(result);
+    });
+    co_return co_await awaitable;
+#else
     auto findFinished = qCoro(mPage.data(), &QWebEnginePage::findTextFinished);
     mPage->findText(subString, options);
     co_return co_await findFinished;
+#endif
 }
 
 QCoro::Task<QVariant> QCoroWebEnginePage::runJavaScript(const QString &scriptSource) {
@@ -129,8 +150,10 @@ QCoro::Task<> QCoroWebEnginePage::save(const QString &filePath, QWebEngineDownlo
 
 namespace {
 
-QCoro::Task<QWebEngineLoadingInfo> handleLoadResult(QCoro::AsyncGenerator<QWebEngineLoadingInfo> &gen) {
+QCoro::Task<QWebEngineLoadingInfo> handleLoadResult(QCoro::AsyncGenerator<QWebEngineLoadingInfo> gen) {
+    qDebug() << "HANDLE RESULT";
     QCORO_FOREACH(const auto &info, gen) {
+        qDebug() << "LOADING" << info.status();
         switch (info.status()) {
         case QWebEngineLoadingInfo::LoadStartedStatus:
             continue;
@@ -149,13 +172,13 @@ QCoro::Task<QWebEngineLoadingInfo> handleLoadResult(QCoro::AsyncGenerator<QWebEn
 QCoro::Task<QWebEngineLoadingInfo> QCoroWebEnginePage::load(const QUrl &url) {
     auto changeGenerator = qCoroSignalListener(mPage.get(), &QWebEnginePage::loadingChanged);
     mPage->load(url);
-    return handleLoadResult(changeGenerator);
+    return handleLoadResult(std::move(changeGenerator));
 }
 
 QCoro::Task<QWebEngineLoadingInfo> QCoroWebEnginePage::load(const QWebEngineHttpRequest &request) {
     auto changeGenerator = qCoroSignalListener(mPage.get(), &QWebEnginePage::loadingChanged);
     mPage->load(request);
-    return handleLoadResult(changeGenerator);
+    return handleLoadResult(std::move(changeGenerator));
 }
 
 QCoro::Task<QByteArray> QCoroWebEnginePage::printToPdf(const QPageLayout &layout, const QPageRanges &ranges) {
