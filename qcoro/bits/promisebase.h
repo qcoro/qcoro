@@ -7,6 +7,11 @@
 #include "../coroutine.h"
 #include "taskfinalsuspend.h"
 
+namespace QCoro {
+template<typename T>
+class CancellableTask;
+} // namespace QCoro
+
 namespace QCoro::detail {
 
 class PromiseBase {
@@ -34,6 +39,7 @@ public:
 
 private:
     friend class TaskFinalSuspend;
+    template<typename T> friend class QCoro::CancellableTask;
 
     std::coroutine_handle<> mAwaitingCoroutine;
     std::atomic<bool> mResumeAwaiter{false};

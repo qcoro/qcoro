@@ -68,6 +68,7 @@ endfunction()
 
 
 qcoro_add_test(qtimer)
+qcoro_add_test(qcorocancellabletask)
 qcoro_add_test(qcoroprocess)
 qcoro_add_test(qcorosignal)
 qcoro_add_test(qcorothread)

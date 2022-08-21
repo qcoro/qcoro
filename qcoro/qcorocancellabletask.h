@@ -32,7 +32,7 @@ class CancellableTask;
 template<typename T = void>
 class DetachedTask;
 
-template<typename T = void>
+template<typename T>
 class Task;
 
 /*! \cond internal */
@@ -45,6 +45,9 @@ struct awaiter_type;
 template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
 
+class CancellableTaskBase;
+
+
 class CancellableTaskPromiseBase : public PromiseBase {
 public:
     template<typename T, typename Awaiter = QCoro::detail::awaiter_type_t<std::remove_cvref_t<T>>>
@@ -53,13 +56,15 @@ public:
     }
 
     template<typename T>
-    auto await_transform(QCoro::CancellableTask<T> &&task) {
-        return std::forward<QCoro::CancellableTask<T>>(task);
+    auto &await_transform(QCoro::CancellableTask<T> &&task) {
+        setAwaitedTask(std::move(task));
+        return static_cast<QCoro::CancellableTask<T> &>(*awaitedTask());
     }
 
     //! \copydoc template<typename T> QCoro::TaskPromiseBase::await_transform(QCoro::Task<T> &&)
     template<typename T>
     auto &await_transform(QCoro::CancellableTask<T> &task) {
+        setAwaitedTask(task);
         return task;
     }
 
@@ -99,9 +104,40 @@ public:
         mCancelled = true;
     }
 
+    void setAwaitedTask(detail::CancellableTaskBase &task) {
+        mAwaitedTask = task;
+    }
+
+    template<typename T>
+    void setAwaitedTask(CancellableTask<T> &&task) {
+        mAwaitedTask = std::make_unique<CancellableTask<T>>(std::move(task));
+    }
+
+    CancellableTaskBase *awaitedTask() const {
+        if (std::holds_alternative<std::monostate>(mAwaitedTask)) {
+            return nullptr;
+        } else if (std::holds_alternative<std::reference_wrapper<detail::CancellableTaskBase>>(mAwaitedTask)) {
+            return std::addressof(std::get<std::reference_wrapper<detail::CancellableTaskBase>>(mAwaitedTask).get());
+        } else if (std::holds_alternative<std::unique_ptr<detail::CancellableTaskBase>>(mAwaitedTask)) {
+            return std::get<std::unique_ptr<detail::CancellableTaskBase>>(mAwaitedTask).get();
+        } else {
+            Q_UNREACHABLE();
+        }
+    }
+
 protected:
     bool mCancelled = false;
+    std::variant<std::monostate, std::reference_wrapper<detail::CancellableTaskBase>, std::unique_ptr<detail::CancellableTaskBase>> mAwaitedTask;
 };
+
+template<typename T>
+struct isResult : public std::false_type {};
+
+template<typename T>
+struct isResult<QCoro::Result<T>> : public std::true_type {};
+
+template<typename T>
+static constexpr bool isResult_v = isResult<std::remove_cvref_t<T>>::value;
 
 template<typename T>
 class CancellableTaskPromise final : public CancellableTaskPromiseBase {
@@ -117,37 +153,67 @@ public:
     }
 
     void return_value(T &&value) noexcept {
-        mValue.template emplace<T>(std::forward<T>(value));
+        mValue = Result<T>{std::forward<T>(value)};
     }
 
     void return_value(const T &value) noexcept {
-        mValue = value;
+        mValue = Result<T>{value};
     }
 
-    template<typename U> requires QCoro::concepts::constructible_from<T, U>
+    template<typename U>
+    requires (std::is_constructible_v<T, U> && !isResult_v<U>)
     void return_value(U &&value) noexcept {
-        mValue = std::forward<U>(value);
+        mValue = Result<T>{std::forward<U>(value)};
     }
 
-    template<typename U> requires QCoro::concepts::constructible_from<T, U>
+    template<typename U>
+    requires (std::is_constructible_v<T, U> && !isResult_v<U>)
     void return_value(const U &value) noexcept {
-        mValue = value;
+        mValue = Result<T>{value};
     }
 
-    Result<T> result() {
+    void return_value(Result<T> &&result) noexcept {
+        mValue = std::move(result);
+    }
+
+    void return_value(const Result<T> &result) noexcept {
+        if (result.isCancelled()) {
+            mValue = Result<T>(cancellation());
+        } else {
+            mValue = Result<T>(*result);
+        }
+    }
+
+    template<typename U>
+    requires std::is_constructible_v<T, U>
+    void return_value(Result<U> &&result) noexcept {
+        mValue = std::move(result);
+    }
+
+    template<typename U>
+    requires std::is_constructible_v<T, U>
+    void return_value(const Result<U> &result) noexcept {
+        if (result.isCancelled()) {
+            mValue.template emplace<Result<T>>(cancellation());
+        } else {
+            mValue.template emplace<Result<T>>(*result);
+        }
+    }
+
+    Result<T> &&result() {
         if (std::holds_alternative<std::exception_ptr>(mValue)) {
             Q_ASSERT(std::get<std::exception_ptr>(mValue) != nullptr);
             std::rethrow_exception(std::get<std::exception_ptr>(mValue));
         }
 
         if (mCancelled) {
-            return Result<T>{detail::cancellation()};
+            mValue = Result<T>{detail::cancellation()};
         }
-        return Result<T>{std::move(std::get<T>(mValue))};
+        return std::move(std::get<Result<T>>(mValue));
     }
 
 private:
-    std::variant<std::monostate, T, std::exception_ptr> mValue;
+    std::variant<std::monostate, Result<T>, std::exception_ptr> mValue;
 };
 
 template<>
@@ -182,16 +248,60 @@ private:
 
 template<typename T>
 struct isCancellableTask : std::false_type {
-    using return_type = T;
+    using return_type = Result<T>;
 };
 
 template<typename T>
 struct isCancellableTask<QCoro::CancellableTask<T>> : std::true_type {
-    using return_type = typename QCoro::CancellableTask<T>::value_type;
+    using return_type = Result<typename QCoro::CancellableTask<T>::value_type>;
 };
 
 template<typename T>
 constexpr bool isCancellableTask_v = isCancellableTask<T>::value;
+
+class CancellableTaskBase {
+    template<typename T> friend class QCoro::CancellableTask;
+
+protected:
+    explicit CancellableTaskBase() = default;
+    explicit CancellableTaskBase(std::coroutine_handle<> coroutine)
+        : mCoroutine(coroutine)
+    {}
+
+    CancellableTaskBase(const CancellableTaskBase &) = delete;
+    CancellableTaskBase &operator=(const CancellableTaskBase &) = delete;
+
+    CancellableTaskBase(CancellableTaskBase &&other) noexcept
+        : mCoroutine(other.mCoroutine)
+    {
+        other.mCoroutine = nullptr;
+    }
+
+public:
+    virtual ~CancellableTaskBase() = default;
+
+    bool isReady() const {
+        return !mCoroutine || mCoroutine.done();
+    }
+
+    virtual void cancel() = 0;
+
+    void destroy() {
+        if (!isReady()) {
+            mCoroutine.destroy();
+        }
+    }
+
+protected:
+    virtual void cancelInner() = 0;
+
+    //! The coroutine represented by this task
+    /*!
+     * In other words, this is a handle to the coroutine that has constructed and
+     * returned this Task<T>.
+     * */
+    std::coroutine_handle<> mCoroutine = {};
+};
 
 } // namespace detail
 
@@ -215,7 +325,7 @@ constexpr bool isCancellableTask_v = isCancellableTask<T>::value;
  * the callee-facing interface.
  */
 template<typename T>
-class CancellableTask {
+class CancellableTask final : public detail::CancellableTaskBase {
 public:
     //! Promise type of the coroutine. This is required by the C++ standard.
     using promise_type = detail::CancellableTaskPromise<T>;
@@ -229,7 +339,8 @@ public:
     /*!
      * \param[in] coroutine handle of the coroutine that has constructed the task.
      */
-    explicit CancellableTask(std::coroutine_handle<promise_type> coroutine) : mCoroutine(coroutine) {}
+    explicit CancellableTask(std::coroutine_handle<promise_type> coroutine)
+        : detail::CancellableTaskBase(coroutine) {}
 
     //! Task cannot be copy-constructed.
     CancellableTask(const CancellableTask &) = delete;
@@ -237,16 +348,14 @@ public:
     CancellableTask &operator=(const CancellableTask &) = delete;
 
     //! The task can be move-constructed.
-    CancellableTask(CancellableTask &&other) noexcept : mCoroutine(other.mCoroutine) {
-        other.mCoroutine = nullptr;
-    }
+    CancellableTask(CancellableTask &&other) noexcept = default;
 
     //! The task can be move-assigned.
     CancellableTask &operator=(CancellableTask &&other) noexcept {
         if (std::addressof(other) != this) {
             if (mCoroutine) {
                 // The coroutine handle will be destroyed only after TaskFinalSuspend
-                if (mCoroutine.promise().setDestroyHandle()) {
+                if (promise().setDestroyHandle()) {
                     mCoroutine.destroy();
                 }
             }
@@ -262,33 +371,37 @@ public:
         if (!mCoroutine) return;
 
         // The coroutine handle will be destroyed only after TaskFinalSuspend
-        if (mCoroutine.promise().setDestroyHandle()) {
+        if (promise().setDestroyHandle()) {
             mCoroutine.destroy();
         }
     };
 
-    //! Returns whether the task has finished.
-    /*!
-     * A task that is ready (represents a finished coroutine) must not attempt
-     * to suspend the coroutine again.
-     */
-    bool isReady() const {
-        return !mCoroutine || mCoroutine.done();
-    }
-
-    void cancel() {
+    void cancelInner() override {
         if (isReady()) {
             return;
         }
 
-        /* TODO: Handle inner coroutines here
-        if (mCoroutine.promise().awaitedCoroutine) {
-            mCoroutine.promise().awaitedCoroutine.destroy();
+        if (promise().awaitedTask()) {
+            promise().awaitedTask()->cancelInner();
         }
-        */
 
-        mCoroutine.promise().setCancelled();
-        mCoroutine.destroy();
+        // TaskFinalSuspend will not be called, so it's up to the CancellableTask dtor to
+        // destroy the coroutine state.
+        promise().setDestroyHandle();
+        promise().setCancelled(); // Mark the promise is cancelled
+    }
+
+    void cancel() override {
+        if (isReady()) {
+            return;
+        }
+
+        cancelInner();
+
+        // Resume awaiter of the top-level cancelled coroutine
+        if (promise().mAwaitingCoroutine) {
+            promise().mAwaitingCoroutine.resume();  // Resume an awaiter, if there's any
+        }
     }
 
     //! Provides an Awaiter for the coroutine machinery.
@@ -315,7 +428,9 @@ public:
             }
         };
 
-        return CancellableTaskAwaiter{mCoroutine};
+        return CancellableTaskAwaiter{
+            std::coroutine_handle<promise_type>::from_address(mCoroutine.address())
+        };
     }
 
     //! A callback to be invoked when the asynchronous task finishes.
@@ -349,7 +464,11 @@ public:
     }
 
 private:
-     template<typename ThenCallback, typename ... Args>
+    inline promise_type &promise() {
+        return std::coroutine_handle<promise_type>::from_address(mCoroutine.address()).promise();
+    }
+
+    template<typename ThenCallback, typename ... Args>
     auto invokeCb(ThenCallback &&callback, Args && ... args) {
         if constexpr (std::is_invocable_v<ThenCallback, Args ...>) {
             return callback(std::forward<Args>(args) ...);
@@ -381,12 +500,15 @@ private:
     }
 
     template<typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isCancellableTask_v<R>, R, Task<R>> {
+    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isCancellableTask_v<R>, R, CancellableTask<R>> {
         const auto thenCb = std::forward<ThenCallback>(thenCallback);
         const auto errCb = std::forward<ErrorCallback>(errorCallback);
         if constexpr (std::is_void_v<value_type>) {
             try {
-                co_await *this;
+                auto result = co_await *this;
+                if (result.isCancelled()) {
+                    co_return result;
+                }
             } catch (const std::exception &e) {
                 co_return handleException<R>(errCb, e);
             }
@@ -398,7 +520,11 @@ private:
         } else {
             std::optional<T> value;
             try {
-                value = co_await *this;
+                auto result = co_await *this;
+                if (result.isCancelled()) {
+                    co_return std::move(result);
+                }
+                value = std::move(*result);
             } catch (const std::exception &e) {
                 co_return handleException<R>(errCb, e);
             }
@@ -409,14 +535,6 @@ private:
             }
         }
     }
-
-private:
-    //! The coroutine represented by this task
-    /*!
-     * In other words, this is a handle to the coroutine that has constructed and
-     * returned this Task<T>.
-     * */
-    std::coroutine_handle<promise_type> mCoroutine = {};
 };
 
 namespace detail {

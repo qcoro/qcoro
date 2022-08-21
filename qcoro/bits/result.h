@@ -18,10 +18,33 @@ class CancellableTaskPromise;
 template<typename T>
 class Result {
 public:
+    // Monadic constructor
+    template<typename U>
+    requires std::is_constructible_v<T, U &&>
+    Result(const Result<U> &other)
+        : mResult(other.mResult)
+    {}
+
+    Result() = default;
     Result(const Result &) = delete;
     Result &operator=(const Result &) = delete;
     Result(Result &&) noexcept = default;
+
+    template<typename U>
+    requires std::is_constructible_v<T, U &&>
+    Result(Result<U> &&other) noexcept
+        : mResult(std::move(other.mResult))
+    {}
+
     Result &operator=(Result &&) noexcept = default;
+
+    template<typename U>
+    requires std::is_constructible_v<T, U &&>
+    Result &operator=(Result<U> &&other) noexcept {
+        mResult = std::move(other.mResult);
+        return *this;
+    }
+
     ~Result() = default;
 
     bool isCancelled() const {
@@ -62,7 +85,7 @@ private:
     explicit Result(const T &result)
         : mResult(result) {}
 
-    std::variant<detail::Cancellation_t, T> mResult;
+    std::variant<std::monostate, detail::Cancellation_t, T> mResult;
 };
 
 template<>
