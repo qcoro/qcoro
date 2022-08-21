@@ -4,6 +4,7 @@ build-*/
 .ccls-cache
 compile_commands.json
 /.vs
+/.vscode
 /CMakeSettings.json
 
 # Python (from mkdocs)
