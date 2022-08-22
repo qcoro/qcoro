@@ -4,6 +4,7 @@
 
 #include "testobject.h"
 #include "qcoro/qcorocancellabletask.h"
+#include "qcoro/qcorodetachedtask.h"
 #include "qcoro/core/qcorotimer.h"
 
 #include <QScopeGuard>
@@ -129,12 +130,27 @@ private:
         QCORO_VERIFY(notCalled);
     }
 
+    QCoro::Task<> testDetachedTaskNotCancelled_coro(QCoro::TestContext) {
+        const auto coro = []() -> QCoro::Task<> {
+            QTimer timer;
+            timer.start(300ms);
+            co_await timer;
+        };
+
+        const auto cancellable = [&coro]() -> QCoro::CancellableTask<> {
+            co_await QCoro::detachTask(coro());
+        };
+
+        co_await cancellable();
+    }
+
 private Q_SLOTS:
     addTest(CancellableTaskSyncResult)
     addTest(CancellableTaskAsyncResult)
     addTest(CancelCoroutineWithSimpleAwaitable)
     addTest(CancelCoroutineWithTask)
     addTest(CancelCoroutineWithThen)
+    addTest(DetachedTaskNotCancelled)
 
 };
 

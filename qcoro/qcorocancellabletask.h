@@ -6,6 +6,7 @@
 
 #include "coroutine.h"
 #include "concepts_p.h"
+#include "qcorotask.h"
 
 #include "bits/cancellation.h"
 #include "bits/result.h"
@@ -553,29 +554,6 @@ inline CancellableTask<void> CancellableTaskPromise<void>::get_return_object() n
 
 namespace detail {
 
-//! Helper class to run a coroutine in a nested event loop.
-/*!
- * We cannot just use QTimer or QMetaObject::invokeMethod() to schedule the func lambda to be
- * invoked from an event loop, because internally, Qt deallocates some structures when the
- * lambda returns, which causes invalid memory access and potentially double-free corruption
- * because the coroutine returns twice - once on suspend and once when it really finishes.
- * So instead we do basically what Qt does internally, but we make sure to not delete the
- * QFunctorSlotObjectWithNoArgs until after the event loop quits.
- */
-template<typename Coroutine>
-CancellableTask<> runCancellableCoroutine(QEventLoop &loop, bool &startLoop, Coroutine &&coroutine) {
-    co_await coroutine;
-    startLoop = false;
-    loop.quit();
-}
-
-template<typename T, typename Coroutine>
-CancellableTask<> runCancellableCoroutine(QEventLoop &loop, bool &startLoop, T &result, Coroutine &&coroutine) {
-    result = co_await coroutine;
-    startLoop = false;
-    loop.quit();
-}
-
 template<typename T, typename Coroutine>
 Result<T> waitFor(Coroutine &&coro) {
     QEventLoop loop;
@@ -607,13 +585,13 @@ Result<T> waitFor(Coroutine &&coro) {
  * \returns Result of the coroutine.
  */
 template<typename T>
-inline T waitFor(QCoro::CancellableTask<T> &task) {
+inline Result<T> waitFor(QCoro::CancellableTask<T> &task) {
     return detail::waitFor<T>(task);
 }
 
 // \overload
 template<typename T>
-inline T waitFor(QCoro::CancellableTask<T> &&task) {
+inline Result<T> waitFor(QCoro::CancellableTask<T> &&task) {
     return detail::waitFor<T>(task);
 }
 
