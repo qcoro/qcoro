@@ -33,12 +33,10 @@ private:
 
         void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
             auto *watcher = new QFutureWatcher<T_>();
-            auto cb = [watcher, awaitingCoroutine]() mutable {
+            QObject::connect(watcher, &QFutureWatcherBase::finished, [watcher, awaitingCoroutine]() mutable {
                 watcher->deleteLater();
                 awaitingCoroutine.resume();
-            };
-            QObject::connect(watcher, &QFutureWatcher<T_>::finished, cb);
-            QObject::connect(watcher, &QFutureWatcher<T_>::canceled, cb);
+            });
             watcher->setFuture(mFuture);
         }
 
