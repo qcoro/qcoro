@@ -7,6 +7,9 @@
 #include "qcorofuture.h"
 
 #include <QtConcurrentRun>
+#if QT_VERSION_MAJOR > 6
+#include <QPromise>
+#endif
 
 #include <thread>
 
@@ -114,6 +117,23 @@ private:
         QVERIFY(called);
     }
 
+// QPromise cancelling running future on destruction has been introduced in
+// Qt 6.3.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
+    QCoro::Task<> testUnfinishedPromiseDestroyed_coro(QCoro::TestContext) {
+        const auto future = [this]() {
+            auto promise = std::make_shared<QPromise<int>>();
+            auto future = promise->future();
+
+            QTimer::singleShot(400ms, this, [p = promise]() {
+                p->addResult(42);
+            });
+            return future;
+        }();
+        co_await future;
+    }
+#endif
+
 private Q_SLOTS:
     addTest(Triggers)
     addCoroAndThenTests(ReturnsResult)
@@ -121,6 +141,9 @@ private Q_SLOTS:
     addCoroAndThenTests(DoesntCoAwaitFinishedFuture)
     addCoroAndThenTests(DoesntCoAwaitCanceledFuture)
     addCoroAndThenTests(QCoroWrapperTriggers)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
+    addTest(UnfinishedPromiseDestroyed)
+#endif
 };
 
 QTEST_GUILESS_MAIN(QCoroFutureTest)
