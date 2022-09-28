@@ -48,7 +48,7 @@ private:
     public:
         using WaitForFinishedOperationBase<T>::WaitForFinishedOperationBase;
 
-        T await_resume() const noexcept {
+        T await_resume() const {
             return this->mFuture.result();
         }
     };
@@ -57,7 +57,12 @@ private:
     public:
         using WaitForFinishedOperationBase<void>::WaitForFinishedOperationBase;
 
-        void await_resume() const noexcept {}
+        void await_resume() {
+            // This won't block, since we know for sure that the QFuture is already finished.
+            // The weird side-effect of this function is that it will re-throw the stored
+            // exception.
+            this->mFuture.waitForFinished();
+        }
     };
 
     using WaitForFinishedOperation = std::conditional_t<
