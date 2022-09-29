@@ -6,12 +6,33 @@
 
 #include "qcorofuture.h"
 
+#include <QString>
+#include <QException>
 #include <QtConcurrentRun>
 #if QT_VERSION_MAJOR > 6
 #include <QPromise>
 #endif
 
 #include <thread>
+
+class TestException : public QException {
+public:
+    explicit TestException(const QString &msg)
+        : mMsg(msg)
+    {}
+    const char *what() const noexcept override { return qUtf8Printable(mMsg); }
+
+    TestException *clone() const override {
+        return new TestException(mMsg);
+    }
+
+    void raise() const override {
+        throw *this;
+    }
+
+private:
+    QString mMsg;
+};
 
 class QCoroFutureTest : public QCoro::TestObject<QCoroFutureTest> {
     Q_OBJECT
@@ -117,6 +138,69 @@ private:
         QVERIFY(called);
     }
 
+    QCoro::Task<> testPropagateQExceptionFromVoidConcurrent_coro(QCoro::TestContext) {
+        auto future = QtConcurrent::run([]() {
+            std::this_thread::sleep_for(100ms);
+            throw TestException(QStringLiteral("Ooops"));
+        });
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await future, TestException);
+    }
+
+    QCoro::Task<> testPropagateQExceptionFromNonvoidConcurrent_coro(QCoro::TestContext) {
+        bool throwException = true;
+        auto future = QtConcurrent::run([throwException]() -> int {
+            std::this_thread::sleep_for(100ms);
+            if (throwException) { // Workaround MSVC reporting the "return" stmt as unreachablet
+                throw TestException(QStringLiteral("Ooops"));
+            }
+            return 42;
+        });
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await future, TestException);
+    }
+
+#if QT_VERSION_MAJOR >= 6
+    QCoro::Task<> testPropagateQExceptionFromVoidPromise_coro(QCoro::TestContext) {
+        QPromise<void> promise;
+        QTimer::singleShot(100ms, this, [&promise]() {
+            promise.setException(TestException(QStringLiteral("Booom")));
+            promise.finish();
+        });
+
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await promise.future(), TestException);
+    }
+
+    QCoro::Task<> testPropagateQExceptionFromNonvoidPromise_coro(QCoro::TestContext) {
+        QPromise<int> promise;
+        QTimer::singleShot(100ms, this, [&promise]() {
+            promise.setException(TestException(QStringLiteral("Booom")));
+            promise.finish();
+        });
+
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await promise.future(), TestException);
+    }
+
+    QCoro::Task<> testPropagateStdExceptionFromVoidPromise_coro(QCoro::TestContext) {
+        QPromise<void> promise;
+        QTimer::singleShot(100ms, this, [&promise]() {
+            promise.setException(std::make_exception_ptr(std::runtime_error("Booom")));
+            promise.finish();
+        });
+
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await promise.future(), std::runtime_error);
+    }
+
+    QCoro::Task<> testPropagateStdExceptionFromNonvoidPromise_coro(QCoro::TestContext) {
+        QPromise<void> promise;
+        QTimer::singleShot(100ms, this, [&promise]() {
+            promise.setException(std::make_exception_ptr(std::runtime_error("Booom")));
+            promise.finish();
+        });
+
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await promise.future(), std::runtime_error);
+    }
+
+#endif
+
 // QPromise cancelling running future on destruction has been introduced in
 // Qt 6.3.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
@@ -141,6 +225,14 @@ private Q_SLOTS:
     addCoroAndThenTests(DoesntCoAwaitFinishedFuture)
     addCoroAndThenTests(DoesntCoAwaitCanceledFuture)
     addCoroAndThenTests(QCoroWrapperTriggers)
+    addTest(PropagateQExceptionFromVoidConcurrent)
+    addTest(PropagateQExceptionFromNonvoidConcurrent)
+#if QT_VERSION_MAJOR >= 6
+    addTest(PropagateQExceptionFromVoidPromise)
+    addTest(PropagateQExceptionFromNonvoidPromise)
+    addTest(PropagateStdExceptionFromVoidPromise)
+    addTest(PropagateStdExceptionFromNonvoidPromise)
+#endif
 #if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
     addTest(UnfinishedPromiseDestroyed)
 #endif
