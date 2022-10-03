@@ -63,6 +63,10 @@ private:
 template<typename TestClass>
 class TestObject : public QObject {
 protected:
+    explicit TestObject(QObject *parent = nullptr)
+        : QObject(parent)
+    {}
+
     void coroWrapper(QCoro::Task<> (TestClass::*testFunction)(TestContext)) {
         QEventLoop el;
         QTimer::singleShot(5s, &el, [&el]() mutable { el.exit(1); });

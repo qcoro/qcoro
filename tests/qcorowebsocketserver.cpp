@@ -13,6 +13,16 @@
 
 class QCoroWebSocketServerTest : public QCoro::TestObject<QCoroWebSocketServerTest> {
     Q_OBJECT
+public:
+    QCoroWebSocketServerTest(QObject *parent = nullptr)
+        : QCoro::TestObject<QCoroWebSocketServerTest>(parent)
+    {
+        // On Windows, constructing QWebSocket for the first time takes some time
+        // (most likely due to loading OpenSSL), which causes the first test to
+        // time out on the CI.
+        QWebSocket socket;
+    }
+
 private:
     QCoro::Task<> testNextPendingConnection_coro(QCoro::TestContext) {
         QWebSocketServer server(QStringLiteral("TestWSServer"), QWebSocketServer::NonSecureMode);
