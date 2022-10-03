@@ -42,7 +42,7 @@ public:
 
     void start() {
         mServer.reset(new QWebSocketServer(QStringLiteral("QCoroTestWSServer"), QWebSocketServer::NonSecureMode));
-        if (!mServer->listen()) {
+        if (!mServer->listen(QHostAddress::LocalHost)) {
             qCritical() << "WebSocket server failed to start listening";
             close();
             return;
