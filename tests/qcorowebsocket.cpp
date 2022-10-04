@@ -10,7 +10,15 @@
 
 class QCoroWebSocketTest : public QCoro::TestObject<QCoroWebSocketTest> {
     Q_OBJECT
-
+public:
+    explicit QCoroWebSocketTest(QObject *parent = nullptr)
+            : QCoro::TestObject<QCoroWebSocketTest>(parent)
+    {
+        // On Windows, constructing QWebSocket for the first time takes some time
+        // (most likely due to loading OpenSSL), which causes the first test to
+        // time out on the CI.
+        QWebSocket socket;
+    }
 private:
     template<typename T, typename SendFunc, typename RecvFunc>
     QCoro::Task<> testReceived(const T &msg, SendFunc sendFunc, RecvFunc recvFunc) {
