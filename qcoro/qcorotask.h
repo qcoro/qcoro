@@ -68,7 +68,6 @@ public:
     template<typename Promise>
     void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept {
         auto &promise = finishedCoroutine.promise();
-
         if (promise.mResumeAwaiter.exchange(true, std::memory_order_acq_rel)) {
             promise.mAwaitingCoroutine.resume();
         }
@@ -140,6 +139,7 @@ public:
      * indicates that the coroutine should not be suspended.
      * */
     std::suspend_never initial_suspend() const noexcept {
+        qDebug() << "Task(" << this << ") started";
         return {};
     }
 
@@ -148,6 +148,7 @@ public:
      * This decides what should happen when the coroutine is finished.
      */
     auto final_suspend() const noexcept {
+        qDebug() << "Task(" << this << ") finished";
         return TaskFinalSuspend{mAwaitingCoroutine};
     }
 
@@ -232,6 +233,10 @@ public:
 
     bool hasAwaitingCoroutine() const {
         return mAwaitingCoroutine != nullptr;
+    }
+
+    std::coroutine_handle<> awaitingCoroutine() const {
+        return mAwaitingCoroutine;
     }
 
     bool setDestroyHandle() noexcept {
@@ -406,8 +411,13 @@ public:
      * co_awaited coroutine has finished synchronously and the co_awaiting coroutine doesn't
      * have to suspend.
      */
-    bool await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
-        return mAwaitedCoroutine.promise().setAwaitingCoroutine(awaitingCoroutine);
+    template<typename AwaiterPromise>
+    bool await_suspend(std::coroutine_handle<AwaiterPromise> awaitingCoroutine) noexcept {
+        const auto suspend = mAwaitedCoroutine.promise().setAwaitingCoroutine(awaitingCoroutine);
+        if (suspend) {
+            qDebug() << "Task(" << std::addressof(awaitingCoroutine.promise()) << ") suspended";
+        }
+        return suspend;
     }
 
 protected:
@@ -538,6 +548,7 @@ public:
              * \return the result from the coroutine's promise, factically the
              * value co_returned by the coroutine. */
             auto await_resume() {
+                qDebug() << "Task(" << static_cast<void *>(static_cast<uint8_t *>(this->mAwaitedCoroutine.promise().awaitingCoroutine().address()) + 16) << ") resumed";
                 Q_ASSERT(this->mAwaitedCoroutine != nullptr);
                 if constexpr (!std::is_void_v<T>) {
                     return std::move(this->mAwaitedCoroutine.promise().result());
