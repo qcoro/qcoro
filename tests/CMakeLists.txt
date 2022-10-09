@@ -66,6 +66,15 @@ function(qcoro_add_websockets_test _name)
     )
 endfunction()
 
+function(qcoro_add_qml_test _name)
+    qcoro_add_network_test(${_name} ${ARGN})
+    target_link_libraries(
+        test-${_name}
+        PRIVATE
+        QCoro${QT_VERSION_MAJOR}Qml
+        Qt${QT_VERSION_MAJOR}::Qml
+    )
+endfunction()
 
 qcoro_add_test(qtimer)
 qcoro_add_test(qcoroprocess)
@@ -95,4 +104,8 @@ endif()
 if (QCORO_WITH_QTWEBSOCKETS)
     qcoro_add_websockets_test(qcorowebsocket)
     qcoro_add_websockets_test(qcorowebsocketserver)
+endif()
+
+if (QCORO_WITH_QML)
+    qcoro_add_qml_test(qcoroqmltask)
 endif()
