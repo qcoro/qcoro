@@ -87,6 +87,6 @@ if (QCORO_WITH_QTWEBSOCKETS)
     add_subdirectory(websockets)
 endif()
 
-if (QCORO_BUILD_QUICK)
+if (QCORO_WITH_QTQUICK)
     add_subdirectory(quick)
 endif()
