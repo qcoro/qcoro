@@ -6,6 +6,8 @@
 
 #include "qcoroqml_export.h"
 
+#include "qcoroqmltask.h"
+
 namespace QCoro::Qml {
 
 QCOROQML_EXPORT void registerTypes();
