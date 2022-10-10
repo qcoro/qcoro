@@ -76,6 +76,17 @@ function(qcoro_add_qml_test _name)
     )
 endfunction()
 
+function(qcoro_add_quick_test _name)
+    qcoro_add_test(${_name} ${ARGN})
+    target_link_libraries(
+        test-${_name}
+        PRIVATE
+        QCoro${QT_VERSION_MAJOR}Quick
+        Qt${QT_VERSION_MAJOR}::Quick
+        Qt${QT_VERSION_MAJOR}::QuickPrivate
+    )
+endfunction()
+
 qcoro_add_test(qtimer)
 qcoro_add_test(qcoroprocess)
 qcoro_add_test(qcorosignal)
@@ -109,3 +120,8 @@ endif()
 if (QCORO_WITH_QML)
     qcoro_add_qml_test(qcoroqmltask)
 endif()
+
+if (QCORO_WITH_QTQUICK)
+    qcoro_add_quick_test(qcoroimageprovider)
+endif()
+
