@@ -76,11 +76,14 @@ QtObject {
         });
         // Crash the test in case the timeout was reachaed without the callback being called
         connect(timeout, &QTimer::timeout, this, [&]() {
-#if defined(__clang__) && defined(_WIN32)
+#if defined(Q_CC_CLANG) && defined(Q_OS_WINDOWS)
+            running = false;
             QEXPECT_FAIL("", "QTBUG-91768", Abort);
-#endif
+            QVERIFY(false);
+            return;
+#else
             QFAIL("Timeout waiting for QML continuation to be called");
-
+#endif
         });
         while (running) {
             QCoreApplication::processEvents();
