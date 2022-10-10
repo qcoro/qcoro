@@ -24,7 +24,6 @@ add_qcoro_library(
         coroutine.h
         macros_p.h
         waitoperationbase_p.h
-        qcorotask.h
     QT_LINK_LIBRARIES
         INTERFACE Core
 )
