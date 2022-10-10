@@ -32,6 +32,7 @@ public:
     Q_INVOKABLE QCoro::QmlTask fetchValue(const QString &name) const
     {
         return database->fetchValue(name);
+        // Returns QCoro::Task<QString>
     }
 }
 ```
