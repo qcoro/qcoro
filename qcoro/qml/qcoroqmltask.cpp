@@ -64,7 +64,7 @@ void QmlTask::then(QJSValue func) {
         return;
     }
 
-    d->task->then([=](const QVariant &result) -> void {
+    d->task->then([func = std::move(func)](const QVariant &result) -> void {
         auto jsval = getEngineForValue(func)->toScriptValue(result);
         auto f = const_cast<QJSValue &>(func);
         f.call({jsval});
