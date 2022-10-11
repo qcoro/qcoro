@@ -75,7 +75,7 @@ jobs:
       shell: bash
       run: |
         cd build
-        QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE \
+        QT_LOGGING_TO_CONSOLE=1 QT_QPA_PLATFORM=offscreen ctest -C $BUILD_TYPE \
           --output-on-failure \
           --verbose \
           --output-junit ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
