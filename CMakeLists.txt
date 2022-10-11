@@ -31,6 +31,8 @@ option(QCORO_WITH_QTWEBSOCKETS "Build QtWebSockets support" ON)
 add_feature_info(QtWebSockets QCORO_WITH_QTWEBSOCKETS "Build QtWebSockets support")
 option(QCORO_WITH_QTQUICK "Build QtQuick support" ON)
 add_feature_info(QtQuick QCORO_WITH_QTQUICK "Build QtQuick support")
+option(QCORO_WITH_QML "Build QML integration features" ON)
+add_feature_info(QtQml QCORO_WITH_QML "Build QML integration features")
 
 #-----------------------------------------------------------#
 # Dependencies
@@ -53,6 +55,9 @@ if (QCORO_WITH_QTWEBSOCKETS)
 endif()
 if (QCORO_WITH_QTQUICK)
     list(APPEND REQUIRED_QT_COMPONENTS Quick)
+endif()
+if (QCORO_WITH_QML)
+    list(APPEND REQUIRED_QT_COMPONENTS Qml)
 endif()
 if (QCORO_BUILD_EXAMPLES)
     list(APPEND REQUIRED_QT_COMPONENTS Widgets Concurrent)

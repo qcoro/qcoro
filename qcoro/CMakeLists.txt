@@ -90,3 +90,7 @@ endif()
 if (QCORO_WITH_QTQUICK)
     add_subdirectory(quick)
 endif()
+
+if (QCORO_WITH_QML)
+    add_subdirectory(qml)
+endif()

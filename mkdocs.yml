@@ -97,6 +97,9 @@ nav:
       - Quick:
         - reference/quick/index.md
         - QCoro::ImageProvider: reference/quick/imageprovider.md
+      - Qml:
+        - reference/qml/index.md
+        - QCoro::QmlTask: reference/qml/qmltask.md
     - Changelog: changelog.md
     - About:
         - License: about/license.md

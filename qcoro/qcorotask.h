@@ -615,8 +615,8 @@ private:
 
     template<typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
     auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, Task<R>> {
-        const auto thenCb = std::forward<ThenCallback>(thenCallback);
-        const auto errCb = std::forward<ErrorCallback>(errorCallback);
+        auto thenCb = std::forward<ThenCallback>(thenCallback);
+        auto errCb = std::forward<ErrorCallback>(errorCallback);
         if constexpr (std::is_void_v<value_type>) {
             try {
                 co_await *this;
