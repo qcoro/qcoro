@@ -41,8 +41,8 @@ public:
      * \param[in] awaitingCoroutine handle of the coroutine that is co_awaiting the current
      * coroutine (continuation).
      */
-    explicit TaskFinalSuspend(std::coroutine_handle<> awaitingCoroutine)
-        : mAwaitingCoroutine(awaitingCoroutine) {}
+    explicit TaskFinalSuspend(const std::vector<std::coroutine_handle<>> &awaitingCoroutines)
+        : mAwaitingCoroutines(awaitingCoroutines) {}
 
     //! Returns whether the just finishing coroutine should do final suspend or not
     /*!
@@ -69,9 +69,10 @@ public:
     void await_suspend(std::coroutine_handle<Promise> finishedCoroutine) noexcept {
         auto &promise = finishedCoroutine.promise();
 
-        if (promise.mResumeAwaiter.exchange(true, std::memory_order_acq_rel)) {
-            promise.mAwaitingCoroutine.resume();
+        for (auto &awaiter : mAwaitingCoroutines) {
+            awaiter.resume();
         }
+        mAwaitingCoroutines.clear();
 
         // The handle will be destroyed here only if the associated Task has already been destroyed
         if (promise.setDestroyHandle()) {
@@ -87,8 +88,7 @@ public:
     constexpr void await_resume() const noexcept {}
 
 private:
-    //! Handle of the coroutine co_awaiting the current coroutine.
-    std::coroutine_handle<> mAwaitingCoroutine;
+    std::vector<std::coroutine_handle<>> mAwaitingCoroutines;
 };
 
 //! Base class for the \c Task<T> promise_type.
@@ -148,7 +148,7 @@ public:
      * This decides what should happen when the coroutine is finished.
      */
     auto final_suspend() const noexcept {
-        return TaskFinalSuspend{mAwaitingCoroutine};
+        return TaskFinalSuspend{mAwaitingCoroutines};
     }
 
     //! Called by co_await to obtain an Awaitable for type \c T.
@@ -225,13 +225,12 @@ public:
      *                          represented by this promise. When our coroutine finishes, it's
      *                          our job to resume the awaiting coroutine.
      */
-    bool setAwaitingCoroutine(std::coroutine_handle<> awaitingCoroutine) {
-        mAwaitingCoroutine = awaitingCoroutine;
-        return !mResumeAwaiter.exchange(true, std::memory_order_acq_rel);
+    void addAwaitingCoroutine(std::coroutine_handle<> awaitingCoroutine) {
+        mAwaitingCoroutines.push_back(awaitingCoroutine);
     }
 
     bool hasAwaitingCoroutine() const {
-        return mAwaitingCoroutine != nullptr;
+        return !mAwaitingCoroutines.empty();
     }
 
     bool setDestroyHandle() noexcept {
@@ -242,9 +241,7 @@ private:
     friend class TaskFinalSuspend;
 
     //! Handle of the coroutine that is currently co_awaiting this Awaitable
-    std::coroutine_handle<> mAwaitingCoroutine;
-    //! Indicates whether the awaiter should be resumed when it tries to co_await on us.
-    std::atomic<bool> mResumeAwaiter{false};
+    std::vector<std::coroutine_handle<>> mAwaitingCoroutines;
 
     //! Indicates whether we can destroy the coroutine handle
     std::atomic<bool> mDestroyHandle{false};
@@ -406,8 +403,8 @@ public:
      * co_awaited coroutine has finished synchronously and the co_awaiting coroutine doesn't
      * have to suspend.
      */
-    bool await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
-        return mAwaitedCoroutine.promise().setAwaitingCoroutine(awaitingCoroutine);
+    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+        mAwaitedCoroutine.promise().addAwaitingCoroutine(awaitingCoroutine);
     }
 
 protected:
