@@ -334,6 +334,35 @@ private:
         QCOMPARE(result, QStringLiteral("42"));
     }
 
+    QCoro::Task<> testMultipleAwaiters_coro(QCoro::TestContext) {
+        auto task = timer(100ms);
+
+        bool called = false;
+        // Internally co_awaits task
+        task.then([&called]() {
+            called = true;
+        });
+
+        co_await task;
+
+        QCORO_VERIFY(called);
+    }
+
+    QCoro::Task<> testMultipleAwaitersSync_coro(QCoro::TestContext ctx) {
+        ctx.setShouldNotSuspend();
+
+        auto task = []() -> QCoro::Task<> { co_return; }();
+
+        bool called = false;
+        task.then([&called]() {
+            called = true;
+        });
+
+        co_await task;
+
+        QCORO_VERIFY(called);
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -355,6 +384,8 @@ private Q_SLOTS:
     addTest(ThenError)
     addTest(ThenErrorWithValue)
     addThenTest(ImplicitArgumentConversion)
+    addTest(MultipleAwaiters)
+    addTest(MultipleAwaitersSync)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
