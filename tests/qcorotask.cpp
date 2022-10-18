@@ -5,6 +5,7 @@
 #include "testobject.h"
 #include "qcorotask.h"
 #include "qcorotimer.h"
+#include "qcorosignal.h"
 
 #include <QTest>
 #include <QObject>
@@ -363,6 +364,23 @@ private:
         QCORO_VERIFY(called);
     }
 
+    Q_SIGNAL void callbackCalled();
+
+    QCoro::Task<> testTaskConnect_coro(QCoro::TestContext) {
+        auto task = timer();
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<>>);
+
+        bool called = false;
+        QCoro::connect(task, this, [&called, this]() {
+            called = true;
+            Q_EMIT callbackCalled();
+        });
+
+        co_await qCoro(this, &QCoroTaskTest::callbackCalled);
+        QCORO_VERIFY(called);
+        co_return;
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -383,6 +401,7 @@ private Q_SLOTS:
     addTest(ThenExceptionPropagation)
     addTest(ThenError)
     addTest(ThenErrorWithValue)
+    addTest(TaskConnect)
     addThenTest(ImplicitArgumentConversion)
     addTest(MultipleAwaiters)
     addTest(MultipleAwaitersSync)
@@ -566,6 +585,25 @@ private Q_SLOTS:
         });
 
         el.exec();
+    }
+
+    void testTaskConnectContext_coro() {
+        auto task = timer(200ms);
+        static_assert(std::is_same_v<decltype(task), QCoro::Task<>>);
+
+        bool called = false;
+        auto context = new QObject();
+
+        QCoro::connect(task, context, [&]() {
+            called = true;
+        });
+
+        // Delete context, callback should not be called
+        delete context;
+
+        QCoro::waitFor(task);
+
+        QVERIFY(!called);
     }
 };
 

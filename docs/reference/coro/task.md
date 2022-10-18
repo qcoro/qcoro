@@ -164,3 +164,29 @@ void nonCoroutineFunction() {
     The implementation internally uses a `QEventLoop` to wait for the coroutine to be completed.
     This means that a `QCoreApplication` instance must exist, although it does not need to be
     executed. Usual warnings about using a nested event loop apply here as well.
+
+## Interfacing with synchronous functions
+
+!!! note "This feature is available since QCoro 0.7.0"
+
+Sometimes you need to interface with code that is not coroutine-aware, for example when building list models.
+
+If you'd use the normal `.then()` function, and the coroutine would finish after the model is deleted, the program would crash.
+
+The `QCoro::connect` function is similar to `QObject::connect`,
+but for `QCoro::Task`s.
+Just like `QObject::connect`, it only calls its callback if the context object still exists.
+
+This is an example for a function that fetches data and updates a model:
+```cpp
+void updateModel() {
+    auto task = someCoroutine();
+    QCoro::connect(task, this, [this](auto &&result) {
+        beginResetModel();
+        m_entries = std::move(result);
+        endResetModel();
+    });
+}
+```
+
+If the model is deleted before the coroutine finishes, the connected lambda will not be called.

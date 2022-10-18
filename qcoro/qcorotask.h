@@ -17,6 +17,7 @@
 #include <QEventLoop>
 #include <QObject>
 #include <QCoreApplication>
+#include <QPointer>
 
 namespace QCoro {
 
@@ -727,6 +728,37 @@ inline T waitFor(QCoro::Task<T> &task) {
 template<typename T>
 inline T waitFor(QCoro::Task<T> &&task) {
     return detail::waitFor<T>(task);
+}
+
+//! Connect a callback to be called when the asynchronous task finishes.
+/*!
+ * Allows to register a callback to be called only when the context object
+ * still exists when the task finishes.
+ *
+ * In contrast to the then function, the result of connect can not be co_awaited.
+ *
+ * @param context A QObject that still needs to exist when the task finishes in order for the callback to be invoked.
+ * @param func The function that will be called when the task finishes.
+ *        For void tasks, it needs to have no arguments.
+ *        For all other types, it takes a value of the type as single argument.
+ */
+template <typename T, typename Callback>
+requires std::is_invocable_v<Callback> || std::is_invocable_v<Callback, T>
+void connect(QCoro::Task<T> &task, QObject *context, Callback func) {
+    QPointer ctxWatcher = context;
+    if constexpr (std::is_same_v<T, void>) {
+        task.then([ctxWatcher, func = std::move(func)]() {
+            if (ctxWatcher) {
+                func();
+            }
+        });
+    } else {
+        task.then([ctxWatcher, func = std::move(func)](auto &&value) {
+            if (ctxWatcher) {
+                func(std::forward<decltype(value)>(value));
+            }
+        });
+    }
 }
 
 } // namespace QCoro
