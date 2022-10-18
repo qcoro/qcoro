@@ -2,6 +2,18 @@ add_subdirectory(testlibs)
 
 include(CMakeParseArguments)
 
+function(_enable_supressions _name)
+    function(_enable_supressions_file _filename)
+        if (EXISTS "${_filename}")
+            set_tests_properties(test-${_name} PROPERTIES
+                ENVIRONMENT LSAN_OPTIONS=suppressions=${_filename}
+            )
+        endif()
+    endfunction()
+
+    _enable_supressions_file("${CMAKE_CURRENT_SOURCE_DIR}/${_name}-qt${QT_VERSION_MAJOR}-lsan.supp")
+endfunction()
+
 function(qcoro_add_test _name)
     set(options SKIP_ADD_TEST)
     set(oneValueArgs)
@@ -20,7 +32,9 @@ function(qcoro_add_test _name)
     )
     if (NOT TEST_SKIP_ADD_TEST)
         add_test(NAME test-${_name} COMMAND test-${_name})
+        _enable_supressions(${_name})
     endif()
+
     target_code_coverage(test-${_name} AUTO ALL EXCLUDE "${CMAKE_BINARY_DIR}" "tests/testlibs/*")
 endfunction()
 
@@ -53,6 +67,7 @@ function(qcoro_add_dbus_test _name)
     else()
         add_test(NAME test-${_name} COMMAND dbus-launch $<TARGET_FILE:test-${_name}>)
     endif()
+    _enable_supressions(${_name})
 endfunction()
 
 function(qcoro_add_websockets_test _name)
@@ -73,6 +88,17 @@ function(qcoro_add_qml_test _name)
         PRIVATE
         QCoro${QT_VERSION_MAJOR}Qml
         Qt${QT_VERSION_MAJOR}::Qml
+    )
+endfunction()
+
+function(qcoro_add_quick_test _name)
+    qcoro_add_test(${_name} ${ARGN})
+    target_link_libraries(
+        test-${_name}
+        PRIVATE
+        QCoro${QT_VERSION_MAJOR}Quick
+        Qt${QT_VERSION_MAJOR}::Quick
+        Qt${QT_VERSION_MAJOR}::QuickPrivate
     )
 endfunction()
 
@@ -109,3 +135,8 @@ endif()
 if (QCORO_WITH_QML)
     qcoro_add_qml_test(qcoroqmltask)
 endif()
+
+if (QCORO_WITH_QTQUICK)
+    qcoro_add_quick_test(qcoroimageprovider)
+endif()
+

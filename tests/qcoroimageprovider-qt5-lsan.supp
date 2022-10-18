@@ -1,0 +1,7 @@
+# leaks in Qt 5.15.2 in the Offscreen QPA, fixed in newer Qt 5.15
+leak:QPlatformScreen
+leak:libqoffscreen.so
+
+# leaks in Qt 5.15.2 + GCC 10, 11
+leak:QObject::QObject(QObject*)
+leak:QtSharedPointer::ExternalRefCountData::getAndRef(QObject const*)
