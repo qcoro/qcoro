@@ -36,7 +36,7 @@ jobs:
                 var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
                 g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
               })();</script><!-- End Matomo Code -->{% endblock %}" > docs/overrides/main.html
-          mkdocs build
+          mkdocs build --verbose
       - name: Deploy Github Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
