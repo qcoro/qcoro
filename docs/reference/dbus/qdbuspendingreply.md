@@ -38,13 +38,11 @@ co_await reply;
 
 ## `waitForFinished()`
 
-{%
-    include-markdown "../../../qcoro/dbus/qcorodbuspendingreply.h"
-        dedent=true
-        rewrite-relative-urls=false
-        start="<!-- doc-waitForFinished-start -->"
-        end="<!-- doc-waitForFinished-end -->"
-%}
+{% include-markdown "../../../qcoro/dbus/qcorodbuspendingreply.h"
+    dedent=true
+    rewrite-relative-urls=false
+    start="<!-- doc-waitForFinished-start -->"
+    end="<!-- doc-waitForFinished-end -->" %}
 
 ## Example
 

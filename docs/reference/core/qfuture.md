@@ -21,14 +21,11 @@ QCoroFuture qCoro(const QFuture<T> &future);
 
 ## `waitForFinished()`
 
-{%
-    include-markdown "../../../qcoro/core/qcorofuture.h"
-        dedent=true
-        rewrite-relative-urls=false
-        start="<!-- doc-waitForFinished-start -->"
-        end="<!-- doc-waitForFinished-end -->"
-%}
-
+{% include-markdown "../../../qcoro/core/qcorofuture.h"
+    dedent=true
+    rewrite-relative-urls=false
+    start="<!-- doc-waitForFinished-start -->"
+    end="<!-- doc-waitForFinished-end -->" %}
 
 ## Example
 

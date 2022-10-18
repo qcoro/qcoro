@@ -43,13 +43,11 @@ const QDBusReply<...> reply = co_await pendigCall;
 
 ## `waitForFinished()`
 
-{%
-    include-markdown "../../../qcoro/dbus/qcorodbuspendingcall.h"
-        dedent=true
-        rewrite-relative-urls=false
-        start="<!-- doc-waitForFinished-start -->"
-        end="<!-- doc-waitForFinished-end -->"
-%}
+{% include-markdown "../../../qcoro/dbus/qcorodbuspendingcall.h"
+    dedent=true
+    rewrite-relative-urls=false
+    start="<!-- doc-waitForFinished-start -->"
+    end="<!-- doc-waitForFinished-end -->" %}
 
 ## Example
 
