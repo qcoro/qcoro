@@ -47,9 +47,26 @@ private:
         QCORO_VERIFY(ok);
     }
 
+    QCoro::Task<> testMoveToThread_coro(QCoro::TestContext) {
+        QThread newThread;
+        newThread.start();
+
+        QCORO_COMPARE(QThread::currentThread(), QCoreApplication::instance()->thread());
+
+        co_await QCoro::moveToThread(&newThread);
+
+        QCORO_COMPARE(QThread::currentThread(), &newThread);
+
+        co_await QCoro::moveToThread(qApp->thread());
+
+        newThread.exit();
+        newThread.wait();
+    }
+
 private Q_SLOTS:
     addTest(WaitForStarted)
     addTest(WaitForFinished)
+    addTest(MoveToThread)
 };
 
 

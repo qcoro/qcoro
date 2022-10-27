@@ -5,7 +5,9 @@
 #pragma once
 
 #include <QPointer>
+
 #include "qcorocore_export.h"
+#include "qcoro/coroutine.h"
 
 #include <chrono>
 
@@ -14,6 +16,30 @@ class QThread;
 namespace QCoro {
 template<typename T>
 class Task;
+
+namespace detail {
+class ThreadContextPrivate;
+} // namespace detail
+
+class ThreadContext {
+public:
+    explicit ThreadContext(QThread *thread);
+    ~ThreadContext();
+    ThreadContext(const ThreadContext &) = delete;
+    ThreadContext &operator=(const ThreadContext &) = delete;
+    ThreadContext(ThreadContext &&) = delete;
+    ThreadContext &operator=(ThreadContext &&) = delete;
+
+    bool await_ready() const noexcept;
+    void await_suspend(std::coroutine_handle<> awaiter) noexcept;
+    void await_resume() noexcept;
+
+private:
+    std::unique_ptr<detail::ThreadContextPrivate> d;
+};
+
+ThreadContext moveToThread(QThread *thread);
+
 } // namespace QCoro
 
 namespace QCoro::detail {
