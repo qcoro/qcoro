@@ -17,6 +17,29 @@ namespace QCoro {
 
 struct QmlTaskPrivate;
 
+namespace detail {
+template <typename T>
+concept TaskConvertible = requires(T v, TaskPromiseBase t)
+{
+    { t.await_transform(v) };
+};
+
+template<typename T>
+struct awaitable_return_type {
+  using type = decltype(std::declval<T>().await_resume());
+};
+
+template<QCoro::detail::has_operator_coawait T>
+struct awaitable_return_type<T> {
+    using type = typename awaitable_return_type<decltype(std::declval<T>().operator co_await())>::type;
+};
+
+template <typename Awaitable>
+requires TaskConvertible<Awaitable>
+using AwaitableReturnType = typename detail::awaitable_return_type<decltype(std::declval<detail::TaskPromiseBase>().await_transform(Awaitable()))>::type;
+
+}
+
 //! QML type that allows to react to asynchronous computations from QML
 struct QCOROQML_EXPORT QmlTask {
     Q_GADGET
@@ -48,6 +71,16 @@ public:
         qMetaTypeId<T>();
     }
 
+    //! Constructs a QmlTask from any awaitable type supported by QCoro.
+    /*!
+     * \param[in] object to await
+     */
+    template <typename T>
+    requires (detail::TaskConvertible<T> && !std::is_same_v<T, QmlTask>)
+    QmlTask(T &&future) : QmlTask(toTask(std::forward<T>(future)))
+    {
+    }
+
     //! Constructs a QmlTask from a QCoro::Task that doesn't return a value
     /*!
      * \param[in] task to await
@@ -68,6 +101,11 @@ public:
     Q_INVOKABLE void then(QJSValue func);
 
 private:
+    template <typename Awaitable>
+    static auto toTask(Awaitable &&future) -> QCoro::Task<detail::AwaitableReturnType<Awaitable>> {
+        co_return co_await future;
+    }
+
     QSharedDataPointer<QmlTaskPrivate> d;
 };
 

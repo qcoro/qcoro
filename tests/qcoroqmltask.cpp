@@ -6,6 +6,7 @@
 #include "qcorotask.h"
 #include "qcorotimer.h"
 #include "qcoroqmltask.h"
+#include "qcorofuture.h"
 
 #include <QTest>
 #include <QTimer>
@@ -29,11 +30,32 @@ public:
         }();
     }
 
+    Q_INVOKABLE QCoro::QmlTask qmlTaskFromTimer() {
+        auto *timer = new QTimer(this);
+        timer->setSingleShot(true);
+        timer->start(1s);
+        return timer;
+    }
+
+    Q_INVOKABLE QCoro::QmlTask qmlTaskFromFuture() {
+        QFutureInterface<QString> interface;
+        interface.reportResult(QStringLiteral("Success"));
+        interface.reportFinished();
+        return interface.future();
+    }
+
     Q_INVOKABLE void reportTestSuccess() {
-        Q_EMIT success();
+        numTestsPassed++;
+
+        if (numTestsPassed == 3) { // Number of java script functions that call reportTestSuccess
+            Q_EMIT success();
+        }
     }
 
     Q_SIGNAL void success();
+
+private:
+    int numTestsPassed = 0;
 };
 
 class QCoroQmlTaskTest : public QObject {
@@ -55,7 +77,17 @@ import QtQuick 2.7
 QtObject {
     Component.onCompleted: {
         QmlObject.startTimer().then(() => {
-            console.log("Task JavaScript callback called")
+            console.log("QCoro::Task JavaScript callback called")
+            QmlObject.reportTestSuccess()
+        })
+
+        QmlObject.qmlTaskFromTimer().then(() => {
+            console.log("QTimer JavaScript callback called")
+            QmlObject.reportTestSuccess()
+        })
+
+        QmlObject.qmlTaskFromFuture().then(() => {
+            console.log("QFuture JavaScript callback called")
             QmlObject.reportTestSuccess()
         })
     }
