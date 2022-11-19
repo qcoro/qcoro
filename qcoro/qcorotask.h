@@ -730,6 +730,36 @@ inline T waitFor(QCoro::Task<T> &&task) {
     return detail::waitFor<T>(task);
 }
 
+namespace detail {
+
+template <typename T>
+concept TaskConvertible = requires(T v, TaskPromiseBase t)
+{
+    { t.await_transform(v) };
+};
+
+template<typename T>
+struct awaitable_return_type {
+  using type = decltype(std::declval<T>().await_resume());
+};
+
+template<QCoro::detail::has_operator_coawait T>
+struct awaitable_return_type<T> {
+    using type = typename awaitable_return_type<decltype(std::declval<T>().operator co_await())>::type;
+};
+
+template <typename Awaitable>
+requires TaskConvertible<Awaitable>
+using awaitable_return_type_t = typename detail::awaitable_return_type<decltype(std::declval<TaskPromiseBase>().await_transform(Awaitable()))>::type;
+
+template <typename Awaitable>
+requires TaskConvertible<Awaitable>
+auto toTask(Awaitable &&future) -> QCoro::Task<detail::awaitable_return_type_t<Awaitable>> {
+    co_return co_await future;
+}
+
+}
+
 //! Connect a callback to be called when the asynchronous task finishes.
 /*!
  * Allows to register a callback to be called only when the context object
@@ -742,23 +772,49 @@ inline T waitFor(QCoro::Task<T> &&task) {
  *        For void tasks, it needs to have no arguments.
  *        For all other types, it takes a value of the type as single argument.
  */
-template <typename T, typename Callback>
-requires std::is_invocable_v<Callback> || std::is_invocable_v<Callback, T>
-void connect(QCoro::Task<T> &task, QObject *context, Callback func) {
+template <typename T, typename QObjectSubclass, typename Callback>
+requires std::is_invocable_v<Callback> || std::is_invocable_v<Callback, T> || std::is_invocable_v<Callback, QObjectSubclass *>
+void connect(QCoro::Task<T> &&task, QObjectSubclass *context, Callback func) {
     QPointer ctxWatcher = context;
     if constexpr (std::is_same_v<T, void>) {
         task.then([ctxWatcher, func = std::move(func)]() {
             if (ctxWatcher) {
-                func();
+                if constexpr (std::is_member_function_pointer_v<Callback>) {
+                    (ctxWatcher->*func)();
+                } else {
+                    func();
+                }
             }
         });
     } else {
         task.then([ctxWatcher, func = std::move(func)](auto &&value) {
             if (ctxWatcher) {
-                func(std::forward<decltype(value)>(value));
+                if constexpr (std::is_invocable_v<Callback, T>) {
+                    if constexpr (std::is_member_function_pointer_v<Callback>) {
+                        (ctxWatcher->*func)(std::forward<decltype(value)>(value));
+                    } else {
+                        func(std::forward<decltype(value)>(value));
+                    }
+                } else {
+                    Q_UNUSED(value);
+                    if constexpr (std::is_member_function_pointer_v<Callback>) {
+                        (ctxWatcher->*func)();
+                    } else {
+                        func();
+                    }
+                }
             }
         });
     }
+}
+
+template <typename T, typename QObjectSubclass, typename Callback>
+requires detail::TaskConvertible<T>
+        && (std::is_invocable_v<Callback> || std::is_invocable_v<Callback, detail::awaitable_return_type_t<T>> || std::is_invocable_v<Callback, QObjectSubclass *>)
+        && (!detail::isTask_v<T>)
+void connect(T &&future, QObjectSubclass *context, Callback func) {
+    auto task = detail::toTask(std::move(future));
+    connect(std::move(task), context, func);
 }
 
 } // namespace QCoro

@@ -366,19 +366,40 @@ private:
 
     Q_SIGNAL void callbackCalled();
 
-    QCoro::Task<> testTaskConnect_coro(QCoro::TestContext) {
-        auto task = timer();
-        static_assert(std::is_same_v<decltype(task), QCoro::Task<>>);
-
+    template <typename QObjectDerived, typename Signal>
+    QCoro::Task<> verifySignalEmitted(QObjectDerived *context, Signal &&signal) {
         bool called = false;
-        QCoro::connect(task, this, [&called, this]() {
+        co_await qCoro(context, std::move(signal)).then([&]() {
             called = true;
+        });
+        QCORO_VERIFY(called);
+    }
+
+    QCoro::Task<> testTaskConnect_coro(QCoro::TestContext) {
+        // Test that free functions can be passed as callback
+        QCoro::connect(timer(), this, [this]() {
             Q_EMIT callbackCalled();
         });
+        co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
 
-        co_await qCoro(this, &QCoroTaskTest::callbackCalled);
-        QCORO_VERIFY(called);
-        co_return;
+        // Check that member functions can be passed as callback
+        QCoro::connect(timer(), this, &QCoroTaskTest::callbackCalled);
+        co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
+
+        // Test that the code still compiles if the value of the coroutine is not used by the function.
+        auto nonVoidCoroutine = []() -> QCoro::Task<QString> {
+            co_await timer();
+            co_return QStringLiteral("Hello World!");
+        };
+        QCoro::connect(nonVoidCoroutine(), this, [this]() {
+            Q_EMIT callbackCalled();
+        });
+        co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
+
+        QCoro::connect(nonVoidCoroutine(), this, [this](QString) {
+            Q_EMIT callbackCalled();
+        });
+        co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
     }
 
 private Q_SLOTS:
