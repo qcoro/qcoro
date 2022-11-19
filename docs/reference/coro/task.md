@@ -181,7 +181,7 @@ This is an example for a function that fetches data and updates a model:
 ```cpp
 void updateModel() {
     auto task = someCoroutine();
-    QCoro::connect(task, this, [this](auto &&result) {
+    QCoro::connect(std::move(task), this, [this](auto &&result) {
         beginResetModel();
         m_entries = std::move(result);
         endResetModel();
