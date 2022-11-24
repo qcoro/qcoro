@@ -100,6 +100,9 @@ function(qcoro_add_quick_test _name)
         Qt${QT_VERSION_MAJOR}::Quick
         Qt${QT_VERSION_MAJOR}::QuickPrivate
     )
+    get_test_property(test-${_name} ENVIRONMENT _env)
+    list(APPEND _env QT_QPA_PLATFORM=offscreen)
+    set_tests_properties(test-${_name} PROPERTIES ENVIRONMENT "${_env}")
 endfunction()
 
 qcoro_add_test(qtimer)
