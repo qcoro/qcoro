@@ -44,6 +44,8 @@ find_package(Threads REQUIRED)
 include(cmake/CheckAtomic.cmake)
 
 set(REQUIRED_QT_COMPONENTS Core)
+set(REQUIRED_QT5_COMPONENTS)
+set(REQUIRED_QT6_COMPONENTS)
 if (QCORO_WITH_QTDBUS)
     list(APPEND REQUIRED_QT_COMPONENTS DBus)
 endif()
@@ -54,10 +56,12 @@ if (QCORO_WITH_QTWEBSOCKETS)
     list(APPEND REQUIRED_QT_COMPONENTS WebSockets)
 endif()
 if (QCORO_WITH_QTQUICK)
-    list(APPEND REQUIRED_QT_COMPONENTS Quick)
+    list(APPEND REQUIRED_QT_COMPONENTS Quick QuickPrivate)
 endif()
 if (QCORO_WITH_QML)
     list(APPEND REQUIRED_QT_COMPONENTS Qml)
+    # Qt6 needs access to private API
+    list(APPEND REQUIRED_QT6_COMPONENTS QmlPrivate)
 endif()
 if (QCORO_BUILD_EXAMPLES)
     list(APPEND REQUIRED_QT_COMPONENTS Widgets Concurrent)
@@ -69,21 +73,16 @@ endif()
 set(MIN_REQUIRED_QT5_VERSION "5.12")
 set(MIN_REQUIRED_QT6_VERSION "6.2.0")
 
-
-if (NOT USE_QT_VERSION)
-    # FIXME: find_package(QT NAMES Qt6 Qt5 ...) seems to prefer Qt5 on my system
-    find_package(Qt6 ${MIN_REQUIRED_QT6_VERSION} COMPONENTS ${REQUIRED_QT_COMPONENTS})
-    if (NOT Qt6_FOUND)
-        find_package(Qt5 ${MIN_REQUIRED_QT5_VERSION} COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
-        set(QT_VERSION_MAJOR 5)
-    else()
-        set(QT_VERSION_MAJOR 6)
-    endif()
-else()
-    find_package(Qt${USE_QT_VERSION} ${MIN_REQUIRED_QT${USE_QT_VERSION}_VERSION}
-                 COMPONENTS ${REQUIRED_QT_COMPONENTS} REQUIRED)
-    set(QT_VERSION_MAJOR ${USE_QT_VERSION})
-endif()
+include(cmake/QCoroFindQt.cmake)
+# Find Qt. If USE_QT_VERSION is not set, it will try to look for Qt6 first
+# and fallback to Qt5 otherwise.
+qcoro_find_qt(
+    QT_VERSION "${USE_QT_VERSION}"
+    COMPONENTS "${REQUIRED_QT_COMPONENTS}"
+    QT5_COMPONENTS "${REQUIRED_QT5_COMPONENTS}"
+    QT6_COMPONENTS "${REQUIRED_QT6_COMPONENTS}"
+    FOUND_VER_VAR QT_VERSION_MAJOR
+)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in

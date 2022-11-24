@@ -1,0 +1,28 @@
+macro(qcoro_find_qt)
+    set(options)
+    set(oneValueArgs QT_VERSION FOUND_VER_VAR)
+    set(multiValueArgs COMPONENTS QT5_COMPONENTS QT6_COMPONENTS)
+    cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    if (NOT ARGS_QT_VERSION)
+        find_package(Qt6Core QUIET)
+        if (Qt6Core_FOUND)
+            set(ARGS_QT_VERSION 6)
+        else()
+            set(ARGS_QT_VERSION 5)
+        endif()
+    endif()
+
+    foreach (component IN LISTS ARGS_COMPONENTS ARGS_QT${ARGS_QT_VERSION}_COMPONENTS)
+        message(STATUS "Qt component: ${component}")
+        if ("${component}" MATCHES "Private$$")
+            string(REPLACE "Private" "" base_component "${component}")
+            find_package(Qt${ARGS_QT_VERSION}${base_component} REQUIRED COMPONENTS Private)
+        else()
+            find_package(Qt${ARGS_QT_VERSION}${component} REQUIRED)
+        endif()
+    endforeach()
+
+    set(${ARGS_FOUND_VER_VAR} ${ARGS_QT_VERSION})
+endmacro()
+
