@@ -27,7 +27,13 @@ public:
     ~ThreadContext();
     ThreadContext(const ThreadContext &) = delete;
     ThreadContext &operator=(const ThreadContext &) = delete;
+#ifdef Q_CC_GNU
+    // Workaround for the a GCC bug(?) where GCC tries to move the ThreadContext
+    // into QCoro::TaskPromise::await_transform() (most likely).
+    ThreadContext(ThreadContext &&) noexcept;
+#else
     ThreadContext(ThreadContext &&) = delete;
+#endif
     ThreadContext &operator=(ThreadContext &&) = delete;
 
     bool await_ready() const noexcept;

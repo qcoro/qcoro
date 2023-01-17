@@ -55,6 +55,10 @@ ThreadContext::ThreadContext(QThread *thread)
     : d(std::make_unique<ThreadContextPrivate>(thread))
 {}
 
+#ifdef Q_CC_GNU
+ThreadContext::ThreadContext(ThreadContext &&) noexcept  = default;
+#endif
+
 ThreadContext::~ThreadContext() = default;
 
 bool ThreadContext::await_ready() const noexcept {

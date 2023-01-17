@@ -59,6 +59,8 @@ private:
 
         co_await QCoro::moveToThread(qApp->thread());
 
+        QCORO_COMPARE(QThread::currentThread(), QCoreApplication::instance()->thread());
+
         newThread.exit();
         newThread.wait();
     }
