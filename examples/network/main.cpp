@@ -63,14 +63,13 @@ private Q_SLOTS:
         mBtn->setEnabled(false);
         mBtn->setText(tr("Downloading ..."));
 
-        auto *reply = co_await mNam.get(QNetworkRequest{wikiUrl});
+        std::unique_ptr<QNetworkReply> reply(co_await mNam.get(QNetworkRequest{wikiUrl}));
         if (reply->error()) {
             QMessageBox::warning(
                 this, tr("Network request error"),
                 tr("Error occured during network request. Error code: %1").arg(reply->error()));
             co_return;
         }
-        delete reply;
 
         mPb->setVisible(false);
         mBtn->setEnabled(true);
