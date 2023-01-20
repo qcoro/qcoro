@@ -52,6 +52,26 @@ struct awaiter_type<QTimer> {
 
 } // namespace QCoro::detail
 
+namespace QCoro {
+
+//! A coroutine that suspends for given period of time.
+template<typename Rep, typename Period>
+QCoro::Task<> sleepFor(const std::chrono::duration<Rep, Period> &timeout) {
+    QTimer timer;
+    timer.setSingleShot(true);
+    timer.start(std::chrono::duration_cast<std::chrono::milliseconds>(timeout));
+    co_await timer;
+}
+
+//! A coroutine that suspends until the specified time.
+template<typename Clock, typename Duration>
+QCoro::Task<> sleepUntil(const std::chrono::time_point<Clock, Duration> &when) {
+    const auto tp = when.time_since_epoch() - std::chrono::steady_clock::now().time_since_epoch();
+    return sleepFor(tp);
+}
+
+} // namespace QCoro
+
 /*! \endcond */
 
 //! Returns a coroutine-friendly wrapper for QTimer object.

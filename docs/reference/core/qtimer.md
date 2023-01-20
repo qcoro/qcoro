@@ -46,5 +46,38 @@ QCoro::Task<> MyClass::pretendWork() {
 }
 ```
 
+## `QCoro::sleepFor()`
+
+A simple coroutine that will suspend for the specified time duration. Can be quite
+useful especially in unit-tests.
+
+```cpp
+template<typename Rep, Period>
+QCoro::Task<> QCoro::sleepFor(const std::chrono::duration<Rep, Period> &timeout);
+```
+
+## `QCoro::sleepUntil()`
+
+A simple coroutine that will suspend until the specified point in time. Can be useful
+for scheduling tasks.
+
+```cpp
+template<typename Clock, typename Duration>
+QCoro::Task< QCoro::sleepUntil(const std::chrono::time_point<Clock, Duration> &when);
+```
+
+Example:
+
+```cpp
+const auto now = std::chrono::system_clock::now();
+const auto tomorrow_time = std::chrono::system_clock::to_time_t(now + 86400s);
+std::tm *gt = std::gmtime(&tomorrow_time);
+gt.tm_hour = 0;
+gt.tm_min = 0;
+gt.tm_sec = 0;
+const auto tomorrow_midnight = std::mktime(&gt);
+co_await QCoro::sleepUntil(std::chrono::system_clock::from_time_t(tomorrow_midnight));
+```
+
 [qdoc-qtimer]: https://doc.qt.io/qt-5/qtimer.html
 [qdoc-qtimer-timeout]: https://doc.qt.io/qt-5/qtimer.html#timeout
