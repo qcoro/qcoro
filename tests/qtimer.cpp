@@ -6,6 +6,10 @@
 
 #include "qcorotimer.h"
 
+#include <chrono>
+
+using namespace std::chrono_literals;
+
 class QCoroTimerTest : public QCoro::TestObject<QCoroTimerTest> {
     Q_OBJECT
 
@@ -68,12 +72,28 @@ private:
         QVERIFY(triggered);
     }
 
+    QCoro::Task<> testSleepFor_coro(QCoro::TestContext) {
+        QElapsedTimer elapsed;
+        elapsed.start();
+        co_await QCoro::sleepFor(100ms);
+        QCORO_VERIFY(elapsed.elapsed() >= 75);
+    }
+
+    QCoro::Task<> testSleepUntil_coro(QCoro::TestContext) {
+        QElapsedTimer elapsed;
+        elapsed.start();
+        co_await QCoro::sleepUntil(std::chrono::steady_clock::now() + 500ms);
+        QCORO_VERIFY(elapsed.elapsed() >= 475);
+    }
+
 private Q_SLOTS:
     addTest(Triggers)
     addTest(QCoroWrapperTriggers)
     addTest(DoesntBlockEventLoop)
     addTest(DoesntCoAwaitInactiveTimer)
     addTest(DoesntCoAwaitNullTimer)
+    addTest(SleepFor)
+    addTest(SleepUntil)
 
     addThenTest(Triggers)
 };
