@@ -7,6 +7,7 @@ on:
     paths:
       - 'mkdocs.yml'
       - 'docs/**'
+      - '.github/workflows/update_docs.yml'
 
   workflow_dispatch:
 
@@ -37,11 +38,11 @@ jobs:
                 g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
               })();</script><!-- End Matomo Code -->{% endblock %}" > docs/overrides/main.html
           mkdocs build --verbose
-      - name: Deploy Github Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@2.0.0
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ SECRETS.CLOUDFLARE_ACCOUNT_ID }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-          cname: qcoro.dvratil.cz
-          exclude_assets: '__pycache__'
+          apiToken: ${{ SECRETS.CLOUDFLARE_PAGES_TOKEN }}
+          command: pages publish ./site --project-name ${{ SECRETS.CLOUDFLARE_PAGES_NAME }} --commit-hash ${{ env.GITHUB_SHA }}
 
