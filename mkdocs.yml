@@ -28,7 +28,8 @@ markdown_extensions:
   - admonition
 
 plugins:
-  - search
+  - search:
+      separator: '[\s\-]+|::'
   - include-markdown
   - blogging:
       dirs:
