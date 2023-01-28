@@ -52,7 +52,7 @@ A simple coroutine that will suspend for the specified time duration. Can be qui
 useful especially in unit-tests.
 
 ```cpp
-template<typename Rep, Period>
+template<typename Rep, typename Period>
 QCoro::Task<> QCoro::sleepFor(const std::chrono::duration<Rep, Period> &timeout);
 ```
 
