@@ -58,6 +58,45 @@ public:
     QString string;
 };
 
+struct TestAwaitableBase {
+    std::chrono::milliseconds delay() const { return mDelay; }
+private:
+    std::chrono::milliseconds mDelay = 100ms;
+};
+
+template<typename T>
+struct TestAwaitable : TestAwaitableBase {
+public:
+    TestAwaitable(T val)
+        : mResult(val)
+    {}
+
+    bool await_ready() const { return false; }
+    void await_suspend(std::coroutine_handle<> handle) {
+        QTimer::singleShot(100ms, [handle = std::move(handle)]() {
+            handle.resume();
+        });
+    }
+    T await_resume() {
+        return mResult;
+    }
+
+private:
+    T mResult;
+};
+
+template<>
+struct TestAwaitable<void> : TestAwaitableBase {
+public:
+    bool await_ready() const { return false; }
+    void await_suspend(std::coroutine_handle<> handle) {
+        QTimer::singleShot(100ms, [handle = std::move(handle)]() {
+            handle.resume();
+        });
+    }
+    void await_resume() {}
+};
+
 } // namespace
 
 class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
@@ -489,6 +528,31 @@ private Q_SLOTS:
         QCOMPARE(result, 42);
     }
 
+    void testWaitForAwaitable() {
+        TestAwaitable<int> awaitable(42);
+        QElapsedTimer timer;
+        timer.start();
+
+        static_assert(std::is_same_v<decltype(QCoro::waitFor(awaitable)), int>);
+        const int result = QCoro::waitFor(awaitable);
+        QCOMPARE(result, 42);
+        QVERIFY(timer.elapsed() >= awaitable.delay().count());
+
+    }
+
+    void testWaitForVoidAwaitable() {
+        TestAwaitable<void> awaitable;
+        QCoro::waitFor(awaitable);
+        QElapsedTimer timer;
+        timer.start();
+
+        static_assert(std::is_void_v<decltype(QCoro::waitFor(awaitable))>);
+        QCoro::waitFor(awaitable);
+
+        QVERIFY(timer.elapsed() >= awaitable.delay().count());
+
+    }
+
     void testIgnoredVoidTaskResult() {
         QEventLoop el;
         ignoreCoroutineResult(el, [&el]() -> QCoro::Task<> {
@@ -626,6 +690,8 @@ private Q_SLOTS:
 
         QVERIFY(!called);
     }
+
+
 };
 
 QTEST_GUILESS_MAIN(QCoroTaskTest)

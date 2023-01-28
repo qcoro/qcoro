@@ -147,14 +147,17 @@ which takes `QCoro::Task<T>` (that is, result of calling any QCoro-based corouti
 until the coroutine finishes. If the coroutine has a non-void return value, the value is returned
 from `waitFor().`
 
+Since QCoro 0.8.0 it is possible to use `QCoro::waitFor()` with any awaitable type, not just `QCoro::Task<T>`.
+
 ```cpp
 QCoro::Task<int> computeAnswer() {
-    std::this_thread::sleep_for(std::chrono::year{7'500'000});
+    co_await QCoro::sleepFor(std::chrono::years{7'500'00});
     co_return 42;
 }
 
 void nonCoroutineFunction() {
-    // The following line will block as if computeAnswer were not a coroutine.
+    // The following line will block as if computeAnswer were not a coroutine. It will internally run a
+    // a QEventLoop, so other events are still processed.
     const int answer = QCoro::waitFor(computeAnswer());
     std::cout << "The answer is: " << answer << std::endl;
 }

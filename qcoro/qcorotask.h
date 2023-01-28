@@ -675,32 +675,32 @@ namespace detail {
  * So instead we do basically what Qt does internally, but we make sure to not delete th
  * QFunctorSlotObjectWithNoArgs until after the event loop quits.
  */
-template<typename Coroutine>
-Task<> runCoroutine(QEventLoop &loop, bool &startLoop, Coroutine &&coroutine) {
-    co_await coroutine;
+template<Awaitable Awaitable>
+Task<> runCoroutine(QEventLoop &loop, bool &startLoop, Awaitable &&awaitable) {
+    co_await awaitable;
     startLoop = false;
     loop.quit();
 }
 
-template<typename T, typename Coroutine>
-Task<> runCoroutine(QEventLoop &loop, bool &startLoop, T &result, Coroutine &&coroutine) {
-    result = co_await coroutine;
+template<typename T, Awaitable Awaitable>
+Task<> runCoroutine(QEventLoop &loop, bool &startLoop, T &result, Awaitable &&awaitable) {
+    result = co_await awaitable;
     startLoop = false;
     loop.quit();
 }
 
-template<typename T, typename Coroutine>
-T waitFor(Coroutine &&coro) {
+template<typename T, Awaitable Awaitable>
+T waitFor(Awaitable &&awaitable) {
     QEventLoop loop;
     bool startLoop = true; // for early returns: calling quit() before exec() still starts the loop
     if constexpr (std::is_void_v<T>) {
-        runCoroutine(loop, startLoop, std::forward<Coroutine>(coro));
+        runCoroutine(loop, startLoop, std::forward<Awaitable>(awaitable));
         if (startLoop) {
             loop.exec();
         }
     } else {
         T result;
-        runCoroutine(loop, startLoop, result, std::forward<Coroutine>(coro));
+        runCoroutine(loop, startLoop, result, std::forward<Awaitable>(awaitable));
         if (startLoop) {
             loop.exec();
         }
@@ -721,13 +721,19 @@ T waitFor(Coroutine &&coro) {
  */
 template<typename T>
 inline T waitFor(QCoro::Task<T> &task) {
-    return detail::waitFor<T>(task);
+    return detail::waitFor<T>(std::forward<QCoro::Task<T>>(task));
 }
 
 // \overload
 template<typename T>
 inline T waitFor(QCoro::Task<T> &&task) {
-    return detail::waitFor<T>(task);
+    return detail::waitFor<T>(std::forward<QCoro::Task<T>>(task));
+}
+
+template<Awaitable Awaitable>
+inline auto waitFor(Awaitable &&awaitable) {
+    using T = decltype(awaitable.await_resume());
+    return detail::waitFor<T>(std::forward<Awaitable>(awaitable));
 }
 
 namespace detail {
