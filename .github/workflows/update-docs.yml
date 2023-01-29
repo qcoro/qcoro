@@ -14,6 +14,9 @@ on:
 jobs:
   update-docs:
     runs-on: ubuntu-latest
+    environment:
+      name: cloudflare-pages
+      url: ${{ vars.CLOUDFLARE_PAGES_NAME}}.pages.dev
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python
@@ -44,5 +47,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ SECRETS.CLOUDFLARE_ACCOUNT_ID }}
         with:
           apiToken: ${{ SECRETS.CLOUDFLARE_PAGES_TOKEN }}
-          command: pages publish ./site --project-name ${{ SECRETS.CLOUDFLARE_PAGES_NAME }} --commit-hash ${{ env.GITHUB_SHA }}
+          command: pages publish ./site --project-name ${{ vars.CLOUDFLARE_PAGES_NAME }} --commit-hash ${{ env.GITHUB_SHA }}
 
