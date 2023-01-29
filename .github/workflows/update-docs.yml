@@ -1,4 +1,4 @@
-name: Generate documentation
+name: Build and Deploy Documentation
 
 on:
   push:
@@ -12,11 +12,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  update-docs:
+  build-and-deploy
+    name: Build and Deploy
     runs-on: ubuntu-latest
     environment:
       name: cloudflare-pages
-      url: ${{ vars.CLOUDFLARE_PAGES_NAME}}.pages.dev
+      url: https://${{ vars.CLOUDFLARE_PAGES_NAME}}.pages.dev
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python
