@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: cloudflare-pages
-      url: https://${{ vars.CLOUDFLARE_PAGES_NAME}}.pages.dev
+      url: ${{ steps.deploy.outputs.url }}
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python
@@ -43,10 +43,14 @@ jobs:
               })();</script><!-- End Matomo Code -->{% endblock %}" > docs/overrides/main.html
           mkdocs build --verbose
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@2.0.0
+        id: deploy
+        uses: cloudflare/pages-action@1
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ SECRETS.CLOUDFLARE_ACCOUNT_ID }}
         with:
           apiToken: ${{ SECRETS.CLOUDFLARE_PAGES_TOKEN }}
-          command: pages publish ./site --project-name ${{ vars.CLOUDFLARE_PAGES_NAME }} --commit-hash ${{ env.GITHUB_SHA }}
+          accountId: ${{ SECRETS.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CLOUDFLARE_PAGES_NAME }}
+          directory: ./site
+          githubToken: ${{ SECRETS.GITHUB_TOKEN }}
 
