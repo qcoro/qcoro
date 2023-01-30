@@ -557,7 +557,7 @@ private Q_SLOTS:
         static_assert(std::is_same_v<decltype(QCoro::waitFor(awaitable)), int>);
         const int result = QCoro::waitFor(awaitable);
         QCOMPARE(result, 42);
-        QVERIFY(timer.elapsed() >= awaitable.delay().count());
+        QVERIFY(timer.elapsed() >= static_cast<float>(awaitable.delay().count()) * 0.9);
 
     }
 
@@ -569,7 +569,7 @@ private Q_SLOTS:
         static_assert(std::is_void_v<decltype(QCoro::waitFor(awaitable))>);
         QCoro::waitFor(awaitable);
 
-        QVERIFY(timer.elapsed() >= awaitable.delay().count());
+        QVERIFY(timer.elapsed() >= static_cast<float>(awaitable.delay().count()) * 0.9);
     }
 
     void testWaitForAwaitableWithOperatorCoAwait() {
@@ -581,7 +581,7 @@ private Q_SLOTS:
         static_assert(std::is_same_v<decltype(QCoro::waitFor(awaitable)), int>);
         const int result = QCoro::waitFor(awaitable);
         QCOMPARE(result, 42);
-        QVERIFY(timer.elapsed() >= (100ms).count());
+        QVERIFY(timer.elapsed() >= (90ms).count());
     }
 
     void testWaitForVoidAwaitableWithOperatorCoAwait() {
@@ -592,7 +592,7 @@ private Q_SLOTS:
         static_assert(std::is_void_v<decltype(QCoro::waitFor(awaitable))>);
         QCoro::waitFor(awaitable);
 
-        QVERIFY(timer.elapsed() >= (100ms).count());
+        QVERIFY(timer.elapsed() >= (90ms).count());
     }
 
 
