@@ -661,10 +661,42 @@ Task<void> inline TaskPromise<void>::get_return_object() noexcept {
     return Task<void>{std::coroutine_handle<TaskPromise>::from_promise(*this)};
 }
 
-} // namespace detail
 
 
-namespace detail {
+template <typename T>
+concept TaskConvertible = requires(T v, TaskPromiseBase t)
+{
+    { t.await_transform(v) };
+};
+
+template<typename T>
+struct awaitable_return_type {
+  using type = std::decay_t<decltype(std::declval<T>().await_resume())>;
+};
+
+template<QCoro::detail::has_member_operator_coawait T>
+struct awaitable_return_type<T> {
+    using type = std::decay_t<typename awaitable_return_type<decltype(std::declval<T>().operator co_await())>::type>;
+};
+
+template<QCoro::detail::has_nonmember_operator_coawait T>
+struct awaitable_return_type<T> {
+    using type = std::decay_t<typename awaitable_return_type<decltype(operator co_await(std::declval<T>()))>::type>;
+};
+
+template<Awaitable Awaitable>
+using awaitable_return_type_t = typename detail::awaitable_return_type<Awaitable>::type;
+
+template <typename Awaitable>
+requires TaskConvertible<Awaitable>
+using convertible_awaitable_return_type_t = typename detail::awaitable_return_type<decltype(std::declval<TaskPromiseBase>().await_transform(Awaitable()))>::type;
+
+template <typename Awaitable>
+requires TaskConvertible<Awaitable>
+auto toTask(Awaitable &&future) -> QCoro::Task<detail::convertible_awaitable_return_type_t<Awaitable>> {
+    co_return co_await future;
+}
+
 
 //! Helper class to run a coroutine in a nested event loop.
 /*!
@@ -732,38 +764,7 @@ inline T waitFor(QCoro::Task<T> &&task) {
 
 template<Awaitable Awaitable>
 inline auto waitFor(Awaitable &&awaitable) {
-    using T = decltype(awaitable.await_resume());
-    return detail::waitFor<T>(std::forward<Awaitable>(awaitable));
-}
-
-namespace detail {
-
-template <typename T>
-concept TaskConvertible = requires(T v, TaskPromiseBase t)
-{
-    { t.await_transform(v) };
-};
-
-template<typename T>
-struct awaitable_return_type {
-  using type = decltype(std::declval<T>().await_resume());
-};
-
-template<QCoro::detail::has_operator_coawait T>
-struct awaitable_return_type<T> {
-    using type = typename awaitable_return_type<decltype(std::declval<T>().operator co_await())>::type;
-};
-
-template <typename Awaitable>
-requires TaskConvertible<Awaitable>
-using awaitable_return_type_t = typename detail::awaitable_return_type<decltype(std::declval<TaskPromiseBase>().await_transform(Awaitable()))>::type;
-
-template <typename Awaitable>
-requires TaskConvertible<Awaitable>
-auto toTask(Awaitable &&future) -> QCoro::Task<detail::awaitable_return_type_t<Awaitable>> {
-    co_return co_await future;
-}
-
+    return detail::waitFor<detail::awaitable_return_type_t<Awaitable>>(std::forward<Awaitable>(awaitable));
 }
 
 //! Connect a callback to be called when the asynchronous task finishes.

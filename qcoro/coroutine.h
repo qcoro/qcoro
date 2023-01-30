@@ -5,6 +5,7 @@
 #pragma once
 
 #include <version>
+#include <utility>
 
 // __cpp_lib_coroutine is not defined if the compiler doesn't support coroutines
 // (__cpp_impl_coroutine), e.g. clang as of 13.0.
@@ -265,11 +266,16 @@ concept has_await_methods = requires(T t) {
 };
 
 template<typename T>
-concept has_operator_coawait = requires(T t) {
+concept has_member_operator_coawait = requires(T t) {
     // TODO: Check that result of co_await() satisfies Awaitable again
     { t.operator co_await() };
 };
 
+template<typename T>
+concept has_nonmember_operator_coawait = requires(T &&t) {
+    // TODO: Check that result of the operator satisfied Awaitable again
+    { operator co_await(std::forward<T>(t)) };
+};
 
 } // namespace detail
 
@@ -278,7 +284,8 @@ concept has_operator_coawait = requires(T t) {
  * Awaitable type is a type that can be passed as an argument to co_await.
  */
 template<typename T>
-concept Awaitable = detail::has_operator_coawait<T> ||
+concept Awaitable = detail::has_member_operator_coawait<T> ||
+                    detail::has_nonmember_operator_coawait<T> ||
                     detail::has_await_methods<T>;
 
 } // namespace QCoro
