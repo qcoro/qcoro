@@ -258,6 +258,7 @@ namespace QCoro {
 
 namespace detail {
 
+
 template<typename T>
 concept has_await_methods = requires(T t) {
     { t.await_ready() } -> std::same_as<bool>;
@@ -272,9 +273,14 @@ concept has_member_operator_coawait = requires(T t) {
 };
 
 template<typename T>
-concept has_nonmember_operator_coawait = requires(T &&t) {
+concept has_nonmember_operator_coawait = requires(T t) {
     // TODO: Check that result of the operator satisfied Awaitable again
-    { operator co_await(std::forward<T>(t)) };
+#if defined(_MSC_VER) && !defined(__clang__)
+    // FIXME: MSVC is unable to perform ADL lookup for operator co_await and just fails to compile
+    { ::operator co_await(static_cast<T &&>(t)) };
+#else
+    { operator co_await(static_cast<T &&>(t)) };
+#endif
 };
 
 } // namespace detail
