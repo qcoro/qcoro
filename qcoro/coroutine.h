@@ -5,6 +5,7 @@
 #pragma once
 
 #include <version>
+#include <utility>
 
 // __cpp_lib_coroutine is not defined if the compiler doesn't support coroutines
 // (__cpp_impl_coroutine), e.g. clang as of 13.0.
@@ -257,6 +258,7 @@ namespace QCoro {
 
 namespace detail {
 
+
 template<typename T>
 concept has_await_methods = requires(T t) {
     { t.await_ready() } -> std::same_as<bool>;
@@ -265,11 +267,21 @@ concept has_await_methods = requires(T t) {
 };
 
 template<typename T>
-concept has_operator_coawait = requires(T t) {
+concept has_member_operator_coawait = requires(T t) {
     // TODO: Check that result of co_await() satisfies Awaitable again
     { t.operator co_await() };
 };
 
+template<typename T>
+concept has_nonmember_operator_coawait = requires(T t) {
+    // TODO: Check that result of the operator satisfied Awaitable again
+#if defined(_MSC_VER) && !defined(__clang__)
+    // FIXME: MSVC is unable to perform ADL lookup for operator co_await and just fails to compile
+    { ::operator co_await(static_cast<T &&>(t)) };
+#else
+    { operator co_await(static_cast<T &&>(t)) };
+#endif
+};
 
 } // namespace detail
 
@@ -278,7 +290,8 @@ concept has_operator_coawait = requires(T t) {
  * Awaitable type is a type that can be passed as an argument to co_await.
  */
 template<typename T>
-concept Awaitable = detail::has_operator_coawait<T> ||
+concept Awaitable = detail::has_member_operator_coawait<T> ||
+                    detail::has_nonmember_operator_coawait<T> ||
                     detail::has_await_methods<T>;
 
 } // namespace QCoro

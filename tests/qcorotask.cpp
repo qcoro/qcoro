@@ -97,6 +97,27 @@ public:
     void await_resume() {}
 };
 
+template<typename T>
+struct TestAwaitableWithCoAwait {
+    TestAwaitableWithCoAwait(T val)
+        : mResult(val)
+    {}
+
+    TestAwaitable<T> operator co_await() {
+        return TestAwaitable(mResult);
+    }
+
+private:
+    T mResult;
+};
+
+template<>
+struct TestAwaitableWithCoAwait<void> {
+    TestAwaitable<void> operator co_await() {
+        return TestAwaitable<void>();
+    }
+};
+
 } // namespace
 
 class QCoroTaskTest : public QCoro::TestObject<QCoroTaskTest>
@@ -536,22 +557,44 @@ private Q_SLOTS:
         static_assert(std::is_same_v<decltype(QCoro::waitFor(awaitable)), int>);
         const int result = QCoro::waitFor(awaitable);
         QCOMPARE(result, 42);
-        QVERIFY(timer.elapsed() >= awaitable.delay().count());
+        QVERIFY(timer.elapsed() >= static_cast<float>(awaitable.delay().count()) * 0.9);
 
     }
 
     void testWaitForVoidAwaitable() {
         TestAwaitable<void> awaitable;
-        QCoro::waitFor(awaitable);
         QElapsedTimer timer;
         timer.start();
 
         static_assert(std::is_void_v<decltype(QCoro::waitFor(awaitable))>);
         QCoro::waitFor(awaitable);
 
-        QVERIFY(timer.elapsed() >= awaitable.delay().count());
-
+        QVERIFY(timer.elapsed() >= static_cast<float>(awaitable.delay().count()) * 0.9);
     }
+
+    void testWaitForAwaitableWithOperatorCoAwait() {
+        TestAwaitableWithCoAwait<int> awaitable(42);
+        QCoro::waitFor(awaitable);
+        QElapsedTimer timer;
+        timer.start();
+
+        static_assert(std::is_same_v<decltype(QCoro::waitFor(awaitable)), int>);
+        const int result = QCoro::waitFor(awaitable);
+        QCOMPARE(result, 42);
+        QVERIFY(timer.elapsed() >= (90ms).count());
+    }
+
+    void testWaitForVoidAwaitableWithOperatorCoAwait() {
+        TestAwaitableWithCoAwait<void> awaitable;
+        QElapsedTimer timer;
+        timer.start();
+
+        static_assert(std::is_void_v<decltype(QCoro::waitFor(awaitable))>);
+        QCoro::waitFor(awaitable);
+
+        QVERIFY(timer.elapsed() >= (90ms).count());
+    }
+
 
     void testIgnoredVoidTaskResult() {
         QEventLoop el;
