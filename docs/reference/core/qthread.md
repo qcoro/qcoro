@@ -50,6 +50,19 @@ See documentation for [`QThread::finished()`][qtdoc-qthread-finished] for detail
 QCoro::Task<bool> QCoroThread::waitForFinished(std::chrono::milliseconds timeout);
 ```
 
+## `QCoro::moveToThread()`
+
+A helper coroutine that allows changing the thread context in which the coroutine
+code is currently being executed.
+
+When `co_await`ed, the current coroutine will be suspended on the current thread and 
+immediately resumed again, but in the context of the thread that was passed in as
+an argument.
+
+```cpp
+QCoro::Task<> QCoro::moveToThread(QThread *thread);
+```
+
 ## Examples
 
 ```cpp
