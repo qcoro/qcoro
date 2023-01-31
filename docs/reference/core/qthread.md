@@ -71,6 +71,6 @@ QCoro::Task<> QCoro::moveToThread(QThread *thread);
 
 
 [qtdoc-qthread]: https://doc.qt.io/qt-5/qthread.html
-[qtdoc-qthread-waitForStarted]: https://doc.qt.io/qt-5/qthread.html#waitForStarted
-[qtdoc-qthread-waitForFiished]: https://doc.qt.io/qt-5/qthread.html#waitForFinished
+[qtdoc-qthread-started]: https://doc.qt.io/qt-5/qthread.html#started
+[qtdoc-qthread-finished]: https://doc.qt.io/qt-5/qthread.html#finished
 [qcoro-coro]: ../coro/coro.md
