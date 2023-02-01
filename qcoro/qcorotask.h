@@ -580,11 +580,22 @@ public:
     }
 
 private:
+    inline void unused_arg_pack() {}
+
+    template<typename Head, typename ... Tail>
+    inline void unused_arg_pack(Head &&head, Tail && ... tail) {
+        Q_UNUSED(head);
+        unused_arg_pack(tail...);
+    }
+
+
     template<typename ThenCallback, typename ... Args>
     auto invokeCb(ThenCallback &&callback, Args && ... args) {
         if constexpr (std::is_invocable_v<ThenCallback, Args ...>) {
             return callback(std::forward<Args>(args) ...);
         } else {
+            // workaround older MSVC complaining about `args` being unused in this branch
+            unused_arg_pack(std::forward<Args>(args) ...);
             return callback();
         }
     }
