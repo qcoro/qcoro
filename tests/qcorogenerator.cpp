@@ -147,6 +147,25 @@ private Q_SLOTS:
         QCOMPARE(testval, 4);
     }
 
+    void testMovedGenerator() {
+        const auto createGenerator = []() -> QCoro::Generator<int> {
+            for (int i = 0; i < 4; ++i) {
+                co_yield i;
+            }
+        };
+
+        auto originalGenerator = createGenerator();
+        auto generator = std::move(originalGenerator);
+        auto it = generator.begin();
+        int testval = 0;
+        while (it != generator.end()) {
+            int value = *it;
+            QCOMPARE(value, testval++);
+            ++it;
+        }
+        QCOMPARE(testval, 4);
+    }
+
     void testException() {
         const auto createGenerator = []() -> QCoro::Generator<int> {
             for (int i = 0; i < 10; ++i) {

@@ -168,6 +168,25 @@ private:
         QCORO_COMPARE(testvalue, 4);
     }
 
+    QCoro::Task<> testMovedGenerator_coro(QCoro::TestContext) {
+        const auto createGenerator = []() -> QCoro::AsyncGenerator<int> {
+            for (int i = 0; i < 4; ++i) {
+                co_await sleep(10ms);
+                co_yield i;
+            }
+        };
+
+        auto originalGenerator = createGenerator();
+        auto generator = std::move(originalGenerator);
+        int testvalue = 0;
+        for (auto it = co_await generator.begin(), end = generator.end(); it != end; co_await ++it) {
+            int value = *it;
+            QCORO_COMPARE(value, testvalue++);
+        }
+        QCORO_COMPARE(testvalue, 4);
+
+    }
+
     QCoro::Task<> testException_coro(QCoro::TestContext) {
         const auto createGenerator = []() -> QCoro::AsyncGenerator<int> {
             for (int i = 0; i < 4; ++i) {
@@ -243,6 +262,7 @@ private Q_SLOTS:
     addTest(ReferenceGenerator)
     addTest(ConstReferenceGenerator)
     addTest(MoveonlyGenerator)
+    addTest(MovedGenerator)
     addTest(Exception)
     addTest(ExceptionInDereference)
     addTest(ExceptionInBegin)
