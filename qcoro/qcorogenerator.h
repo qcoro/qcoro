@@ -236,9 +236,16 @@ public:
     using iterator = GeneratorIterator<T>;
 
     explicit Generator() = default;
-    Generator(Generator &&) noexcept = default;
+    Generator(Generator &&other) noexcept {
+        mGeneratorCoroutine = other.mGeneratorCoroutine;
+        other.mGeneratorCoroutine = std::coroutine_handle<promise_type>::from_address(nullptr);
+    }
     Generator(const Generator &) = delete;
-    Generator &operator=(Generator &&) noexcept = default;
+    Generator &operator=(Generator &&other) noexcept {
+            mGeneratorCoroutine = other.mGeneratorCoroutine;
+            other.mGeneratorCoroutine = std::coroutine_handle<promise_type>::from_address(nullptr);
+            return *this;
+    };
     Generator &operator=(const Generator &) = delete;
     /**
      * @brief Destroys this Generator object and the associated generator coroutine.
@@ -246,7 +253,9 @@ public:
      * All values allocated on the generator stack are destroyed automatically.
      */
     ~Generator() {
-        mGeneratorCoroutine.destroy();
+        if (mGeneratorCoroutine.address() != nullptr) {
+            mGeneratorCoroutine.destroy();
+        }
     }
 
     /**
