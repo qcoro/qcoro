@@ -12,6 +12,8 @@
 
 #include <QIODevice>
 
+#if QT_CONFIG(process)
+
 class QProcess;
 
 namespace QCoro::detail {
@@ -126,3 +128,4 @@ inline auto qCoro(QProcess *p) noexcept {
     return QCoro::detail::QCoroProcess{p};
 }
 
+#endif // QT_CONFIG(process)
