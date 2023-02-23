@@ -2,6 +2,10 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <QtGlobal>
+
+#if QT_CONFIG(process)
+
 #include "qcoroprocess.h"
 #include "qcorosignal.h"
 
@@ -51,3 +55,5 @@ QCoro::Task<bool> QCoroProcess::start(const QString &program, const QStringList 
     static_cast<QProcess *>(mDevice.data())->start(program, arguments, mode);
     return waitForStarted(timeout);
 }
+
+#endif // QT_CONFIG(process)
