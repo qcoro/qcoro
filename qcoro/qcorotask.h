@@ -817,7 +817,7 @@ void connect(QCoro::Task<T> &&task, QObjectSubclass *context, Callback func) {
 
 template <typename T, typename QObjectSubclass, typename Callback>
 requires detail::TaskConvertible<T>
-        && (std::is_invocable_v<Callback> || std::is_invocable_v<Callback, detail::awaitable_return_type_t<T>> || std::is_invocable_v<Callback, QObjectSubclass *>)
+        && (std::is_invocable_v<Callback> || std::is_invocable_v<Callback, detail::convertible_awaitable_return_type_t<T>> || std::is_invocable_v<Callback, QObjectSubclass *>)
         && (!detail::isTask_v<T>)
 void connect(T &&future, QObjectSubclass *context, Callback func) {
     auto task = detail::toTask(std::move(future));
