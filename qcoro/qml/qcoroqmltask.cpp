@@ -9,7 +9,10 @@
 #include <optional>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+QT_WARNING_PUSH
+QT_WARNING_DISABLE_MSVC(4458 4201)
 #include <private/qjsvalue_p.h>
+QT_WARNING_POP
 #endif
 
 Q_DECLARE_LOGGING_CATEGORY(qcoroqml)
