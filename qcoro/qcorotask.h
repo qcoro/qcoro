@@ -581,7 +581,7 @@ public:
 
 private:
     template<typename ThenCallback, typename ... Args>
-    auto invokeCb(ThenCallback &&callback, Args && ... args) {
+    auto invokeCb(ThenCallback &&callback, [[maybe_unused]] Args && ... args) {
         if constexpr (std::is_invocable_v<ThenCallback, Args ...>) {
             return callback(std::forward<Args>(args) ...);
         } else {
