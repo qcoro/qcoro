@@ -17,6 +17,8 @@ namespace QCoro {
 
 struct QmlTaskPrivate;
 
+class QmlTaskListener;
+
 //! QML type that allows to react to asynchronous computations from QML
 struct QCOROQML_EXPORT QmlTask {
     Q_GADGET
@@ -77,8 +79,31 @@ public:
      */
     Q_INVOKABLE void then(QJSValue func);
 
+    //! Allows to use tasks in property bindings
+    /*!
+     * The value property is initially null, and will be updated to the actual value once it is available.
+     * Example usage:
+     * ```
+     * text: asyncLoadText().await().value
+     * ```
+     */
+    Q_INVOKABLE QCoro::QmlTaskListener *await();
+
 private:
     QSharedDataPointer<QmlTaskPrivate> d;
+};
+
+class QmlTaskListener : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(QVariant value READ value NOTIFY valueChanged)
+
+public:
+    QVariant value() const;
+    void setValue(QVariant &&value);
+    Q_SIGNAL void valueChanged();
+
+private:
+    QVariant m_value;
 };
 
 }

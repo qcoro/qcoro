@@ -73,4 +73,26 @@ void QmlTask::then(QJSValue func) {
     });
 }
 
+QmlTaskListener *QmlTask::await()
+{
+    QPointer listener = new QmlTaskListener();
+    d->task->then([listener](auto &&value) {
+        if (listener) {
+            listener->setValue(std::move(value));
+        }
+    });
+    return listener;
+}
+
+QVariant QmlTaskListener::value() const
+{
+    return m_value;
+}
+
+void QmlTaskListener::setValue(QVariant &&value)
+{
+    m_value = std::move(value);
+    Q_EMIT valueChanged();
+}
+
 }

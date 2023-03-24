@@ -10,4 +10,5 @@
 
 void QCoro::Qml::registerTypes() {
     qRegisterMetaType<QCoro::QmlTask>();
+    qmlRegisterAnonymousType<QCoro::QmlTaskListener>("QCoro", 0);
 }
