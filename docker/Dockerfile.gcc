@@ -1,22 +1,23 @@
 # SPDX-FileCopyrightText: 2022 Daniel Vrátil <dvratil@kde.org>
 # SPDX-License-Identifier: MIT
 #
-# Docker image for specific versions of clang or gcc and specific version of Qt.
+# Docker image for specific versions of gcc and specific version of Qt.
 
 ARG compiler_version
-ARG compiler_image
-FROM ${compiler_image}:${compiler_version}
+FROM gcc:${compiler_version}
 ARG qt_version
 ARG qt_modules
 ARG qt_archives
 
 SHELL ["/bin/bash", "-c"]
 
+# Enable backports in older GCC images to get access to newer cmake
 RUN source /etc/os-release && \
     if [[ "${VERSION_ID}" == "10" ]]; then \
         echo "deb http://deb.debian.org/debian buster-backports main" > /etc/apt/sources.list.d/backports.list; \
     fi
 
+# Install build-time and runtime dependencies
 RUN apt-get update \
     && apt-get upgrade --yes \
     && apt-get install --yes --no-install-recommends \
@@ -33,14 +34,13 @@ RUN apt-get update \
 # in /usr/lib/x86_64-unknown-linux-gnu instead of /usr/lib/x86_64-linux-gnu
 RUN ln -s x86_64-linux-gnu /usr/lib/x86_64-unknown-linux-gnu
 
-RUN pip3 install aqtinstall
-
+# Install Qt
 WORKDIR /root
-
+RUN pip3 install aqtinstall
 COPY install-qt.sh ./install-qt.sh
-
 RUN ./install-qt.sh "${qt_version}" "${qt_modules}" "${qt_archives}"
 
+# Set up environment
 ENV QT_BASE_DIR "/opt/qt/${qt_version}/gcc_64"
 ENV PATH "${QT_BASE_DIR}/bin:${PATH}"
 ENV CMAKE_PREFIX_PATH="${QT_BASE_DIR}/lib/cmake"
