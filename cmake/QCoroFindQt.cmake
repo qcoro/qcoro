@@ -12,17 +12,11 @@ macro(qcoro_find_qt)
             set(ARGS_QT_VERSION 5)
         endif()
     endif()
+    
+    list(APPEND REQUIRED_QT_COMPONENTS "${ARGS_QT${ARGS_QT_VERSION}_COMPONENTS}")
+    list(FILTER REQUIRED_QT_COMPONENTS EXCLUDE REGEX "Private$$")
 
-    foreach (component IN LISTS ARGS_COMPONENTS ARGS_QT${ARGS_QT_VERSION}_COMPONENTS)
-        message(STATUS "Qt component: ${component}")
-        if ("${component}" MATCHES "Private$$")
-            string(REPLACE "Private" "" base_component "${component}")
-            find_package(Qt${ARGS_QT_VERSION}${base_component} REQUIRED COMPONENTS Private)
-        else()
-            find_package(Qt${ARGS_QT_VERSION}${component} REQUIRED)
-        endif()
-    endforeach()
+    find_package(Qt${ARGS_QT_VERSION} REQUIRED COMPONENTS ${REQUIRED_QT_COMPONENTS})
 
     set(${ARGS_FOUND_VER_VAR} ${ARGS_QT_VERSION})
 endmacro()
-
