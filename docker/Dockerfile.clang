@@ -42,7 +42,7 @@ RUN \
     wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     # Install clang \
     apt-get update && \
-    apt-get install --yes --no-install-recommends clang${CLANG_VERSION_SUFFIX}
+    apt-get install --yes --no-install-recommends clang${CLANG_VERSION_SUFFIX} libclang-rt${CLANG_VERSION_SUFFIX}-dev
 
 # Workaround a bug in CMake (?) which tries to look for OpenGL-related libraries
 # in /usr/lib/x86_64-unknown-linux-gnu instead of /usr/lib/x86_64-linux-gnu
