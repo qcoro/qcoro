@@ -42,7 +42,11 @@ RUN \
     wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - && \
     # Install clang \
     apt-get update && \
-    apt-get install --yes --install-recommends clang${CLANG_VERSION_SUFFIX}
+    apt-get install --yes --install-recommends clang${CLANG_VERSION_SUFFIX} && \
+    clang_major_version=$(clang${CLANG_VERSION_SUFFIX} --version | grep -Eo "[0-9]+.[0-9]+.[0-9]+" | cut -d' ' -f1) && \
+    if [ ${clang_major_version} -gt 11 ]; then \
+        apt-get install --yes --no-install-recommends libclang-rt-${clang_major_version}-dev; \
+    fi
 
 # Workaround a bug in CMake (?) which tries to look for OpenGL-related libraries
 # in /usr/lib/x86_64-unknown-linux-gnu instead of /usr/lib/x86_64-linux-gnu
