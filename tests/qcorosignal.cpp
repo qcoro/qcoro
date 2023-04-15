@@ -48,6 +48,27 @@ private:
     QTimer mTimer;
 };
 
+
+class SimpleSignal: public QObject {
+    Q_OBJECT
+public:
+    void send(int id) {
+        Q_EMIT messageReceived(id);
+    }
+
+    Q_SIGNAL void messageReceived(int id);
+
+    QCoro::Task<int> waitForMessage(int id) {
+        QCORO_FOREACH(int msgId, qCoroSignalListener(this, &SimpleSignal::messageReceived)) {
+            if (msgId == id) {
+                co_return id;
+            }
+        }
+
+        co_return -1;
+    }
+};
+
 class QCoroSignalTest : public QCoro::TestObject<QCoroSignalTest> {
     Q_OBJECT
 
@@ -279,6 +300,16 @@ private:
         QCORO_COMPARE(count, 10);
     }
 
+    QCoro::Task<> testSignalAfterListenerQuits_coro(QCoro::TestContext) {
+        SimpleSignal simple;
+        auto msg1 = simple.waitForMessage(1);
+        auto msg2 = simple.waitForMessage(2);
+        simple.send(1);
+        simple.send(2);
+        QCORO_COMPARE(co_await msg1, 1);
+        QCORO_COMPARE(co_await msg2, 2);
+    }
+
 private Q_SLOTS:
     addTest(Triggers)
     addTest(ReturnsValue)
@@ -298,6 +329,7 @@ private Q_SLOTS:
     addTest(SignalListenerTuple)
     addTest(SignalListenerTimeout)
     addTest(SignalListenerQueue)
+    addTest(SignalAfterListenerQuits)
 };
 
 QTEST_GUILESS_MAIN(QCoroSignalTest)

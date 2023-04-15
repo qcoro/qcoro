@@ -105,11 +105,13 @@ public:
     using typename QCoroSignalBase<T, FuncPtr>::result_type;
 
     QCoroSignal(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
-        : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout) {}
+        : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout)
+        , mDummyReceiver(std::make_unique<QObject>()) {}
     QCoroSignal(const QCoroSignal &) = delete;
     QCoroSignal(QCoroSignal &&other) noexcept
         : QCoroSignalBase<T, FuncPtr>(std::move(other))
-        , mResult(std::move(other.mResult)) {
+        , mResult(std::move(other.mResult))
+        , mDummyReceiver(std::move(other.mDummyReceiver)) {
         if (this->mConn) {
             QObject::disconnect(this->mConn);
             setupConnection();
@@ -119,6 +121,7 @@ public:
     QCoroSignal &operator=(QCoroSignal &&other) noexcept {
         QCoroSignalBase<T, FuncPtr>::operator=(std::move(other));
         std::swap(mResult, other.mResult);
+        std::swap(mDummyReceiver, other.mDummyReceiver);
         if (this->mConn) {
             QObject::disconnect(this->mConn);
             setupConnection();
@@ -148,7 +151,7 @@ private:
     void setupConnection() {
         Q_ASSERT(!this->mConn);
         this->mConn = QObject::connect(
-            this->mObj, this->mFuncPtr, this->mObj,
+            this->mObj, this->mFuncPtr, this->mDummyReceiver.get(),
             [this](auto &&...args) mutable {
                 if (this->mTimeoutTimer) {
                     this->mTimeoutTimer->stop();
@@ -165,6 +168,7 @@ private:
 
     result_type mResult;
     std::coroutine_handle<> mAwaitingCoroutine;
+    std::unique_ptr<QObject> mDummyReceiver;
 };
 
 template<concepts::QObject T, typename FuncPtr>
@@ -237,7 +241,7 @@ private:
             return;
         }
         this->mConn = QObject::connect(
-            this->mObj, this->mFuncPtr, this->mObj,
+            this->mObj, this->mFuncPtr, &this->mDummyReceiver,
             [this](auto && ...args) mutable {
                 if (this->mTimeoutTimer) {
                     this->mTimeoutTimer->stop();
@@ -253,6 +257,7 @@ private:
 
     std::coroutine_handle<> mAwaitingCoroutine;
     std::deque<typename result_type::value_type> mQueue;
+    QObject mDummyReceiver;
 };
 
 template<concepts::QObject T, typename FuncPtr>
