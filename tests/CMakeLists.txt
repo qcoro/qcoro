@@ -105,6 +105,11 @@ function(qcoro_add_quick_test _name)
     set_tests_properties(test-${_name} PROPERTIES ENVIRONMENT "${_env}")
 endfunction()
 
+function(qcoro_add_webengine_test _name)
+    qcoro_add_network_test(${_name} ${ARGN})
+    target_link_libraries(test-${_name} PRIVATE QCoro${QT_VERSION_MAJOR}WebEngine Qt${QT_VERSION_MAJOR}::WebEngineWidgets)
+endfunction()
+
 qcoro_add_test(qtimer)
 qcoro_add_test(qcoroprocess)
 qcoro_add_test(qcorosignal)
@@ -143,3 +148,6 @@ if (QCORO_WITH_QTQUICK)
     qcoro_add_quick_test(qcoroimageprovider)
 endif()
 
+if (QCORO_WITH_QTWEBENGINE)
+    qcoro_add_webengine_test(qcorowebenginepage)
+endif()
