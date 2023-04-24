@@ -37,10 +37,25 @@ public:
 }
 ```
 
+QmlTasks can call a JavaScript function when they complete:
 ```QML
 Example {
     Component.onCompleted: {
         fetchValue("key").then((result) => console.log("Result", result))
+    }
+}
+```
+
+They can also set properties when the value is available:
+```QML
+import QCoro 0
+import io.me.qmlmodule 1.0
+
+Item {
+    Example { id: store }
+
+    Label {
+        text: store.fetchValue("key").await().value
     }
 }
 ```
