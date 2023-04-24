@@ -76,7 +76,10 @@ import QCoro 0
 import QtQuick 2.7
 
 QtObject {
-    property string value: QmlObject.qmlTaskFromFuture().await().value
+    property string value: QmlObject.qmlTaskFromFuture().await("Loading...").value
+
+    property string valueWithoutIntermediate: QmlObject.qmlTaskFromFuture().await().value
+
     onValueChanged: {
         if (value == "Success") {
             console.log("awaiting finished")

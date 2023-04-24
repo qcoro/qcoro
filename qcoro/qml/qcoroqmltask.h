@@ -86,8 +86,11 @@ public:
      * ```
      * text: asyncLoadText().await().value
      * ```
+     *
+     * Optionally, an intermediate value can be passed to await,
+     * which will be returned by value while calculating the asynchronous result.
      */
-    Q_INVOKABLE QCoro::QmlTaskListener *await();
+    Q_INVOKABLE QCoro::QmlTaskListener *await(const QVariant &intermediateValue = {});
 
 private:
     QSharedDataPointer<QmlTaskPrivate> d;
