@@ -780,7 +780,7 @@ inline auto waitFor(Awaitable &&awaitable) {
  *        For all other types, it takes a value of the type as single argument.
  */
 template <typename T, typename QObjectSubclass, typename Callback>
-requires std::is_invocable_v<Callback> || std::is_invocable_v<Callback, T> || std::is_invocable_v<Callback, QObjectSubclass *>
+requires std::is_invocable_v<Callback> || std::is_invocable_v<Callback, T> || std::is_invocable_v<Callback, QObjectSubclass *> || std::is_invocable_v<Callback, QObjectSubclass *, T>
 void connect(QCoro::Task<T> &&task, QObjectSubclass *context, Callback func) {
     QPointer ctxWatcher = context;
     if constexpr (std::is_same_v<T, void>) {
@@ -796,12 +796,10 @@ void connect(QCoro::Task<T> &&task, QObjectSubclass *context, Callback func) {
     } else {
         task.then([ctxWatcher, func = std::move(func)](auto &&value) {
             if (ctxWatcher) {
-                if constexpr (std::is_invocable_v<Callback, T>) {
-                    if constexpr (std::is_member_function_pointer_v<Callback>) {
-                        (ctxWatcher->*func)(std::forward<decltype(value)>(value));
-                    } else {
-                        func(std::forward<decltype(value)>(value));
-                    }
+                if constexpr (std::is_invocable_v<Callback, QObjectSubclass, T>) {
+                    (ctxWatcher->*func)(std::forward<decltype(value)>(value));
+                } else if constexpr (std::is_invocable_v<Callback, T>) {
+                    func(std::forward<decltype(value)>(value));
                 } else {
                     Q_UNUSED(value);
                     if constexpr (std::is_member_function_pointer_v<Callback>) {
@@ -817,7 +815,7 @@ void connect(QCoro::Task<T> &&task, QObjectSubclass *context, Callback func) {
 
 template <typename T, typename QObjectSubclass, typename Callback>
 requires detail::TaskConvertible<T>
-        && (std::is_invocable_v<Callback> || std::is_invocable_v<Callback, detail::convertible_awaitable_return_type_t<T>> || std::is_invocable_v<Callback, QObjectSubclass *>)
+        && (std::is_invocable_v<Callback> || std::is_invocable_v<Callback, detail::convertible_awaitable_return_type_t<T>> || std::is_invocable_v<Callback, QObjectSubclass *> || std::is_invocable_v<Callback, QObjectSubclass *, T>)
         && (!detail::isTask_v<T>)
 void connect(T &&future, QObjectSubclass *context, Callback func) {
     auto task = detail::toTask(std::move(future));
