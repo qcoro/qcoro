@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "qcorogenerator.h"
-#include "testmacros.h"
+#include "qcorotest.h"
 
 #include <QObject>
 #include <QTest>

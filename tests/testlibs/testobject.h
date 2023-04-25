@@ -4,15 +4,15 @@
 
 #pragma once
 
-#include "testmacros.h"
-
 #include <QEventLoop>
 #include <QObject>
 #include <QTest>
 #include <QTimer>
 #include <QVariant>
 
-#include "qcoro/qcorotask.h"
+#include "qcorotask.h"
+#include "qcorotest.h"
+#include "testmacros.h"
 #include "testloop.h"
 
 #include <chrono>
