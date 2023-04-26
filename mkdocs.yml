@@ -101,6 +101,8 @@ nav:
       - Qml:
         - reference/qml/index.md
         - QCoro::QmlTask: reference/qml/qmltask.md
+      - Test:
+        - reference/test/index.md
     - Changelog: changelog.md
     - About:
         - License: about/license.md
