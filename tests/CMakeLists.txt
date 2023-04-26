@@ -23,7 +23,7 @@ function(qcoro_add_test _name)
     target_link_libraries(
         test-${_name}
         PRIVATE
-        qcoro_test
+        qcoro_testlib
         QCoro${QT_VERSION_MAJOR}Core
         Qt${QT_VERSION_MAJOR}::Core
         Qt${QT_VERSION_MAJOR}::Test

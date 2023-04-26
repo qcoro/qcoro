@@ -33,6 +33,8 @@ option(QCORO_WITH_QTQUICK "Build QtQuick support" ON)
 add_feature_info(QtQuick QCORO_WITH_QTQUICK "Build QtQuick support")
 option(QCORO_WITH_QML "Build QML integration features" ON)
 add_feature_info(QtQml QCORO_WITH_QML "Build QML integration features")
+option(QCORO_WITH_QTTEST "Build QtTest support" ON)
+add_feature_info(QtTest QCORO_WITH_QTTEST "Build QtTest support")
 
 #-----------------------------------------------------------#
 # Dependencies
@@ -62,6 +64,9 @@ if (QCORO_WITH_QML)
     list(APPEND REQUIRED_QT_COMPONENTS Qml)
     # Qt6 needs access to private API
     list(APPEND REQUIRED_QT6_COMPONENTS QmlPrivate)
+endif()
+if (QCORO_WITH_QTTEST)
+    list(APPEND REQUIRED_QT_COMPONENTS Test)
 endif()
 if (QCORO_BUILD_EXAMPLES)
     list(APPEND REQUIRED_QT_COMPONENTS Widgets Concurrent)

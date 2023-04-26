@@ -1,11 +1,12 @@
-add_library(qcoro_test
+add_library(qcoro_testlib
     STATIC
     testobject.cpp
     testloop.cpp
 )
-target_include_directories(qcoro_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(qcoro_test PUBLIC
+target_include_directories(qcoro_testlib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(qcoro_testlib PUBLIC
     QCoro${QT_VERSION_MAJOR}Core
+    QCoro${QT_VERSION_MAJOR}Test
     Qt${QT_VERSION_MAJOR}::Core
     Qt${QT_VERSION_MAJOR}::Test
 )

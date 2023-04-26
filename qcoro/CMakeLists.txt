@@ -94,3 +94,7 @@ endif()
 if (QCORO_WITH_QML)
     add_subdirectory(qml)
 endif()
+
+if (QCORO_WITH_QTTEST)
+    add_subdirectory(test)
+endif()
