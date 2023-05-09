@@ -697,6 +697,11 @@ auto toTask(Awaitable &&future) -> QCoro::Task<detail::convertible_awaitable_ret
     co_return co_await future;
 }
 
+struct WaitContext {
+    QEventLoop loop;
+    bool coroutineFinished = false;
+    std::exception_ptr exception;
+};
 
 //! Helper class to run a coroutine in a nested event loop.
 /*!
@@ -708,33 +713,46 @@ auto toTask(Awaitable &&future) -> QCoro::Task<detail::convertible_awaitable_ret
  * QFunctorSlotObjectWithNoArgs until after the event loop quits.
  */
 template<Awaitable Awaitable>
-Task<> runCoroutine(QEventLoop &loop, bool &startLoop, Awaitable &&awaitable) {
-    co_await awaitable;
-    startLoop = false;
-    loop.quit();
+Task<> runCoroutine(WaitContext &context, Awaitable &&awaitable) {
+    try {
+        co_await awaitable;
+    } catch (...) {
+        context.exception = std::current_exception();
+    }
+    context.coroutineFinished = true;
+    context.loop.quit();
 }
 
 template<typename T, Awaitable Awaitable>
-Task<> runCoroutine(QEventLoop &loop, bool &startLoop, T &result, Awaitable &&awaitable) {
-    result = co_await awaitable;
-    startLoop = false;
-    loop.quit();
+Task<> runCoroutine(WaitContext &context, T &result, Awaitable &&awaitable) {
+    try {
+        result = co_await awaitable;
+    } catch (...) {
+        context.exception = std::current_exception();
+    }
+    context.coroutineFinished = true;
+    context.loop.quit();
 }
 
 template<typename T, Awaitable Awaitable>
 T waitFor(Awaitable &&awaitable) {
-    QEventLoop loop;
-    bool startLoop = true; // for early returns: calling quit() before exec() still starts the loop
+    WaitContext context;
     if constexpr (std::is_void_v<T>) {
-        runCoroutine(loop, startLoop, std::forward<Awaitable>(awaitable));
-        if (startLoop) {
-            loop.exec();
+        runCoroutine(context, std::forward<Awaitable>(awaitable));
+        if (!context.coroutineFinished) {
+            context.loop.exec();
+        }
+        if (context.exception) {
+            std::rethrow_exception(context.exception);
         }
     } else {
         T result;
-        runCoroutine(loop, startLoop, result, std::forward<Awaitable>(awaitable));
-        if (startLoop) {
-            loop.exec();
+        runCoroutine(context, result, std::forward<Awaitable>(awaitable));
+        if (!context.coroutineFinished) {
+            context.loop.exec();
+        }
+        if (context.exception) {
+            std::rethrow_exception(context.exception);
         }
         return result;
     }
