@@ -2,16 +2,28 @@ import json
 from socket import create_connection
 from argparse import ArgumentParser
 
+qt5_config = {
+    "archives": [ "qtbase", "icu", "qtwebsockets", "qtdeclarative", "qtwebchannel", "qtlocation" ],
+    "modules": [ "qtwebengine" ]
+}
+
+qt6_config = {
+    "archives": [ "qtbase", "icu", "qtdeclarative" ],
+    "modules": [ "qtwebsockets", "qtwebengine", "qtwebchannel", "qtpositioning" ]
+}
+
 qt = [
     {
         "version": "5.15.2",
-        "archives": [ "qtbase", "icu", "qtwebsockets", "qtdeclarative", "qtwebchannel", "qtlocation" ],
-        "modules": [ "qtwebengine" ]
+        **qt5_config
     },
     {
         "version": "6.2.0",
-        "archives": [ "qtbase", "icu", "qtdeclarative" ],
-        "modules": [ "qtwebsockets", "qtwebengine", "qtwebchannel", "qtpositioning" ]
+        **qt6_config
+    },
+    {
+        "version": "6.5.0",
+        **qt6_config
     }
 ]
 
