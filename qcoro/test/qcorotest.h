@@ -58,13 +58,13 @@
 #if !defined(QT_NO_EXCEPTIONS)
 
 /**
- * @brief Coroutine-friendly version of QVERIFY_EXCEPTION_THROWN macro.
+ * @brief Coroutine-friendly version of QVERIFY_THROWS_EXCEPTION macro.
  **/
-#define QCORO_VERIFY_EXCEPTION_THROWN(expression, exceptionType)                                   \
+#define QCORO_VERIFY_THROWS_EXCEPTION(exceptionType, ...)                                          \
     do {                                                                                           \
         try {                                                                                      \
             try {                                                                                  \
-                expression;                                                                        \
+                __VA_ARGS__;                                                                       \
                 QTest::qFail("Expected exception of type " #exceptionType " to be thrown"          \
                              " but no exception caught",                                           \
                              __FILE__, __LINE__);                                                  \
@@ -85,10 +85,18 @@
         }                                                                                          \
     } while (false)
 
+/**
+ * @brief Coroutine-friendly version of QVERIFY_EXCEPTION_THROWN macro.
+ **/
+#define QCORO_VERIFY_EXCEPTION_THROWN(expression, exceptionType) \
+    QCORO_VERIFY_THROWS_EXCEPTION(exceptionType, expression)
+
 #else // QT_NO_EXCEPTIONS
 
 #define QCORO_VERIFY_EXCEPTION_THROWN(expression, exceptionType) \
     static_assert(false, "Support of exceptions is disabled")
+#define QCORO_VERIFY_THROWS_EXCEPTION(exceptionType, ...) \
+    static_assert(false, "Support for exceptions is disabled")
 
 #endif // QT_NO_EXCEPTIONS
 
