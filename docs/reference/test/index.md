@@ -45,6 +45,7 @@ counterparts, the only difference being that they can be used inside a coroutine
 * [`QCORO_VERIFY2(condition, message)`][qdoc-qverify2]
 * [`QCORO_VERIFY(condition)`][qdoc-qverify]
 * [`QCORO_VERIFY_EXCEPTION_THROWN(expression, exceptionType)`][qdoc-qverify-exception-thrown]
+* [`QCORO_VERIFY_THROWS_EXCEPTION(exceptionType, ...)`][qdoc6-qverify-throws-exception]
 
 
 [qdoc-qtest]: https://doc.qt.io/qt-5/qttest-index.html
@@ -62,5 +63,6 @@ counterparts, the only difference being that they can be used inside a coroutine
 [qdoc-qverify2]: https://doc.qt.io/qt-5/qtest.html#QVERIFY2
 [qdoc-qverify]: https://doc.qt.io/qt-5/qtest.html#QVERIFY
 [qdoc-qverify-exception-thrown]: https://doc.qt.io/qt-5/qtest.html#QVERIFY_EXCEPTION_THROWN
+[qdoc6-qverify-throws-exception]: https://doc.qt.io/qt-6/qtest.html#QVERIFY_THROWS_EXCEPTION
 
 
