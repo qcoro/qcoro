@@ -6,6 +6,7 @@
 
 #include "coroutine.h"
 #include "concepts_p.h"
+#include "bits/features.h"
 
 #include <atomic>
 #include <exception>
@@ -18,8 +19,6 @@ namespace QCoro {
 
 template<typename T = void>
 class Task;
-
-/*! \cond internal */
 
 namespace detail {
 
@@ -154,6 +153,10 @@ public:
     template<Awaitable T>
     auto &await_transform(T &awaitable);
 
+    auto &await_transform(detail::ThisCoroPromise &&) {
+        return mFeatures;
+    }
+
     //! Called by \c TaskAwaiter when co_awaited.
     /*!
      * This function is called by a TaskAwaiter, e.g. an object obtain by co_await
@@ -172,8 +175,10 @@ public:
     void refCoroutine();
     void destroyCoroutine();
 
+    CoroutineFeatures &features() noexcept;
+
 protected:
-    explicit TaskPromiseBase();
+    TaskPromiseBase();
 
 private:
     friend class TaskFinalSuspend;
@@ -183,6 +188,7 @@ private:
 
     //! Indicates whether we can destroy the coroutine handle
     std::atomic<uint32_t> mRefCount{0};
+    CoroutineFeatures mFeatures;
 };
 
 //! The promise_type for Task<T>

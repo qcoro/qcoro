@@ -462,6 +462,30 @@ private:
         co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
     }
 
+    QCoro::Task<> testGuardedThisDestroyed_coro(QCoro::TestContext) {
+        bool notCalled = true;
+
+        auto coro = [&notCalled]() -> QCoro::Task<> {
+            auto obj = new QObject();
+
+            auto &features = co_await QCoro::thisCoro();
+            features.guardThis(obj);
+
+            QTimer::singleShot(0, [obj]() {
+                qDebug() << "Destroyed!";
+                delete obj;
+            });
+            co_await timer();
+            qDebug() << "RESUMED";
+
+            notCalled = false;
+        };
+
+        co_await coro();
+
+        QCORO_VERIFY(notCalled);
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -486,6 +510,7 @@ private Q_SLOTS:
     addThenTest(ImplicitArgumentConversion)
     addTest(MultipleAwaiters)
     addTest(MultipleAwaitersSync)
+    addTest(GuardedThisDestroyed)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()

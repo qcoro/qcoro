@@ -25,7 +25,17 @@ inline void TaskFinalSuspend::await_suspend(std::coroutine_handle<Promise> finis
     auto &promise = finishedCoroutine.promise();
 
     for (auto &awaiter : mAwaitingCoroutines) {
-        awaiter.resume();
+        auto handle = std::coroutine_handle<TaskPromiseBase>::from_address(awaiter.address());
+        auto &promise = handle.promise();
+        const CoroutineFeatures &features = promise.features();
+        if (const auto &guardedThis = features.guardedThis(); guardedThis.has_value() && guardedThis->isNull()) {
+            // We have a QPointer, but it's null which means that observed QObject has been destroyed,
+            // so just destroy the current coroutine as well.
+            qDebug() << "Destroy direct!";
+            promise.destroyCoroutine();
+        } else {
+            awaiter.resume();
+        }
     }
     mAwaitingCoroutines.clear();
 

@@ -9,7 +9,9 @@
 #pragma once
 
 #include "../qcorotask.h"
-#include <coroutine>
+#include "bits/features.h"
+
+#include <QDebug>
 
 namespace QCoro::detail
 {
