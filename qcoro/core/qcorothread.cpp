@@ -6,6 +6,8 @@
 #include "qcorosignal.h"
 
 #include <QThread>
+#include <QEvent>
+#include <QCoreApplication>
 
 using namespace QCoro;
 using namespace QCoro::detail;

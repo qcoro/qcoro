@@ -178,10 +178,18 @@ function(add_qcoro_library)
         EXPORT ${target_name}Targets
     )
     install(
-        FILES ${source_HEADERS} ${LIB_HEADERS}
+        FILES ${source_HEADERS}
         DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/qcoro/
         COMPONENT Devel
     )
+    foreach(lib_header ${LIB_HEADERS})
+        get_filename_component(header_prefix_dir ${lib_header} DIRECTORY)
+        install(
+            FILES ${lib_header}
+            DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/qcoro/${header_prefix_dir}
+            COMPONENT Devel
+        )
+    endforeach()
     install(
         FILES ${camelcase_HEADERS}
         DESTINATION ${QCORO_INSTALL_INCLUDEDIR}/QCoro/
