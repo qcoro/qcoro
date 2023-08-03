@@ -22,7 +22,7 @@ qt = [
         **qt6_config
     },
     {
-        "version": "6.5.2",
+        "version": "6.5.0",
         **qt6_config
     }
 ]
