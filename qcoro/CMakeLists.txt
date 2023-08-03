@@ -24,6 +24,13 @@ add_qcoro_library(
         coroutine.h
         macros_p.h
         waitoperationbase_p.h
+        impl/connect.h
+        impl/task.h
+        impl/taskawaiterbase.h
+        impl/taskfinalsuspend.h
+        impl/taskpromise.h
+        impl/taskpromisebase.h
+        impl/waitfor.h
     QT_LINK_LIBRARIES
         INTERFACE Core
 )
