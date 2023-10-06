@@ -281,8 +281,7 @@ public:
     using iterator = AsyncGeneratorIterator<T>;
 
     /// Constructs an empty asynchronous generator
-    AsyncGenerator() noexcept
-        : m_coroutine(nullptr) {}
+    AsyncGenerator() noexcept = default;
 
     /// Constructs AsyncGenerator for given promise.
     explicit AsyncGenerator(promise_type &promise) noexcept
@@ -304,8 +303,8 @@ public:
 
     /// Move-assignment operator.
     AsyncGenerator& operator=(AsyncGenerator &&other) noexcept {
-        AsyncGenerator temp(std::move(other));
-        swap(temp);
+        m_coroutine = other.m_coroutine;
+        other.m_coroutine = nullptr;
         return *this;
     }
 
@@ -364,7 +363,7 @@ public:
     }
 
 private:
-    std::coroutine_handle<promise_type> m_coroutine;
+    std::coroutine_handle<promise_type> m_coroutine = {nullptr};
 };
 
 template<typename T>

@@ -6,6 +6,7 @@
 #include "qcorotimer.h"
 #include "testobject.h"
 
+#include <cstdint>
 #include <vector>
 
 #include <QScopeGuard>
@@ -169,22 +170,25 @@ private:
     }
 
     QCoro::Task<> testMovedGenerator_coro(QCoro::TestContext) {
+        QCoro::AsyncGenerator<int> generator;
+
         const auto createGenerator = []() -> QCoro::AsyncGenerator<int> {
             for (int i = 0; i < 4; ++i) {
                 co_await sleep(10ms);
                 co_yield i;
             }
         };
-
-        auto originalGenerator = createGenerator();
-        auto generator = std::move(originalGenerator);
+    
+        {
+          QCoro::AsyncGenerator<int> originalGenerator = createGenerator();
+          generator = std::move(originalGenerator);
+        }
         int testvalue = 0;
         for (auto it = co_await generator.begin(), end = generator.end(); it != end; co_await ++it) {
             int value = *it;
             QCORO_COMPARE(value, testvalue++);
         }
         QCORO_COMPARE(testvalue, 4);
-
     }
 
     QCoro::Task<> testException_coro(QCoro::TestContext) {
@@ -233,23 +237,33 @@ private:
     }
 
     QCoro::Task<> testExceptionInBegin_coro(QCoro::TestContext) {
-        auto generator = []() -> QCoro::AsyncGenerator<int> {
+        bool throw_exception = true;
+        const auto createGenerator = [throw_exception]() -> QCoro::AsyncGenerator<uint64_t> {
             co_await sleep(10ms);
-            throw std::runtime_error("I can't even zero!");
-            co_yield 1;
-        }();
+            // NOTE: The condition here is a necessary workaround for Clang being too clever,
+            // seeing that `co_yield` will never be reached and optimizing it away, thus breaking
+            // the coroutine. With this condition (or by wrapping the body into a for-loop) the
+            // optimization is disabled (as the co_yield could *theoretically* be reached) and
+            // the generator behaves as expected.
+            if (throw_exception) {
+                throw std::runtime_error("I can't even zero!");
+            }
+            co_yield 42;
+        };
 
+        auto generator = createGenerator();
         QCORO_VERIFY_EXCEPTION_THROWN(co_await generator.begin(), std::runtime_error);
     }
 
     QCoro::Task<> testExceptionInBeginSync_coro(QCoro::TestContext context) {
         context.setShouldNotSuspend();
 
-        auto generator = []() -> QCoro::AsyncGenerator<int> {
+        const auto createGenerator = []() -> QCoro::AsyncGenerator<int> {
             throw std::runtime_error("I can't even zero!");
             co_yield 1;
-        }();
+        };
 
+        auto generator = createGenerator();
         QCORO_VERIFY_EXCEPTION_THROWN(co_await generator.begin(), std::runtime_error);
     }
 
