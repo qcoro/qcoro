@@ -31,8 +31,11 @@ jobs:
             .github/**
       - id: source_code_changed
         name: Check for source code changes
-        if: steps.changed_files.outputs.any_changed != 'true'
-        run: echo '::set-output name=source_code_changed::true'
+        if: steps.changed_files.outputs.any_changed == 'true'
+        run: |
+          echo "Detected changed files:"
+          echo "${{ steps.changed_files.outputs.all_changed_files }}"
+          echo '::set-output name=source_code_changed::true'
 
 
   generate-matrix:

@@ -25,8 +25,11 @@ jobs:
             .github/workflows/update-docs.yml
       - id: docs_changed
         name: Check for documentatio nchanges
-        if: steps.changed_files.outputs.any_changed != 'true'
-        run: echo '::set-output name=docs_changed::true'
+        if: steps.changed_files.outputs.any_changed == 'true'
+        run: |
+          echo "Detected changed files:"
+          echo "${{ steps.changed_files.outputs.all_changed_files }}"
+          echo "::set-output name=docs_changed::true"
 
 
   build:
