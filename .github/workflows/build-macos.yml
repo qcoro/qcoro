@@ -4,20 +4,8 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - 'docs/**'
-      - 'docker/**'
-      - 'requirements.txt'
-      - 'mkdocs.yml'
-      - 'README.md'
   pull_request:
     types: [opened, synchronize, reopened, edited]
-    paths-ignore:
-      - 'docs/**'
-      - 'docker/**'
-      - 'requirements.txt'
-      - 'mkdocs.yml'
-      - 'README.md'
 
 env:
   BUILD_TYPE: Debug
@@ -25,9 +13,32 @@ env:
 
 
 jobs:
+  detect_run:
+    name: Check changes
+    outputs: { "source_code_changed": "${{ steps.source_code_changed.outputs.source_code_changed}}" }
+    runs-on: ubuntu-latest
+    steps:
+      - id: changed_files
+        uses: tj-actions/changed-files@v39
+        name: Get changed files
+        with:
+          files_ignore: |
+            docs/**
+            docker/**
+            requirements.txt
+            mkdocs.yml
+            README.md
+            .github/**
+      - id: source_code_changed
+        name: Check for source code changes
+        if: steps.changed_files.outputs.any_changed != 'true'
+        run: echo '::set-output name=source_code_changed::true'
+
   generate-matrix:
     name: Generate build matrix
     runs-on: ubuntu-latest
+    needs: detect_run
+    if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
