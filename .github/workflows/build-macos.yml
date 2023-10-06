@@ -42,8 +42,6 @@ jobs:
   generate-matrix:
     name: Generate build matrix
     runs-on: ubuntu-latest
-    needs: detect_run
-    if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -56,7 +54,8 @@ jobs:
         echo "::set-output name=matrix::${matrix_json}"
 
   build:
-    needs: generate-matrix
+    needs: [ generate-matrix, detect_run ]
+    if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
     strategy:
       matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
       fail-fast: false
