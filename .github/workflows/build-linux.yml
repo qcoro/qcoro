@@ -55,7 +55,6 @@ jobs:
 
   build:
     needs: [ generate-matrix, detect_run ]
-    if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
     strategy:
       matrix: ${{ fromJSON(needs.generate-matrix.outputs.matrix) }}
       fail-fast: false
@@ -72,13 +71,16 @@ jobs:
     steps:
     - name: Checkout sources
       uses: actions/checkout@v2
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
 
 
     - name: Create Build Environment
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
       run: |
         cmake -E make_directory build
 
     - name: Configure CMake
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
       run: |
         QT_VERSION_MAJOR=$(echo ${{ matrix.qt_version }} | cut -d'.' -f1)
 
@@ -96,10 +98,12 @@ jobs:
           ${EXTRA_CMAKE_FLAGS}
 
     - name: Build
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
       run: |
         cmake --build build --config $BUILD_TYPE --parallel $(nproc) --verbose
 
     - name: Test
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
       run: |
         cd build
         QT_LOGGING_TO_CONSOLE=1 ctest -C $BUILD_TYPE \
@@ -108,7 +112,7 @@ jobs:
           --output-junit ${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
 
     - name: Upload Test Results
-      if: always()
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' && always() }}
       uses: actions/upload-artifact@v2
       with:
         name: Unit Tests Results (${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }})
@@ -116,7 +120,7 @@ jobs:
           ${{ github.workspace }}/build/${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}.xml
 
     - name: Upload build logs on failure
-      if: failure()
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' && failure() }}
       uses: actions/upload-artifact@v2
       with:
         name: build-${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
