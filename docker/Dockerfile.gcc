@@ -36,7 +36,7 @@ RUN ln -s x86_64-linux-gnu /usr/lib/x86_64-unknown-linux-gnu
 
 # Install Qt
 WORKDIR /root
-RUN pip3 install aqtinstall
+RUN pip3 install aqtinstall --break-system-packages
 COPY install-qt.sh ./install-qt.sh
 RUN ./install-qt.sh "${qt_version}" "${qt_modules}" "${qt_archives}"
 
