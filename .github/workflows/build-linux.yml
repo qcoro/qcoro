@@ -6,6 +6,10 @@ on:
       - main
     paths-ignore:
       - 'docs/**'
+      - 'docker/**'
+      - 'requirements.txt'
+      - 'mkdocs.yaml'
+      - 'README.md'
   pull_request:
     types: [opened, synchronize, reopened, edited]
 

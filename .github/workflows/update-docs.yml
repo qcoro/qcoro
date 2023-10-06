@@ -6,9 +6,9 @@ on:
       - main
     paths:
       - 'mkdocs.yml'
+      - 'requirements.txt'
       - 'docs/**'
       - '.github/workflows/update_docs.yml'
-
   workflow_dispatch:
 
 jobs:
