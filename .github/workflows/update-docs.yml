@@ -9,6 +9,12 @@ on:
       - 'requirements.txt'
       - 'docs/**'
       - '.github/workflows/update_docs.yml'
+  pull_request:
+    paths:
+      - 'mkdocs.yml'
+      - 'requirements.txt'
+      - 'docs/**'
+      - '.github/workflows/update_docs.yml'
   workflow_dispatch:
 
 jobs:
@@ -44,6 +50,7 @@ jobs:
           mkdocs build --verbose
       - name: Deploy to Cloudflare Pages
         id: deploy
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: cloudflare/pages-action@1
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ SECRETS.CLOUDFLARE_ACCOUNT_ID }}

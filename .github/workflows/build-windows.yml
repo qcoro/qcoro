@@ -12,7 +12,12 @@ on:
       - 'README.md'
   pull_request:
     types: [opened, synchronize, reopened, edited]
-
+    paths-ignore:
+      - 'docs/**'
+      - 'docker/**'
+      - 'requirements.txt'
+      - 'mkdocs.yml'
+      - 'README.md'
 
 env:
   BUILD_TYPE: Debug
