@@ -18,12 +18,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy
+  build:
+    name: Build
     runs-on: ubuntu-latest
-    environment:
-      name: cloudflare-pages
-      url: ${{ steps.deploy.outputs.url }}
     steps:
       - uses: actions/checkout@v2
       - name: Setup Python
@@ -48,9 +45,27 @@ jobs:
                 g.type='text/javascript'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
               })();</script><!-- End Matomo Code -->{% endblock %}" > docs/overrides/main.html
           mkdocs build --verbose
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: site
+          path: site
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' }}
+    environment:
+      name: cloudflare-pages
+      url: ${{ steps.deploy.outputs.url }}
+    needs: build
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: site
       - name: Deploy to Cloudflare Pages
         id: deploy
-        if: ${{ github.ref == 'refs/heads/main' }}
         uses: cloudflare/pages-action@1
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ SECRETS.CLOUDFLARE_ACCOUNT_ID }}
