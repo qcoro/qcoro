@@ -18,6 +18,8 @@ jobs:
     outputs: { "source_code_changed": "${{ steps.source_code_changed.outputs.source_code_changed}}" }
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
       - id: changed_files
         uses: tj-actions/changed-files@v39
         name: Get changed files
