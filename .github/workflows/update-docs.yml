@@ -72,7 +72,7 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.event.pull_request.title, "Docs:") && github.ref == 'refs/heads/main' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     environment:
       name: cloudflare-pages
       url: ${{ steps.deploy.outputs.url }}
