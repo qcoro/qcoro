@@ -166,6 +166,15 @@ add_code_coverage_all_targets(EXCLUDE "${CMAKE_BINARY_DIR}" tests/utils/*)
 # Definitions
 #-----------------------------------------------------------#
 
+# debug suffixes for qmake compatibility
+if(WIN32)
+    set(CMAKE_DEBUG_POSTFIX "d")
+elseif(APPLE)
+    set(CMAKE_DEBUG_POSTFIX "_debug")
+else()
+    set(CMAKE_DEBUG_POSTFIX "")
+endif()
+
 set(QCORO_TARGET_PREFIX "QCoro${QT_VERSION_MAJOR}")
 set(QCORO_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}/qcoro${QT_VERSION_MAJOR}")
 
