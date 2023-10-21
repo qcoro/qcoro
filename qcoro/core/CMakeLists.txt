@@ -19,6 +19,8 @@ add_qcoro_library(
         QCoroThread
         QCoroTimer
         QCoroFuture
+    HEADERS
+        impl/isqprivatesignal.h
     QT_LINK_LIBRARIES
         PUBLIC Core
     QCORO_LINK_LIBRARIES

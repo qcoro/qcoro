@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021 Daniel Vrátil <dvratil@kde.org>
+// SPDX-FileCopyrightText: 2021-2023 Daniel Vrátil <dvratil@kde.org>
 //
 // SPDX-License-Identifier: MIT
 
@@ -17,6 +17,10 @@
 #include <cassert>
 #include <optional>
 #include <deque>
+#include <tuple>
+#include <type_traits>
+
+#include "impl/isqprivatesignal.h"
 
 namespace QCoro::detail {
 
@@ -31,34 +35,67 @@ concept QObject = requires(T *obj) {
 
 } // namespace concepts
 
-template<class>
-struct args_tuple;
-
-template<class R, class... Args>
-struct args_tuple<R(Args...)> {
-    using type = std::tuple<std::remove_cvref_t<Args>...>;
-};
-
-template<class R, class T, class... Args>
-struct args_tuple<R (T::*)(Args...)> {
-    using type = std::tuple<std::remove_cvref_t<Args>...>;
-};
-
-template<class R, class T, class Arg>
-struct args_tuple<R (T::*)(Arg)> {
-    using type = std::remove_cvref_t<Arg>;
-};
-
-template<class R, class Arg>
-struct args_tuple<R(Arg)> {
-    using type = std::remove_cvref_t<Arg>;
-};
-
 template<concepts::QObject T, typename FuncPtr>
 class QCoroSignalBase {
+private:
+    template<typename T1, typename T2>
+    struct concat_tuple;
+
+    template<typename Arg, typename... TupleTypes>
+    struct concat_tuple<Arg, std::tuple<TupleTypes...>> {
+        using type = std::tuple<TupleTypes..., Arg>;
+    };
+
+    template<typename Tuple, typename... Args>
+    struct filtered_tuple;
+
+    template<typename Tuple, typename Arg, typename... Args>
+    struct filtered_tuple<Tuple, Arg, Args...> {
+        using type = std::conditional_t<
+            is_qprivatesignal_v<Arg>, typename filtered_tuple<Tuple, Args...>::type,
+            typename filtered_tuple<typename concat_tuple<Arg, Tuple>::type, Args...>::type>;
+    };
+
+    template<typename Tuple>
+    struct filtered_tuple<Tuple> {
+        using type = Tuple;
+    };
+
+    template<class>
+    struct args_tuple;
+
+    template<class R, class... Args>
+    struct args_tuple<R(Args...)> {
+        using type = std::tuple<std::remove_cvref_t<Args>...>;
+    };
+
+    template<class R, class Obj, class... Args>
+    struct args_tuple<R (Obj::*)(Args...)> {
+        using type = typename filtered_tuple<std::tuple<>, std::remove_cvref_t<Args>...>::type;
+    };
+
+    template<typename Arg>
+    struct result_type_from_tuple;
+
+    template<typename Arg>
+    struct result_type_from_tuple<std::tuple<Arg>> {
+        using type = Arg;
+    };
+
+    template<typename... Args>
+    struct result_type_from_tuple<std::tuple<Args...>> {
+        using type = std::tuple<Args...>;
+    };
+
+    using result_tuple = typename args_tuple<std::remove_cvref_t<FuncPtr>>::type;
+
 public:
-    // TODO: Ignore QPrivateSignal
-    using result_type = std::optional<typename args_tuple<std::remove_cvref_t<FuncPtr>>::type>;
+    /**!
+     * The result_type is std::optional of
+     *  * T if result_tuple is std::tuple<T>
+     *  * result_tuple otherwise
+     **/
+    using result_type = std::optional<typename result_type_from_tuple<result_tuple>::type>;
 
     QCoroSignalBase(const QCoroSignalBase &) = delete;
     QCoroSignalBase &operator=(const QCoroSignalBase &) = delete;
@@ -148,6 +185,34 @@ public:
     }
 
 private:
+    template<typename... Args>
+    struct select_last {
+        using type = typename decltype((std::type_identity<Args>{}, ...))::type;
+    };
+
+    template<typename... Args>
+    constexpr void storeResult(Args &&...args) {
+        using LastArg = typename select_last<Args...>::type;
+        if constexpr (is_qprivatesignal_v<LastArg>) {
+            // Based on https://stackoverflow.com/a/77026174/4601437
+            // Remove the last element (which is a QPrivateSignal) from the tuple
+            auto all = std::forward_as_tuple(std::forward<Args>(args)...);
+            auto reduced = [&]<std::size_t... I>(std::index_sequence<I...>) constexpr {
+                return std::make_tuple(std::get<I>(all)...);
+            }(std::make_index_sequence<sizeof...(Args) - 1>{});
+            // Use the shortened tuple as arguments to mResult.emplace()
+            std::apply(
+                [this](auto &&...args) { mResult.emplace(std::forward<decltype(args)>(args)...); },
+                std::move(reduced));
+        } else {
+            mResult.emplace(std::forward<Args>(args)...);
+        }
+    }
+
+    constexpr void storeResult() {
+        mResult.emplace();
+    }
+
     void setupConnection() {
         Q_ASSERT(!this->mConn);
         this->mConn = QObject::connect(
@@ -158,7 +223,8 @@ private:
                 }
                 QObject::disconnect(this->mConn);
 
-                mResult.emplace(std::forward<decltype(args)>(args)...);
+                storeResult(std::forward<decltype(args)>(args)...);
+
                 if (mAwaitingCoroutine) {
                     mAwaitingCoroutine.resume();
                 }
