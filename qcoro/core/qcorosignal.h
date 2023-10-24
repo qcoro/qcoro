@@ -129,6 +129,33 @@ protected:
         }
     }
 
+    template<typename... Args>
+    struct select_last {
+        using type = typename decltype((std::type_identity<Args>{}, ...))::type;
+    };
+
+    template<typename StoreResultCb, typename... Args>
+    constexpr void storeResult(StoreResultCb &&storeResult, Args &&...args) {
+        using LastArg = typename select_last<Args...>::type;
+        if constexpr (is_qprivatesignal_v<LastArg>) {
+            // Based on https://stackoverflow.com/a/77026174/4601437
+            // Remove the last element (which is a QPrivateSignal) from the tuple
+            auto all = std::forward_as_tuple(std::forward<Args>(args)...);
+            auto reduced = [&]<std::size_t... I>(std::index_sequence<I...>) constexpr {
+                return std::make_tuple(std::get<I>(all)...);
+            }(std::make_index_sequence<sizeof...(Args) - 1>{});
+            // Use the shortened tuple as arguments to mResult.emplace()
+            std::apply(std::forward<StoreResultCb>(storeResult), std::move(reduced));
+        } else {
+            std::invoke(std::forward<StoreResultCb>(storeResult), std::forward<Args>(args)...);
+        }
+    }
+
+    template<typename StoreResultCb>
+    constexpr void storeResult(StoreResultCb &&storeResult) {
+        std::invoke(std::forward<StoreResultCb>(storeResult));
+    }
+
 protected:
     QPointer<T> mObj;
     FuncPtr mFuncPtr;
@@ -185,34 +212,6 @@ public:
     }
 
 private:
-    template<typename... Args>
-    struct select_last {
-        using type = typename decltype((std::type_identity<Args>{}, ...))::type;
-    };
-
-    template<typename... Args>
-    constexpr void storeResult(Args &&...args) {
-        using LastArg = typename select_last<Args...>::type;
-        if constexpr (is_qprivatesignal_v<LastArg>) {
-            // Based on https://stackoverflow.com/a/77026174/4601437
-            // Remove the last element (which is a QPrivateSignal) from the tuple
-            auto all = std::forward_as_tuple(std::forward<Args>(args)...);
-            auto reduced = [&]<std::size_t... I>(std::index_sequence<I...>) constexpr {
-                return std::make_tuple(std::get<I>(all)...);
-            }(std::make_index_sequence<sizeof...(Args) - 1>{});
-            // Use the shortened tuple as arguments to mResult.emplace()
-            std::apply(
-                [this](auto &&...args) { mResult.emplace(std::forward<decltype(args)>(args)...); },
-                std::move(reduced));
-        } else {
-            mResult.emplace(std::forward<Args>(args)...);
-        }
-    }
-
-    constexpr void storeResult() {
-        mResult.emplace();
-    }
-
     void setupConnection() {
         Q_ASSERT(!this->mConn);
         this->mConn = QObject::connect(
@@ -223,7 +222,9 @@ private:
                 }
                 QObject::disconnect(this->mConn);
 
-                storeResult(std::forward<decltype(args)>(args)...);
+                this->storeResult([this](auto && ...args) {
+                    mResult.emplace(std::forward<decltype(args)>(args)...);
+                }, std::forward<decltype(args)>(args)...);
 
                 if (mAwaitingCoroutine) {
                     mAwaitingCoroutine.resume();
@@ -312,7 +313,10 @@ private:
                 if (this->mTimeoutTimer) {
                     this->mTimeoutTimer->stop();
                 }
-                mQueue.emplace_back(std::forward<decltype(args)>(args) ...);
+
+                this->storeResult([this](auto && ...args) {
+                    mQueue.emplace_back(std::forward<decltype(args)>(args)...);
+                }, std::forward<decltype(args)>(args) ...);
 
                 if (mAwaitingCoroutine) {
                     mAwaitingCoroutine.resume();
