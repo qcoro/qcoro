@@ -92,10 +92,11 @@ struct coroutine_handle : public std::coroutine_handle<Promise> {};
 
 } // namespace experimental
 
+#if defined(__cpp_lib_coroutine)
 // Import std::experimental::coroutine_traits into the std namespace
 template<typename R, typename ... ArgTypes>
 using coroutine_traits = std::experimental::coroutine_traits<R, ArgTypes ...>;
-
+#endif
 
 // 17.12.3, coroutine handle
 
