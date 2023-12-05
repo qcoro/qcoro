@@ -10,17 +10,25 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 
 # Changelog
 
+## 0.9.0 (2023-04-27)
+
+* [Release announcement](news/2023/2023-04-27-qcoro-0.9.0-announcement.md)
+* [Github release changelog](https://github.com/danvratil/qcoro/releases/tag/v0.9.0)
+
+## 0.8.0 (2023-01-31)
+
+* [Release announcement](news/2023/2023-01-31-qcoro-0.8.0-announcement.md)
+* [Github release changelog](https://github.com/danvratil/qcoro/releases/tag/v0.8.0)
+
 ## 0.7.0 (2022-11-20)
 
 * [Release announcement](news/2022/2022-11-17-qcoro-0.7.0-announcement.md)
 * [Github release changelog](https://github.com/danvratil/qcoro/releases/tag/v0.7.0)
 
-
 ## 0.6.0 (2022-07-09)
 
 * [Release announcement](news/2022/2022-07-09-qcoro-0.6.0-announcement.md)
 * [Github release changelog](https://github.com/danvratil/qcoro/releases/tag/v0.6.0)
-
 
 ## 0.5.1 (2022-04-27)
 
@@ -30,7 +38,6 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 
 * [Release announcement](news/2022/2022-04-25-qcoro-0.5.0-announcement.md)
 * [Github release changelog](https://github.com/danvratil/qcoro/releases/tag/v0.5.0)
-
 
 ## 0.4.0 (2022-01-06)
 

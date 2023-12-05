@@ -2,6 +2,7 @@
 
 1. Ensure all CI builds for current `main` pass
 1. Create Release Announcement in `docs/news/`
+1. Update `docs/changelog.md`
 1. Bump version in `qcoro_VERSION` in CMakeLists.txt to `X.Y.Z`
 1. Commit release announcement and version bump as `QCoro release X.Y.Z`
 1. Tag the release commit: `git tag -s vX.Y.Z -m "QCoro X.Y.Z"`
