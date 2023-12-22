@@ -118,6 +118,17 @@ if (MSVC)
 else()
     # Only enable strict warnings in debug mode
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Werror -pedantic")
+
+    if (ANDROID)
+        include(DetectAndroidNDKVersion)
+        detectAndroidNDKVersion(NDK_VERSION)
+        if ("${NDK_VERSION}" VERSION_LESS 26)
+            # Android NDK < 26 ships mismatching versions of clang and libc++ - libc++ is older and doesn't have coroutine support
+            # which forces us to use coroutines from std::experimental. But the clang itself is newer and emits an error about
+            # std::experimental coroutines being deprecated in LLVM 14. This option is needed to suppress the error.
+            add_compile_options(-Wno-error=deprecated-experimental-coroutine)
+        endif()
+    endif()
 endif()
 
 if (QCORO_ENABLE_ASAN)
