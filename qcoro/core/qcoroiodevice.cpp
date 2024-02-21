@@ -82,13 +82,19 @@ QCoro::Task<QByteArray> QCoroIODevice::readLine(qint64 maxSize, std::chrono::mil
 }
 
 QCoro::Task<qint64> QCoroIODevice::write(const QByteArray &buffer) {
-    auto bytesWritten = mDevice->write(buffer);
-    while (bytesWritten > 0) {
+    const auto bytesWritten = mDevice->write(buffer);
+    qint64 bytesConfirmed = 0;
+    while (bytesConfirmed < bytesWritten) {
         const auto flushed = co_await waitForBytesWritten(-1);
-        bytesWritten -= flushed.value();
+        if (!flushed.has_value()) {
+            // There was an intermediate error and we don't know how much was actually
+            // written, so we report only what we know for sure was written.
+            break;
+        }
+        bytesConfirmed += *flushed;
     }
 
-    co_return bytesWritten;
+    co_return bytesConfirmed;
 }
 
 QCoro::Task<bool> QCoroIODevice::waitForReadyRead(int timeout_msecs) {

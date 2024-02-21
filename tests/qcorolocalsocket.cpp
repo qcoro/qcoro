@@ -14,6 +14,9 @@
 
 #include <thread>
 
+static const QByteArray blockRequest = "GET /block HTTP/1.1\r\n";
+static const QByteArray streamRequest = "GET /stream HTTP/1.1\r\n";
+
 class QCoroLocalSocketTest : public QCoro::TestObject<QCoroLocalSocketTest> {
     Q_OBJECT
 
@@ -234,7 +237,8 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        socket.write("GET /stream HTTP/1.1\r\n");
+        const auto written = co_await qCoro(socket).write(streamRequest);
+        QCORO_COMPARE(written, streamRequest.size());
 
         QCORO_TEST_IODEVICE_READALL(socket);
         QCORO_VERIFY(mServer.waitForConnection());
@@ -250,7 +254,10 @@ private:
             el.quit();
             QVERIFY(!data.isEmpty());
         });
-        socket.write("GET /block HTTP/1.1\r\n");
+
+        qCoro(socket).write(blockRequest).then([&](qint64 written) {
+            QCOMPARE(written, blockRequest.size());
+        });
         el.exec();
 
         QVERIFY(called);
@@ -262,7 +269,8 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        socket.write("GET /stream HTTP/1.1\r\n");
+        const auto written = co_await qCoro(socket).write(streamRequest);
+        QCORO_COMPARE(written, streamRequest.size());
 
         QCORO_TEST_IODEVICE_READ(socket);
         QCORO_VERIFY(mServer.waitForConnection());
@@ -278,7 +286,11 @@ private:
             el.quit();
             QCOMPARE(data.size(), 1);
         });
-        socket.write("GET /block HTTP/1.1\r\n");
+
+        qCoro(socket).write(blockRequest).then([&](qint64 written) {
+            QCOMPARE(written, blockRequest.size());
+        });
+
         el.exec();
         QVERIFY(called);
         QVERIFY(mServer.waitForConnection());
@@ -289,7 +301,8 @@ private:
         socket.connectToServer(QCoroLocalSocketTest::getSocketName());
         QCORO_COMPARE(socket.state(), QLocalSocket::ConnectedState);
 
-        socket.write("GET /stream HTTP/1.1\r\n");
+        const auto written = co_await qCoro(socket).write(streamRequest);
+        QCORO_COMPARE(written, streamRequest.size());
 
         QCORO_TEST_IODEVICE_READLINE(socket);
         QCORO_COMPARE(lines.size(), 14);
@@ -306,7 +319,11 @@ private:
             el.quit();
             QVERIFY(!data.isEmpty());
         });
-        socket.write("GET /block HTTP/1.1\r\n");
+
+        qCoro(socket).write(blockRequest).then([&](qint64 written) {
+            QCOMPARE(written, blockRequest.size());
+        });
+
         el.exec();
 
         QVERIFY(called);
