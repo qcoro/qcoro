@@ -86,6 +86,11 @@ QCoro::Task<qint64> QCoroIODevice::write(const QByteArray &buffer) {
     qint64 bytesConfirmed = 0;
     while (bytesConfirmed < bytesWritten) {
         const auto flushed = co_await waitForBytesWritten(-1);
+        if (!flushed.has_value()) {
+            // There was an intermediate error and we don't know how much was actually
+            // written, so we report only what we know for sure was written.
+            break;
+        }
         bytesConfirmed += *flushed;
     }
 
