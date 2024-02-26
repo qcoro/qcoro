@@ -24,7 +24,7 @@ public:
 
     ~Thread() = default;
 
-    void run() {
+    void run() override {
         mFunc();
     }
 
