@@ -114,7 +114,7 @@ public:
                 [this, awaitingCoroutine]() {
                     QObject::disconnect(mConn);
                     awaitingCoroutine.resume();
-                });
+                }, Qt::DirectConnection); // force coro to be resumed on our thread, not mObj's thread
             mTimeoutTimer->start();
         }
     }

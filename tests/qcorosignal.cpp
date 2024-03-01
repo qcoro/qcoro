@@ -8,6 +8,7 @@
 #include "qcoro/core/qcorosignal.h"
 
 #include <QTimer>
+#include <QThread>
 
 using namespace std::chrono_literals;
 
@@ -36,6 +37,8 @@ Q_SIGNALS:
     void privateVoid(QPrivateSignal);
     void privateSingleArg(const QString &, QPrivateSignal);
     void privateMultiArg(const QString &, int, QObject *, QPrivateSignal);
+
+    void signalThatsNeverEmitted();
 };
 
 class MultiSignalTest : public SignalTest {
@@ -394,6 +397,24 @@ private:
         QCORO_COMPARE(count, 10);
     }
 
+    QCoro::Task<> testSignalEmitterOnDifferentThread_coro(QCoro::TestContext) {
+        SignalTest test;
+        QThread thread;
+        test.moveToThread(&thread);
+        thread.start();
+
+        co_await qCoro(&test, &SignalTest::voidSignal);
+        // Make sure we are resumed on our thread
+        QCORO_COMPARE(QThread::currentThread(), qApp->thread());
+
+        co_await qCoro(&test, &SignalTest::signalThatsNeverEmitted, 20ms);
+        // Make sure we are resumed on our thread after the timeout
+        QCORO_COMPARE(QThread::currentThread(), qApp->thread());
+
+        thread.quit();
+        thread.wait();
+    }
+
 private Q_SLOTS:
     addTest(Triggers)
     addTest(ReturnsValue)
@@ -420,6 +441,7 @@ private Q_SLOTS:
     addTest(SignalListenerQPrivateSignalVoid)
     addTest(SignalListenerQPrivateSignalValue)
     addTest(SignalListenerQPrivateSignalTuple)
+    addTest(SignalEmitterOnDifferentThread)
 };
 
 QTEST_GUILESS_MAIN(QCoroSignalTest)
