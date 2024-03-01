@@ -8,6 +8,7 @@
 #include "qcoro/core/qcorosignal.h"
 
 #include <QTimer>
+#include <QThread>
 
 using namespace std::chrono_literals;
 
