@@ -34,6 +34,21 @@ private:
     QString mMsg;
 };
 
+class MoveOnly
+{
+public:
+    explicit MoveOnly(int value)
+     : value(value)
+    {}
+    MoveOnly(const MoveOnly &) = delete;
+    MoveOnly(MoveOnly &&) = default;
+    MoveOnly &operator=(const MoveOnly &) = delete;
+    MoveOnly &operator=(MoveOnly &&) = default;
+    ~MoveOnly() = default;
+
+    int value = 0;
+};
+
 class QCoroFutureTest : public QCoro::TestObject<QCoroFutureTest> {
     Q_OBJECT
 private:
@@ -162,6 +177,7 @@ private:
     QCoro::Task<> testPropagateQExceptionFromVoidPromise_coro(QCoro::TestContext) {
         QPromise<void> promise;
         QTimer::singleShot(100ms, this, [&promise]() {
+            promise.start();
             promise.setException(TestException(QStringLiteral("Booom")));
             promise.finish();
         });
@@ -172,6 +188,7 @@ private:
     QCoro::Task<> testPropagateQExceptionFromNonvoidPromise_coro(QCoro::TestContext) {
         QPromise<int> promise;
         QTimer::singleShot(100ms, this, [&promise]() {
+            promise.start();
             promise.setException(TestException(QStringLiteral("Booom")));
             promise.finish();
         });
@@ -182,6 +199,7 @@ private:
     QCoro::Task<> testPropagateStdExceptionFromVoidPromise_coro(QCoro::TestContext) {
         QPromise<void> promise;
         QTimer::singleShot(100ms, this, [&promise]() {
+            promise.start();
             promise.setException(std::make_exception_ptr(std::runtime_error("Booom")));
             promise.finish();
         });
@@ -192,11 +210,47 @@ private:
     QCoro::Task<> testPropagateStdExceptionFromNonvoidPromise_coro(QCoro::TestContext) {
         QPromise<void> promise;
         QTimer::singleShot(100ms, this, [&promise]() {
+            promise.start();
             promise.setException(std::make_exception_ptr(std::runtime_error("Booom")));
             promise.finish();
         });
 
         QCORO_VERIFY_EXCEPTION_THROWN(co_await promise.future(), std::runtime_error);
+    }
+
+    QCoro::Task<> testTakeResult_coro(QCoro::TestContext) {
+        auto future = QtConcurrent::run([]() -> MoveOnly {
+            std::this_thread::sleep_for(10ms);
+            return MoveOnly(42);
+        });
+
+        MoveOnly result = co_await qCoro(future).takeResult();
+        QCORO_COMPARE(result.value, 42);
+
+        QPromise<MoveOnly> promise;
+        QTimer::singleShot(10ms, this, [&promise]() {
+            promise.start();
+            promise.addResult(MoveOnly(84));
+            promise.finish();
+        });
+
+        QCORO_COMPARE((co_await qCoro(promise.future()).takeResult()).value, 84);
+    }
+
+    void testThenTakeResult_coro(TestLoop &el) {
+        auto future = QtConcurrent::run([]() -> MoveOnly {
+            std::this_thread::sleep_for(10ms);
+            return MoveOnly(42);
+        });
+
+        bool called = false;
+        qCoro(future).takeResult().then([&](MoveOnly result) {
+            called = true;
+            QCOMPARE(result.value, 42);
+            el.quit();
+        });
+        el.exec();
+        QVERIFY(called);
     }
 
 #endif
@@ -232,6 +286,7 @@ private Q_SLOTS:
     addTest(PropagateQExceptionFromNonvoidPromise)
     addTest(PropagateStdExceptionFromVoidPromise)
     addTest(PropagateStdExceptionFromNonvoidPromise)
+    addCoroAndThenTests(TakeResult)
 #endif
 #if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
     addTest(UnfinishedPromiseDestroyed)

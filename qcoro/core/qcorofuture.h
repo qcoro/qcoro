@@ -68,6 +68,20 @@ private:
     using WaitForFinishedOperation = std::conditional_t<
         std::is_void_v<T>, WaitForFinishedOperationImplVoid, WaitForFinishedOperationImplT>;
 
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    template<typename T_ =  T> requires (!std::is_void_v<T_>)
+    class TakeResultOperation : public WaitForFinishedOperationBase<T_> {
+    public:
+        using WaitForFinishedOperationBase<T>::WaitForFinishedOperationBase;
+
+        T_ await_resume() {
+            return this->mFuture.takeResult();
+        }
+    };
+
+#endif
+
+
     friend struct awaiter_type<QFuture<T>>;
 
     QFuture<T> mFuture;
@@ -77,43 +91,45 @@ public:
         : mFuture(future) {}
 
     /*!
-     \brief Operation that allows co_awaiting completion of the running future.
-
-     <!-- doc-waitForFinished-start -->
-     Waits until the future is finished and then returns the result of the future (or nothing, if the future
-     is a `QFuture<void>`.
-
-     If the call is already finished or has an error, the coroutine will not suspend and the `co_await`
-     expression will return immediatelly.
-
-     This is a coroutine-friendly equivalent to using [`QFutureWatcher`][qdoc-qfuturewatcher]:
-
-     ```cpp
-     QFuture<QString> future = QtConcurrent::run([]() { ... });
-     QFutureWatcher<QString> *watcher = new QFutureWatcher<QString>();
-     QObject::connect(watcher, &QFutureWatcher<QString>::finished,
-                      this, [watcher]() {
-                          watcher->deleteLater();
-                          const QStrign result = watcher->result();
-                          ...
-                      });
-     ```
-
-     You can also await completion of the future without using `QCoroFuture` at all by directly co-awaiting the
-     `QFuture` object:
-
-     ```cpp
-     const QString result = co_await QtConcurrent::run([]() { ... });
-     ```
-
-     <!-- doc-waitForFinished-end -->
-
-     [qfuturewatcher]: https://doc.qt.io/qt-5/qfuturewatcher.html
-    */
+     * \brief Equivalent to using `QCoroFuture::result()`.
+     *
+     * This function is provided for backwards API compatibility, new code should use
+     * `QCoroFuture::result()` instead.
+     *
+     * \see QCoroFuture<T>::result()
+     */
     Task<T> waitForFinished() {
         co_return co_await WaitForFinishedOperation{mFuture};
     }
 
+    /*!
+     * \brief Asynchronously waits for the future to finish and returns the result.
+     *
+     * This is equivalent to using `QFutureWatcher` to wait for the future to finish and
+     * then obtainign the result using `QFuture::result()`.
+     *
+     * \see QCoroFuture<T>::takeResult()
+     */
+    Task<T> result() {
+        co_return co_await WaitForFinishedOperation{mFuture};
+    }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    /*!
+     * \brief Asynchronously waits for the future to finish and takes (moves) the result from the future object.
+     *
+     * This is useful when you want to move the result from the future object into a local variable without
+     * copying it or when working with move-only types.
+     *
+     * Using this is equivalent to using `QFutureWatcher` to wait for the future to finish and then
+     * obtaining the result using `QFuture::takeResult()`.
+     *
+     * \see QCoroFuture<T>::result()
+     */
+    Task<T> takeResult() requires (!std::is_void_v<T>) {
+        co_return std::move(co_await TakeResultOperation<T>{mFuture});
+    }
+#endif
 };
 
 template<typename T>
