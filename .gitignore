@@ -2,6 +2,7 @@ build/
 build-*/
 .*.swp
 .ccls-cache
+.cache
 compile_commands.json
 /.vs
 /.vscode
