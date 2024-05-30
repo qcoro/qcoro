@@ -8,6 +8,7 @@
 #include "concepts_p.h"
 
 #include <atomic>
+#include <exception>
 #include <variant>
 #include <memory>
 #include <type_traits>
