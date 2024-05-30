@@ -125,6 +125,7 @@ if (QCORO_WITH_QTNETWORK)
     qcoro_add_network_test(qcoroabstractsocket)
     qcoro_add_network_test(qcoronetworkreply)
     qcoro_add_network_test(qcorotcpserver)
+    qcoro_add_network_test(qcorosocketnotifier)
 
     # Tests for test utilities
     qcoro_add_network_test(testhttpserver)

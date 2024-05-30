@@ -8,12 +8,14 @@ add_qcoro_library(
         qcoroabstractsocket.cpp
         qcorolocalsocket.cpp
         qcoronetworkreply.cpp
+        qcorosocketnotifier.cpp
         qcorotcpserver.cpp
     CAMELCASE_HEADERS
         QCoroNetwork
         QCoroAbstractSocket
         QCoroLocalSocket
         QCoroNetworkReply
+        QCoroSocketNotifier
         QCoroTcpServer
     QCORO_LINK_LIBRARIES
         PUBLIC Coro Core
