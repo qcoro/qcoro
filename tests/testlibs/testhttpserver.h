@@ -161,6 +161,11 @@ private:
                             "Content-Type: text/plain\r\n"
                             "\r\n"
                             "abcdef");
+
+                if (request == "GET /no-close HTTP/1.1\r\n") {
+                    conn->flush();
+                    std::this_thread::sleep_for(500ms);
+                }
             }
             conn->flush();
             conn->close();

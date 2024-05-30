@@ -30,6 +30,11 @@ function(qcoro_add_test _name)
         ${TEST_LINK_LIBRARIES}
         Threads::Threads
     )
+    set_target_properties(test-${_name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    target_include_directories(test-${_name} PRIVATE ${CMAKE_BINARY_DIR})
+
     if (NOT TEST_SKIP_ADD_TEST)
         add_test(NAME test-${_name} COMMAND test-${_name})
         _enable_supressions(${_name})
@@ -105,6 +110,16 @@ function(qcoro_add_quick_test _name)
     set_tests_properties(test-${_name} PROPERTIES ENVIRONMENT "${_env}")
 endfunction()
 
+function(qcoro_add_asyncsql_test _name)
+    qcoro_add_test(${_name} ${ARGN})
+    target_sources(test-${_name} PRIVATE qcoroasyncsqlbase.cpp)
+    target_link_libraries(
+        test-${_name}
+        PRIVATE
+        QCoro${QT_VERSION_MAJOR}AsyncSql
+    )
+endfunction()
+
 qcoro_add_test(qtimer)
 qcoro_add_test(qcoroprocess)
 qcoro_add_test(qcorosignal)
@@ -144,3 +159,8 @@ if (QCORO_WITH_QTQUICK)
     qcoro_add_quick_test(qcoroimageprovider)
 endif()
 
+if (QCORO_WITH_QTSQL)
+    if (QCORO_WITH_POSTGRESQL)
+        qcoro_add_asyncsql_test(qcoroasyncsqlpsql)
+    endif()
+endif()

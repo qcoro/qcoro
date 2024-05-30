@@ -1,0 +1,49 @@
+---
+# misc-definitions-in-headers is triggered also by a variable template
+#
+# bugprone-narrowing-conversions is a duplicate of cppcoreguidelines-narrowing-conversions
+
+Checks: -*,
+        bugprone-*,
+        -bugprone-narrowing-conversions,
+        clang-analyzer-*,
+        cppcoreguidelines-*,
+        -cppcoreguidelines-avoid-c-arrays,
+        -cppcoreguidelines-macro-usage,
+        -cppcoreguidelines-owning-memory,
+        -cppcoreguidelines-pro-bounds-*,
+        -cppcoreguidelines-pro-type-reinterpret-cast,
+        -cppcoreguidelines-pro-type-vararg,
+        -cppcoreguidelines-avoid-non-const-global-variables,
+        -cppcoreguidelines-avoid-do-while,
+        google-explicit-constructor,
+        google-global-names-in-headers,
+        hicpp-signed-bitwise,
+        misc-*,
+        -misc-definitions-in-headers,
+        -misc-no-recursion,
+        -*-non-private-member-variables-in-classes,
+        performance-*,
+        readability-*,
+        -readability-avoid-const-params-in-decls,
+        -readability-convert-member-functions-to-static,
+        -readability-else-after-return,
+        -readability-braces-around-statements,
+        -readability-misleading-indentation,
+        -readability-named-parameter,
+        -readability-redundant-access-specifiers,
+        -readability-qualified-auto,
+        -readability-make-member-function-const,
+        -readability-use-anyofallof,
+        -*-magic-numbers,
+        -bugprone-branch-clone
+HeaderFilterRegex: \./qcoro/.+
+AnalyzeTemporaryDtors: true
+CheckOptions:
+    - key:   bugprone-assert-side-effect.AssertMacros
+      value: 'Q_ASSERT'
+    - key:   CheckFunctionCalls
+      value: true
+    - key:   readability-identifier-length.IgnoredVariableNames
+      value: 'it,el,db'
+

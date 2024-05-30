@@ -35,6 +35,10 @@ option(QCORO_WITH_QML "Build QML integration features" ON)
 add_feature_info(QtQml QCORO_WITH_QML "Build QML integration features")
 option(QCORO_WITH_QTTEST "Build QtTest support" ON)
 add_feature_info(QtTest QCORO_WITH_QTTEST "Build QtTest support")
+option(QCORO_WITH_QTSQL "Build AsyncSql module" ON)
+add_feature_info(QtSql QCORO_WITH_QTSQL "Build AsyncSql module")
+option(QCORO_WITH_POSTGRESQL "Build PostgreSQL support for AsyncSql" ON)
+add_feature_info(Postgresql QCORO_WITH_POSTGRESQL "Build PostgreSQL support for AsyncSql")
 
 #-----------------------------------------------------------#
 # Dependencies
@@ -74,9 +78,12 @@ endif()
 if (BUILD_TESTING)
     list(APPEND REQUIRED_QT_COMPONENTS Test Concurrent)
 endif()
+if (QCORO_WITH_QTSQL)
+    list(APPEND REQUIRED_QT_COMPONENTS Sql)
+endif()
 
 set(MIN_REQUIRED_QT5_VERSION "5.12")
-set(MIN_REQUIRED_QT6_VERSION "6.2.0")
+set(MIN_REQUIRED_QT6_VERSION "6.3.0")
 
 include(cmake/QCoroFindQt.cmake)
 # Find Qt. If USE_QT_VERSION is not set, it will try to look for Qt6 first
@@ -89,6 +96,12 @@ qcoro_find_qt(
     FOUND_VER_VAR QT_VERSION_MAJOR
 )
 
+if (QCORO_WITH_POSTGRESQL)
+    find_package(PostgreSQL REQUIRED)
+endif()
+
+
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/config.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/config.h
@@ -100,6 +113,7 @@ configure_file(
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if (MSVC)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W4 /WX")

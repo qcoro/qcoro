@@ -115,6 +115,8 @@ function(add_qcoro_library)
             WINDOWS_EXPORT_ALL_SYMBOLS 1
             VERSION ${qcoro_VERSION}
             SOVERSION ${qcoro_SOVERSION}
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+            LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         target_code_coverage(${target_name} AUTO)
     else()

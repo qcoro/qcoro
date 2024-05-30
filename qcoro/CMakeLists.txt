@@ -105,3 +105,5 @@ endif()
 if (QCORO_WITH_QTTEST)
     add_subdirectory(test)
 endif()
+
+add_subdirectory(asyncsql)

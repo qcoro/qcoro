@@ -1,1 +1,3 @@
 #cmakedefine QCORO_QT_HAS_COMPAT_ABI
+
+#cmakedefine QCORO_WITH_POSTGRESQL
