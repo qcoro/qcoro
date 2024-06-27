@@ -19,7 +19,9 @@ Task<SignalResult> qCoro(QObject *obj, QtSignalPtr ptr);
 
 The arguments are a pointer to a QObject-derived object and a pointer
 to a the object's signal to connect to. Note that if the object is destroyed
-while being `co_await`ed, the coroutine will never be resumed.
+while being `co_await`ed, the coroutine will never be resumed. If you want the
+couroutine to resume instead, use qCoroWatch()
+// ******************** Include example below **************** //
 
 The returned awaitable produces the signal's arguments. That is, if the
 signal has no arguments, the result of the awaitable will be `void`. If

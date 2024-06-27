@@ -415,6 +415,16 @@ private:
         thread.wait();
     }
 
+    QCoro::Task<> testCoroutineResumeOnSenderDelete_coro(QCoro::TestContext) {
+        auto obj = new SignalTest;
+
+        QTimer::singleShot(10ms, obj, &QObject::deleteLater);
+
+        const auto result = co_await qCoroWatch(obj, &SignalTest::singleArg, 50ms);
+        static_assert(std::is_same_v<decltype(result), const std::optional<QString>>);
+        QCORO_VERIFY(!result.has_value());
+    }
+
 private Q_SLOTS:
     addTest(Triggers)
     addTest(ReturnsValue)
@@ -442,6 +452,7 @@ private Q_SLOTS:
     addTest(SignalListenerQPrivateSignalValue)
     addTest(SignalListenerQPrivateSignalTuple)
     addTest(SignalEmitterOnDifferentThread)
+    addTest(CoroutineResumeOnSenderDelete)
 };
 
 QTEST_GUILESS_MAIN(QCoroSignalTest)

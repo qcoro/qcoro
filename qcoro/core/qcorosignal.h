@@ -242,6 +242,98 @@ template<concepts::QObject T, typename FuncPtr>
 QCoroSignal(T *, FuncPtr &&, std::chrono::milliseconds) -> QCoroSignal<T, FuncPtr>;
 
 template<concepts::QObject T, typename FuncPtr>
+class QCoroSignalWatcher : public QCoroSignalBase<T, FuncPtr> {
+public:
+    using typename QCoroSignalBase<T, FuncPtr>::result_type;
+
+    QCoroSignalWatcher(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
+        : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout),
+          mDummyReceiver(std::make_unique<QObject>()) {}
+    QCoroSignalWatcher(const QCoroSignalWatcher &) = delete;
+    QCoroSignalWatcher(QCoroSignalWatcher &&other) noexcept
+        : QCoroSignalBase<T, FuncPtr>(std::move(other)),
+          mResult(std::move(other.mResult)),
+          mDummyReceiver(std::move(other.mDummyReceiver)) {
+        if (this->mConn) {
+            QObject::disconnect(this->mConn);
+            setupConnection();
+        }
+    }
+
+    QCoroSignalWatcher &operator=(QCoroSignalWatcher &&other) noexcept {
+        QCoroSignalBase<T, FuncPtr>::operator=(std::move(other));
+        std::swap(mResult, other.mResult);
+        std::swap(mDummyReceiver, other.mDummyReceiver);
+        if (this->mConn) {
+            QObject::disconnect(this->mConn);
+            setupConnection();
+        }
+        return *this;
+    }
+
+    QCoroSignalWatcher &operator=(const QCoroSignalWatcher &) = delete;
+    ~QCoroSignalWatcher() = default;
+
+    bool await_ready() const noexcept {
+        return this->mObj.isNull();
+    }
+
+    void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+        this->handleTimeout(awaitingCoroutine);
+        mAwaitingCoroutine = awaitingCoroutine;
+        setupConnection();
+    }
+
+    result_type await_resume() {
+        return std::move(mResult);
+    }
+
+private:
+    void setupConnection() {
+        Q_ASSERT(!this->mConn);
+        this->mConn = QObject::connect(
+            this->mObj, this->mFuncPtr, this->mDummyReceiver.get(),
+            [this](auto &&...args) mutable {
+                if (this->mTimeoutTimer) {
+                    this->mTimeoutTimer->stop();
+                }
+                QObject::disconnect(this->mConn);
+                QObject::disconnect(this->mDestructionConn);
+
+                this->storeResult(
+                    [this](auto &&...args) {
+                        mResult.emplace(std::forward<decltype(args)>(args)...);
+                    },
+                    std::forward<decltype(args)>(args)...);
+
+                if (mAwaitingCoroutine) {
+                    mAwaitingCoroutine.resume();
+                }
+            },
+            Qt::QueuedConnection);
+
+        // Ensure that we don't leave the caller stuck in limbo if the sender gets deleted
+        this->mDestructionConn =
+            QObject::connect(this->mObj, &QObject::destroyed, this->mDummyReceiver.get(), [this] {
+                if (this->mTimeoutTimer) {
+                    this->mTimeoutTimer->stop();
+                }
+                QObject::disconnect(this->mConn);
+                QObject::disconnect(this->mDestructionConn);
+
+                if (mAwaitingCoroutine) {
+                    mAwaitingCoroutine.resume();
+                }
+            });
+    }
+
+    result_type mResult;
+    QMetaObject::Connection mDestructionConn;
+    std::coroutine_handle<> mAwaitingCoroutine;
+    std::unique_ptr<QObject> mDummyReceiver;
+};
+
+template<concepts::QObject T, typename FuncPtr>
 class QCoroSignalQueue : public QCoroSignalBase<T, FuncPtr> {
 public:
     using typename QCoroSignalBase<T, FuncPtr>::result_type;
@@ -353,6 +445,14 @@ template<QCoro::detail::concepts::QObject T, typename FuncPtr>
 inline auto qCoro(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
     -> QCoro::Task<typename QCoro::detail::QCoroSignal<T, FuncPtr>::result_type> {
     auto result = co_await QCoro::detail::QCoroSignal(obj, std::forward<FuncPtr>(ptr), timeout);
+    co_return std::move(result);
+}
+
+//! *************** TODO ************
+template<QCoro::detail::concepts::QObject T, typename FuncPtr>
+inline auto qCoroWatch(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout = std::chrono::milliseconds(-1))
+    -> QCoro::Task<typename QCoro::detail::QCoroSignalWatcher<T, FuncPtr>::result_type> {
+    auto result = co_await QCoro::detail::QCoroSignalWatcher(obj, std::forward<FuncPtr>(ptr), timeout);
     co_return std::move(result);
 }
 
