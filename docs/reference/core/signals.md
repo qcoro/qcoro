@@ -18,10 +18,7 @@ Task<SignalResult> qCoro(QObject *obj, QtSignalPtr ptr);
 ```
 
 The arguments are a pointer to a QObject-derived object and a pointer
-to a the object's signal to connect to. Note that if the object is destroyed
-while being `co_await`ed, the coroutine will never be resumed. If you want the
-couroutine to resume instead, use qCoroWatch()
-// ******************** Include example below **************** //
+to a the object's signal to connect to.
 
 The returned awaitable produces the signal's arguments. That is, if the
 signal has no arguments, the result of the awaitable will be `void`. If
@@ -41,6 +38,8 @@ const QUrl url = co_await qCoro(reply, &QNetworkReply::redirected);
 const auto [exitCode, exitStatus] = co_await qCoro(process, &QProcess::finished);
 ```
 
+## With a timeout
+
 ```cpp
 Task<std::optional<SignalResult>> qCoro(QObject *obj, QtSignalPtr ptr, std::chrono::milliseconds timeout);
 ```
@@ -49,6 +48,17 @@ An overload that behaves similar to the two-argument overload, but takes an addi
 `timeout` argument. If the signal is not emitted within the specified timeout,  the returned
 awaitable produces an empty `std::optional`. Otherwise the return type behaves the same way
 as the two-argument overload.
+
+## Sender lifetime
+In the examples above, the coroutine will never be resumed if the object is
+destroyed while being `co_await`ed. This can be problematic in some cases (for
+example if you have local variables that need to be freed). If you want the
+coroutine to resume instead, use `qCoroWatch()` instead of `qCoro()`. It also
+allows you to specify a timeout as an optional parameter.
+
+If the sender is deleted, or the signal is not emitted within the specified
+timeout, the returned awaitable produces an empty `std::optional`. Otherwise
+the return type behaves the same way as the two-argument overload.
 
 ## QCoroSignalListener
 

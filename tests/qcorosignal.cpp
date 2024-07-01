@@ -420,7 +420,7 @@ private:
 
         QTimer::singleShot(10ms, obj, &QObject::deleteLater);
 
-        const auto result = co_await qCoroWatch(obj, &SignalTest::singleArg, 50ms);
+        const auto result = co_await qCoroWatch(obj, &SignalTest::singleArg);
         static_assert(std::is_same_v<decltype(result), const std::optional<QString>>);
         QCORO_VERIFY(!result.has_value());
     }
