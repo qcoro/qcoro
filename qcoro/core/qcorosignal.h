@@ -171,7 +171,7 @@ public:
     QCoroSignal(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
         : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout)
         , mDummyReceiver(std::make_unique<QObject>()) {}
-    QCoroSignal(T *obj, FuncPtr &&ptr, T *context, std::chrono::milliseconds timeout)
+    QCoroSignal(T *obj, FuncPtr &&ptr, QObject *context, std::chrono::milliseconds timeout)
         : QCoroSignalBase<T, FuncPtr>(obj, std::forward<FuncPtr>(ptr), timeout),
           mContextObj(context),
           mDummyReceiver(std::make_unique<QObject>()) {}
@@ -260,7 +260,7 @@ private:
 
     result_type mResult;
 
-    QPointer<T> mContextObj;
+    QPointer<QObject> mContextObj;
     QMetaObject::Connection mContextConn;
     std::coroutine_handle<> mAwaitingCoroutine;
     std::unique_ptr<QObject> mDummyReceiver;
@@ -400,11 +400,11 @@ inline auto qCoro(T *obj, FuncPtr &&ptr, std::chrono::milliseconds timeout)
  * the operation will never time out.
  */
 template<QCoro::detail::concepts::QObject T, typename FuncPtr>
-inline auto qCoroWatch(T *obj, FuncPtr &&ptr,
-                       std::chrono::milliseconds timeout = std::chrono::milliseconds(-1))
+inline auto qCoro(T *obj, FuncPtr &&ptr, QObject *context,
+                  std::chrono::milliseconds timeout = std::chrono::milliseconds(-1))
     -> QCoro::Task<typename QCoro::detail::QCoroSignal<T, FuncPtr>::result_type> {
     auto result =
-        co_await QCoro::detail::QCoroSignal(obj, std::forward<FuncPtr>(ptr), obj, timeout);
+        co_await QCoro::detail::QCoroSignal(obj, std::forward<FuncPtr>(ptr), context, timeout);
     co_return std::move(result);
 }
 
