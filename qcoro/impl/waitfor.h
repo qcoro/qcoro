@@ -53,7 +53,18 @@ Task<> runCoroutine(WaitContext &context, Awaitable &&awaitable) {
 }
 
 template<typename T, Awaitable Awaitable>
-Task<> runCoroutine(WaitContext &context, std::optional<T> &result, Awaitable &&awaitable) {
+Task<> runCoroutine(WaitContext &context, T &result, Awaitable &&awaitable) {
+    try {
+        result = co_await awaitable;
+    } catch (...) {
+        context.exception = std::current_exception();
+    }
+    context.coroutineFinished = true;
+    context.loop.quit();
+}
+
+template<typename T, Awaitable Awaitable>
+Task<> runCoroutineOpt(WaitContext &context, std::optional<T> &result, Awaitable &&awaitable) {
     try {
         result.emplace(co_await awaitable);
     } catch (...) {
@@ -75,15 +86,27 @@ T waitFor(Awaitable &&awaitable) {
             std::rethrow_exception(context.exception);
         }
     } else {
-        std::optional<T> result;
-        runCoroutine(context, result, std::forward<Awaitable>(awaitable));
-        if (!context.coroutineFinished) {
-            context.loop.exec();
+        if constexpr (std::is_default_constructible_v<T>) {
+            T result;
+            runCoroutine(context, result, std::forward<Awaitable>(awaitable));
+            if (!context.coroutineFinished) {
+                context.loop.exec();
+            }
+            if (context.exception) {
+                std::rethrow_exception(context.exception);
+            }
+            return result;
+        } else {
+            std::optional<T> result;
+            runCoroutineOpt(context, result, std::forward<Awaitable>(awaitable));
+            if (!context.coroutineFinished) {
+                context.loop.exec();
+            }
+            if (context.exception) {
+                std::rethrow_exception(context.exception);
+            }
+            return *result;
         }
-        if (context.exception) {
-            std::rethrow_exception(context.exception);
-        }
-        return *result;
     }
 }
 
