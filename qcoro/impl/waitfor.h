@@ -12,6 +12,8 @@
 
 #include <QEventLoop>
 
+#include <optional>
+
 namespace QCoro
 {
 
@@ -51,9 +53,9 @@ Task<> runCoroutine(WaitContext &context, Awaitable &&awaitable) {
 }
 
 template<typename T, Awaitable Awaitable>
-Task<> runCoroutine(WaitContext &context, T &result, Awaitable &&awaitable) {
+Task<> runCoroutine(WaitContext &context, std::optional<T> &result, Awaitable &&awaitable) {
     try {
-        result = co_await awaitable;
+        result.emplace(co_await awaitable);
     } catch (...) {
         context.exception = std::current_exception();
     }
@@ -73,7 +75,7 @@ T waitFor(Awaitable &&awaitable) {
             std::rethrow_exception(context.exception);
         }
     } else {
-        T result;
+        std::optional<T> result;
         runCoroutine(context, result, std::forward<Awaitable>(awaitable));
         if (!context.coroutineFinished) {
             context.loop.exec();
@@ -81,7 +83,7 @@ T waitFor(Awaitable &&awaitable) {
         if (context.exception) {
             std::rethrow_exception(context.exception);
         }
-        return result;
+        return *result;
     }
 }
 
