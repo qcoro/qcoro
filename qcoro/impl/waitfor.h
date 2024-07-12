@@ -83,7 +83,7 @@ T waitFor(Awaitable &&awaitable) {
         if (context.exception) {
             std::rethrow_exception(context.exception);
         }
-        return *result;
+        return std::move(*result);
     }
 }
 
