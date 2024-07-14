@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - id: changed_files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@v44
         name: Get changed files
         with:
           files_ignore: |
@@ -47,7 +47,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - name: Checkout sources
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - id: set-matrix
       name: Generate matrix
       run: |
@@ -66,7 +66,7 @@ jobs:
     steps:
     - name: Checkout sources
       if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install Qt
       if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
@@ -144,7 +144,7 @@ jobs:
 
     - name: Upload Test Results
       if: ${{ needs.detect_run.outputs.source_code_changed == 'true' && always() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Unit Tests Results (${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }})
         path: |
@@ -152,7 +152,7 @@ jobs:
 
     - name: Upload build logs on failure
       if: ${{ needs.detect_run.outputs.source_code_changed == 'true' && failure() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: build-${{ matrix.platform }}-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
         path: build/**
@@ -162,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Upload
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: Event File
         path: ${{ github.event_path }}
