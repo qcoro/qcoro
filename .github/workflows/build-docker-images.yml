@@ -61,7 +61,7 @@ jobs:
         images: ghcr.io/${{ github.repository }}/build-${{ matrix.compiler_full }}-qt-${{ matrix.qt_version }}
 
     - name: Build and push image
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v6
       with:
         build-args: |
           compiler_image=${{ matrix.compiler_base_image }}
