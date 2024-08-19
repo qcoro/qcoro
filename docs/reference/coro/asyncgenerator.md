@@ -22,7 +22,7 @@ the returned iterator must be `co_await`ed as well.
 QCoro::AsyncGenerator<uint8_t> lottoNumbersGenerator(int count) {
     Hat hat; // Hat with numbers
     Hand hand; // Hand to pull numbers out of the hat
-    for (int = 0; i < count; ++i) {
+    for (int i = 0; i < count; ++i) {
         const uint8_t number = co_await hand.pullNumberFrom(hat);
         co_yield number; // guaranteed to be a winning number
     }
@@ -34,7 +34,7 @@ QCoro::Task<> winningLottoNumbers() {
     auto winningNumber = co_await makeMeRich.begin();
     std::cout << "Winning numbers: ";
     while (winningNumber != makeMeRich.end()) {
-        std::cout << *winningNumger;
+        std::cout << *winningNumber;
         // And we must co_await increment
         co_await ++(winningNumber);
     }
@@ -74,7 +74,7 @@ QCoro::Task<> divide42ForNoReason(std::size_t count) {
     auto generator = generatorThatThrows();
     std::vector<int> numbers;
     try {
-        // Might throw if generator generates 0 immediatelly.
+        // Might throw if generator generates 0 immediately.
         auto it = co_await generator.begin();
         while (numbers.size() < count) {
             numbers.push_back(*it);
