@@ -9,11 +9,13 @@
 #pragma once
 
 #include "../qcorotask.h"
+#include <coroutine>
+#include <QDebug>
 
 namespace QCoro::detail
 {
 
-inline TaskFinalSuspend::TaskFinalSuspend(const std::vector<std::coroutine_handle<>> &awaitingCoroutines)
+inline TaskFinalSuspend::TaskFinalSuspend(const std::vector<CoroutineHandle> &awaitingCoroutines)
     : mAwaitingCoroutines(awaitingCoroutines) {}
 
 inline bool TaskFinalSuspend::await_ready() const noexcept {
@@ -25,16 +27,18 @@ inline void TaskFinalSuspend::await_suspend(std::coroutine_handle<Promise> finis
     auto &promise = finishedCoroutine.promise();
 
     for (auto &awaiter : mAwaitingCoroutines) {
-        auto handle = std::coroutine_handle<TaskPromiseBase>::from_address(awaiter.address());
-        auto &promise = handle.promise();
-        const CoroutineFeatures &features = promise.features();
-        if (const auto &guardedThis = features.guardedThis(); guardedThis.has_value() && guardedThis->isNull()) {
-            // We have a QPointer, but it's null which means that observed QObject has been destroyed,
-            // so just destroy the current coroutine as well.
-            qDebug() << "Destroy direct!";
-            promise.destroyCoroutine();
+        if (const auto qcoro_handle = std::get_if<std::coroutine_handle<TaskPromiseBase>>(&awaiter); qcoro_handle != nullptr) {
+            auto &promise = qcoro_handle->promise();
+            const CoroutineFeatures &features = promise.features();
+            if (const auto &guardedThis = features.guardedThis(); guardedThis.has_value() && guardedThis->isNull()) {
+                // We have a QPointer, but it's null which means that observed QObject has been destroyed,
+                // so just destroy the current coroutine as well.
+                promise.destroyCoroutine(true);
+            } else {
+                qcoro_handle->resume();
+            }
         } else {
-            awaiter.resume();
+            std::get<std::coroutine_handle<>>(awaiter).resume();
         }
     }
     mAwaitingCoroutines.clear();

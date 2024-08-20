@@ -9,9 +9,9 @@
 #include "bits/features.h"
 
 #include <atomic>
+#include <coroutine>
 #include <exception>
 #include <variant>
-#include <memory>
 #include <type_traits>
 #include <vector>
 
@@ -28,6 +28,9 @@ struct awaiter_type;
 template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
 
+class TaskPromiseBase;
+using CoroutineHandle = std::variant<std::coroutine_handle<TaskPromiseBase>, std::coroutine_handle<>>;
+
 //! Continuation that resumes a coroutine co_awaiting on currently finished coroutine.
 class TaskFinalSuspend {
 public:
@@ -36,7 +39,7 @@ public:
      * \param[in] awaitingCoroutine handle of the coroutine that is co_awaiting the current
      * coroutine (continuation).
      */
-    explicit TaskFinalSuspend(const std::vector<std::coroutine_handle<>> &awaitingCoroutines);
+    explicit TaskFinalSuspend(const std::vector<CoroutineHandle> &awaitingCoroutines);
 
     //! Returns whether the just finishing coroutine should do final suspend or not
     /*!
@@ -68,7 +71,7 @@ public:
     constexpr void await_resume() const noexcept;
 
 private:
-    std::vector<std::coroutine_handle<>> mAwaitingCoroutines;
+    std::vector<CoroutineHandle> mAwaitingCoroutines;
 };
 
 //! Base class for the \c Task<T> promise_type.
@@ -167,13 +170,14 @@ public:
      *                          represented by this promise. When our coroutine finishes, it's
      *                          our job to resume the awaiting coroutine.
      */
-    void addAwaitingCoroutine(std::coroutine_handle<> awaitingCoroutine);
+    template<typename T>
+    void addAwaitingCoroutine(std::coroutine_handle<T> awaitingCoroutine);
 
     bool hasAwaitingCoroutine() const;
 
     void derefCoroutine();
     void refCoroutine();
-    void destroyCoroutine();
+    void destroyCoroutine(bool wakeUpAwaiters = false);
 
     CoroutineFeatures &features() noexcept;
 
@@ -184,7 +188,7 @@ private:
     friend class TaskFinalSuspend;
 
     //! Handle of the coroutine that is currently co_awaiting this Awaitable
-    std::vector<std::coroutine_handle<>> mAwaitingCoroutines;
+    std::vector<CoroutineHandle> mAwaitingCoroutines;
 
     //! Indicates whether we can destroy the coroutine handle
     std::atomic<uint32_t> mRefCount{0};
@@ -314,6 +318,9 @@ public:
      * co_awaited coroutine has finished synchronously and the co_awaiting coroutine doesn't
      * have to suspend.
      */
+    template<typename T>
+    void await_suspend(std::coroutine_handle<TaskPromise<T>> awaitingCoroutine) noexcept;
+
     void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
 
 protected:

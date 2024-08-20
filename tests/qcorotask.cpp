@@ -472,11 +472,9 @@ private:
             features.guardThis(obj);
 
             QTimer::singleShot(0, [obj]() {
-                qDebug() << "Destroyed!";
                 delete obj;
             });
             co_await timer();
-            qDebug() << "RESUMED";
 
             notCalled = false;
         };
