@@ -10,13 +10,12 @@
 
 #include "../qcorotask.h"
 #include <coroutine>
-#include <QDebug>
 
 namespace QCoro::detail
 {
 
-inline TaskFinalSuspend::TaskFinalSuspend(const std::vector<CoroutineHandle> &awaitingCoroutines)
-    : mAwaitingCoroutines(awaitingCoroutines) {}
+inline TaskFinalSuspend::TaskFinalSuspend(std::vector<CoroutineHandle> awaitingCoroutines)
+    : mAwaitingCoroutines(std::move(awaitingCoroutines)) {}
 
 inline bool TaskFinalSuspend::await_ready() const noexcept {
     return false;
@@ -29,14 +28,16 @@ inline void TaskFinalSuspend::await_suspend(std::coroutine_handle<Promise> finis
     for (auto &awaiter : mAwaitingCoroutines) {
         if (const auto qcoro_handle = std::get_if<std::coroutine_handle<TaskPromiseBase>>(&awaiter); qcoro_handle != nullptr) {
             auto &promise = qcoro_handle->promise();
-            const CoroutineFeatures &features = promise.features();
-            if (const auto &guardedThis = features.guardedThis(); guardedThis.has_value() && guardedThis->isNull()) {
-                // We have a QPointer, but it's null which means that observed QObject has been destroyed,
-                // so just destroy the current coroutine as well.
-                promise.destroyCoroutine(true);
-            } else {
-                qcoro_handle->resume();
+            if (const CoroutineFeatures *features = promise.features(); features != nullptr) {
+                if (const auto &guardedThis = features->guardedThis(); guardedThis.has_value() && guardedThis->isNull()) {
+                    // We have a QPointer, but it's null which means that observed QObject has been destroyed,
+                    // so just destroy the current coroutine as well.
+                    promise.destroyCoroutine(true);
+                    continue;
+                }
             }
+
+            qcoro_handle->resume();
         } else {
             std::get<std::coroutine_handle<>>(awaiter).resume();
         }

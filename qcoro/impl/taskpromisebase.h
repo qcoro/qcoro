@@ -24,7 +24,7 @@ inline std::suspend_never TaskPromiseBase::initial_suspend() const noexcept {
 }
 
 inline auto TaskPromiseBase::final_suspend() const noexcept {
-    return TaskFinalSuspend{mAwaitingCoroutines};
+    return TaskFinalSuspend{std::move(mAwaitingCoroutines)};
 }
 
 template<typename T, typename Awaiter>
@@ -80,6 +80,10 @@ inline void TaskPromiseBase::destroyCoroutine(bool wakeUpAwaiters) {
     auto handle = std::coroutine_handle<TaskPromiseBase>::from_promise(*this);
     handle.destroy();
 
+}
+
+inline CoroutineFeatures *TaskPromiseBase::features() noexcept {
+    return mFeatures.get();
 }
 
 } // namespace QCoro::detail

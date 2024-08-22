@@ -11,9 +11,11 @@
 #include <atomic>
 #include <coroutine>
 #include <exception>
+#include <utility>
 #include <variant>
 #include <type_traits>
 #include <vector>
+#include <memory>
 
 namespace QCoro {
 
@@ -29,6 +31,15 @@ template<typename T>
 using awaiter_type_t = typename awaiter_type<T>::type;
 
 class TaskPromiseBase;
+
+/**
+ * We use std::variant to distinguish between a handle to a QCoro::Task-based coroutine (which may have
+ * additional features) and any generic coroutine. We do this because once the Promise type is erased in
+ * std::coroutine_handle<>, there's no way to find out what the Promise type was, and just blindly
+ * constructing std::coroutine_handle<T> from std::coroutine_handle<> is undefined behavior, if the
+ * coroutine promise type is not T, which we have no way of knowing at that point. The variant allows
+ * us to preserve this information.
+ **/
 using CoroutineHandle = std::variant<std::coroutine_handle<TaskPromiseBase>, std::coroutine_handle<>>;
 
 //! Continuation that resumes a coroutine co_awaiting on currently finished coroutine.
@@ -39,7 +50,7 @@ public:
      * \param[in] awaitingCoroutine handle of the coroutine that is co_awaiting the current
      * coroutine (continuation).
      */
-    explicit TaskFinalSuspend(const std::vector<CoroutineHandle> &awaitingCoroutines);
+    explicit TaskFinalSuspend(std::vector<CoroutineHandle> awaitingCoroutines);
 
     //! Returns whether the just finishing coroutine should do final suspend or not
     /*!
@@ -157,7 +168,10 @@ public:
     auto &await_transform(T &awaitable);
 
     auto &await_transform(detail::ThisCoroPromise &&) {
-        return mFeatures;
+        if (!mFeatures) {
+            mFeatures.reset(new CoroutineFeatures());
+        }
+        return *mFeatures;
     }
 
     //! Called by \c TaskAwaiter when co_awaited.
@@ -179,20 +193,20 @@ public:
     void refCoroutine();
     void destroyCoroutine(bool wakeUpAwaiters = false);
 
-    CoroutineFeatures &features() noexcept;
+    CoroutineFeatures *features() noexcept;
 
 protected:
     TaskPromiseBase();
 
 private:
     friend class TaskFinalSuspend;
-
-    //! Handle of the coroutine that is currently co_awaiting this Awaitable
+    //! Handle of the coroutine that is currently co_awaiting this Awaitable.
+    // See CoroutineHandle docs for details about why it's a typedef.
     std::vector<CoroutineHandle> mAwaitingCoroutines;
 
     //! Indicates whether we can destroy the coroutine handle
     std::atomic<uint32_t> mRefCount{0};
-    CoroutineFeatures mFeatures;
+    std::unique_ptr<CoroutineFeatures> mFeatures;
 };
 
 //! The promise_type for Task<T>
@@ -312,8 +326,10 @@ public:
      * resuming the awaiting coroutine. At the same time this function resumes the awaited
      * coroutine.
      *
+     * This overload, specifically, is for QCoro::Task-based coroutines.
+     *
      * \param[in] awaitingCoroutine handle of the coroutine that is currently co_awaiting the
-     * coroutine represented by this Tak.
+     * coroutine represented by this Task.
      * \return returns whether the awaiting coroutine should be suspended, or whether the
      * co_awaited coroutine has finished synchronously and the co_awaiting coroutine doesn't
      * have to suspend.
@@ -321,6 +337,7 @@ public:
     template<typename T>
     void await_suspend(std::coroutine_handle<TaskPromise<T>> awaitingCoroutine) noexcept;
 
+    //! Overload for await_suspend() that works for any generic coroutine.
     void await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept;
 
 protected:

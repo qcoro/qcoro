@@ -10,7 +10,6 @@
 
 #include "../qcorotask.h"
 #include <coroutine>
-#include <type_traits>
 
 namespace QCoro::detail
 {
