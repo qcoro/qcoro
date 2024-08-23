@@ -9,7 +9,6 @@
 #include "bits/features.h"
 
 #include <atomic>
-#include <coroutine>
 #include <exception>
 #include <utility>
 #include <variant>
