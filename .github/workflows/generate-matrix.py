@@ -66,7 +66,7 @@ def get_os_for_platform(platform):
     if platform == "linux":
         return "ubuntu-20.04"
     if platform == "macos":
-        return "macos-11"
+        return "macos-13"
     raise RuntimeError(f"Invalid platform '{platform}'.")
 
 def get_base_image_for_compiler(compiler):
