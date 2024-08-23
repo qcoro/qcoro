@@ -58,7 +58,8 @@ public:
     {
         return true;
     }
-    constexpr void await_suspend(std::coroutine_handle<> &&) noexcept {}
+    // Could be &&, but that fails on GCC 10 due to handle being passed as an lvalue.
+    constexpr void await_suspend(std::coroutine_handle<>) noexcept {}
 
     constexpr CoroutineFeatures & await_resume() noexcept
     {
