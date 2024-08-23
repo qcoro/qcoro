@@ -13,8 +13,16 @@ include(FeatureSummary)
 # Options
 #-----------------------------------------------------------#
 
+
+# Allow QCORO_BUILD_TESTING to override BUILD_TESTING, but default to BUILD_TESTING if not set
+if (DEFINED QCORO_BUILD_TESTING)
+    set(BUILD_TESTING ${QCORO_BUILD_TESTING})
+endif()
+
 option(QCORO_BUILD_EXAMPLES "Build examples" ON)
 add_feature_info(Examples QCORO_BUILD_EXAMPLES "Build examples")
+option(QCORO_BUILD_TESTING "Build QCoro tests" ${BUILD_TESTING})
+add_feature_info(Testing QCORO_BUILD_TESTING "Build QCoro tests")
 option(QCORO_ENABLE_ASAN "Build with AddressSanitizer" OFF)
 add_feature_info(Asan QCORO_ENABLE_ASAN "Build with AddressSanitizer")
 option(QCORO_DISABLE_DEPRECATED_TASK_H "Disable deprecated task.h header" OFF)
@@ -198,7 +206,7 @@ add_subdirectory(qcoro)
 if (QCORO_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
-if (BUILD_TESTING)
+if (QCORO_BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
