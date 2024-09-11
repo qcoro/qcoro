@@ -14,6 +14,7 @@
 #include <QTimer>
 
 #include <chrono>
+#include <qtestcase.h>
 
 using namespace std::chrono_literals;
 
@@ -116,6 +117,16 @@ struct TestAwaitableWithCoAwait<void> {
     TestAwaitable<void> operator co_await() {
         return TestAwaitable<void>();
     }
+};
+
+
+struct NonDefaultConstructible {
+public:
+    NonDefaultConstructible(qint64 value)
+        : mValue(value)
+    {}
+
+    qint64 mValue;
 };
 
 } // namespace
@@ -463,9 +474,7 @@ private:
     }
 
     QCoro::Task<> testGuardedThisDestroyed_coro(QCoro::TestContext) {
-        bool notCalled = true;
-
-        auto coro = [&notCalled]() -> QCoro::Task<> {
+        auto coro = []() -> QCoro::Task<> {
             auto obj = new QObject();
 
             auto &features = co_await QCoro::thisCoro();
@@ -476,12 +485,46 @@ private:
             });
             co_await timer();
 
-            notCalled = false;
+
+#if __GNUC__ == 10
+            QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
+#endif
+            QCORO_FAIL("This code should not be reached");
         };
 
         co_await coro();
+#if __GNUC__ == 10
+        QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
+#endif
+        QCORO_FAIL("This code should not be reached");
+    }
 
-        QCORO_VERIFY(notCalled);
+    QCoro::Task<> testGuardedThisWithReturnValueDestroyed_coro(QCoro::TestContext) {
+        auto coro = []() -> QCoro::Task<NonDefaultConstructible> {
+            auto obj = new QObject();
+
+            auto &features = co_await QCoro::thisCoro();
+            features.guardThis(obj);
+
+            QTimer::singleShot(0, [obj]() {
+                delete obj;
+            });
+            co_await timer();
+
+            []() {
+                #if __GNUC__ == 10
+                QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
+                #endif
+                QFAIL("This code should not be reached");
+            }();
+            co_return NonDefaultConstructible(42);
+        };
+
+        co_await coro();
+#if __GNUC__ == 10
+        QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
+#endif
+        QCORO_FAIL("This code should not be reached");
     }
 
 private Q_SLOTS:
@@ -509,6 +552,7 @@ private Q_SLOTS:
     addTest(MultipleAwaiters)
     addTest(MultipleAwaitersSync)
     addTest(GuardedThisDestroyed)
+    addTest(GuardedThisWithReturnValueDestroyed)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
