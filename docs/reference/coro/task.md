@@ -193,3 +193,53 @@ void updateModel() {
 ```
 
 If the model is deleted before the coroutine finishes, the connected lambda will not be called.
+
+## Coroutine Features
+
+!!! note "This feature is available since QCoro 0.11.0"
+
+It is possible to customize behavior of the coroutine by obtaining its "features":
+
+```cpp
+QCoro::Task<> myCoroutine() {
+    auto &features = co_await QCoro::thisCoro();
+}
+```
+
+### `guardThis`
+
+The problem with member function coroutines (e.g. a slot) is, that when the coroutine
+is suspended and the object is destroyed in the meantime, when the coroutine is resumed
+again it crashes, since the `this` pointer is no longer valid.
+
+To prevent this, it is possible to use `guardThis` feature to bind the coroutine to the
+the object. When the coroutine is supposed to be resumed, but the guarded object has been
+destroyed while it was suspended, the coroutine will self-destroy immediately and will not
+continue executing to prevent crash due to dangling `this` pointer.
+
+!!! warn Caveats
+    Use this feature carefuly and be aware of the following caveats:
+    - Memory leaks: When the coroutine is destroyed, its stack is destroyed as well and all destructors
+      are executed, however if you manually allocated any memory on heap that you expected to free manually
+      after the coroutine has been resumed, this memory will leak (because the freeing code will not be
+      executed).
+    - The coroutine chain will be destroyed - all coroutines awaiting on the destroyed coroutine will be
+      recursively destroyed as well instead of being resumed. The reason is that when a coroutine is
+      destroy, there's no result to pass to the awaiting coroutine.
+    - Does not work when code is compiled with GCC 10 - for some reason the coroutine is still
+      executed when compiled with GCC 10. Newer versions of GCC or other compilers are not affected.
+      This is a known bug caused by different implementation of coroutines in older GCC versions.
+
+Example:
+
+```cpp
+QCoro::Task<> MyQObject::mySlot()
+{
+    (co_await QCoro::thisCoro()).guardThis(this);
+
+    const auto resut = co_await someOtherCoroutine();
+    // If `this` is destroyed while awaiting `someOtherCoroutine()`, the rest of the
+    // coroutine will not be executed.
+    this->someMethod(result);
+}
+```
