@@ -473,7 +473,24 @@ private:
         co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
     }
 
+    struct Fuse {
+    public:
+        ~Fuse() {
+            if (mSet) {
+                QFAIL("Fuse wasn't defused");
+            }
+        }
+
+        void defuse() {
+            mSet = false;
+        }
+    private:
+        bool mSet = true;
+    };
+
     QCoro::Task<> testGuardedThisDestroyed_coro(QCoro::TestContext) {
+        Fuse fuse;
+
         auto coro = []() -> QCoro::Task<> {
             auto obj = new QObject();
 
@@ -483,23 +500,21 @@ private:
             QTimer::singleShot(0, [obj]() {
                 delete obj;
             });
-            co_await timer();
-
+            co_await timer(50ms);
 
 #if __GNUC__ == 10
             QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
 #endif
-            QCORO_FAIL("This code should not be reached");
+            QCORO_FAIL("This code should not be reached (1)");
         };
 
         co_await coro();
-#if __GNUC__ == 10
-        QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
-#endif
-        QCORO_FAIL("This code should not be reached");
+        fuse.defuse();
     }
 
     QCoro::Task<> testGuardedThisWithReturnValueDestroyed_coro(QCoro::TestContext) {
+        Fuse fuse;
+
         auto coro = []() -> QCoro::Task<NonDefaultConstructible> {
             auto obj = new QObject();
 
@@ -509,22 +524,19 @@ private:
             QTimer::singleShot(0, [obj]() {
                 delete obj;
             });
-            co_await timer();
+            co_await timer(50ms);
 
             []() {
                 #if __GNUC__ == 10
                 QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
                 #endif
-                QFAIL("This code should not be reached");
+                QFAIL("This code should not be reached (1)");
             }();
             co_return NonDefaultConstructible(42);
         };
 
         co_await coro();
-#if __GNUC__ == 10
-        QEXPECT_FAIL("", "Known bug in GCC 10", Continue);
-#endif
-        QCORO_FAIL("This code should not be reached");
+        fuse.defuse();
     }
 
 private Q_SLOTS:
