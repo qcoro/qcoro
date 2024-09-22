@@ -146,35 +146,7 @@ public:
     template<typename T, typename Awaiter = QCoro::detail::awaiter_type_t<std::remove_cvref_t<T>>>
     auto await_transform(T &&value);
 
-    //! Specialized overload of await_transform() for Task<T>.
-    /*!
-     *
-     * When co_awaiting on a value of type \c Task<T>, the co_await will try to obtain
-     * an Awaitable object for the \c Task<T>. Since \c Task<T> already implements the
-     * Awaitable interface it can be directly used as an Awaitable, thus this specialization
-     * only acts as an identity operation.
-     *
-     * The reason we need to specialize it is that co_await will always call promise's await_transform()
-     * overload if it exists. Since our generic await_transform() overload exists only for Qt types
-     * that specialize the \c QCoro::detail::awaiter_type template, the compilation would fail
-     * due to no suitable overload for \c QCoro::Task<T> being found.
-     *
-     * The reason the compiler doesn't check for an existence of await_transform() overload for type T
-     * and falling back to using the T as an Awaitable, but instead only checks for existence of
-     * any overload of await_transform() and failing compilation if non of the overloads is suitable
-     * for type T is, that it allows us to delete await_transform() overload for a particular type,
-     * and thus disallow that type to be co_awaited, even if the type itself provides the Awaitable
-     * interface. This would not be possible if the compiler would always fall back to using the T
-     * as an Awaitable type.
-     */
-    template<typename T>
-    auto await_transform(QCoro::Task<T> &&task);
-
-    //! \copydoc template<typename T> QCoro::TaskPromiseBase::await_transform(QCoro::Task<T> &&)
-    template<typename T>
-    auto &await_transform(QCoro::Task<T> &task);
-
-    //! If the type T is already an awaitable, then just forward it as it is.
+    //! If the type T is already an awaitable (including Task or LazyTask), then just forward it as it is.
     template<Awaitable T>
     auto && await_transform(T &&awaitable);
 

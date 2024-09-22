@@ -32,16 +32,6 @@ inline auto TaskPromiseBase::await_transform(T &&value) {
     return Awaiter{std::forward<T>(value)};
 }
 
-template<typename T>
-inline auto TaskPromiseBase::await_transform(QCoro::Task<T> &&task) {
-    return std::forward<QCoro::Task<T>>(task);
-}
-
-template<typename T>
-inline auto &TaskPromiseBase::await_transform(QCoro::Task<T> &task) {
-    return task;
-}
-
 template<Awaitable T>
 inline auto && TaskPromiseBase::await_transform(T &&awaitable) {
     return std::forward<T>(awaitable);
