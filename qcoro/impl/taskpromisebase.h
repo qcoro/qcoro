@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../qcorotask.h"
+#include <coroutine>
 
 namespace QCoro::detail
 {
