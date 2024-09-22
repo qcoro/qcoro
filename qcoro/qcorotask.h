@@ -196,7 +196,12 @@ public:
 
     bool hasAwaitingCoroutine() const;
 
-    bool setDestroyHandle() noexcept;
+    void derefCoroutine();
+    void refCoroutine();
+    void destroyCoroutine();
+
+protected:
+    explicit TaskPromiseBase();
 
 private:
     friend class TaskFinalSuspend;
@@ -205,7 +210,7 @@ private:
     std::vector<std::coroutine_handle<>> mAwaitingCoroutines;
 
     //! Indicates whether we can destroy the coroutine handle
-    std::atomic<bool> mDestroyHandle{false};
+    std::atomic<uint32_t> mRefCount{0};
 };
 
 //! The promise_type for Task<T>

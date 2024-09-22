@@ -13,6 +13,11 @@
 namespace QCoro::detail
 {
 
+inline TaskPromiseBase::TaskPromiseBase()
+    : mRefCount(1)
+{
+}
+
 inline std::suspend_never TaskPromiseBase::initial_suspend() const noexcept {
     return {};
 }
@@ -54,8 +59,21 @@ inline bool TaskPromiseBase::hasAwaitingCoroutine() const {
     return !mAwaitingCoroutines.empty();
 }
 
-inline bool TaskPromiseBase::setDestroyHandle() noexcept {
-    return mDestroyHandle.exchange(true, std::memory_order_acq_rel);
+inline void TaskPromiseBase::derefCoroutine() {
+    if (--mRefCount == 0) {
+        destroyCoroutine();
+    }
+}
+
+inline void TaskPromiseBase::refCoroutine() {
+    ++mRefCount;
+}
+
+
+inline void TaskPromiseBase::destroyCoroutine() {
+    mRefCount = 0;
+    auto handle = std::coroutine_handle<TaskPromiseBase>::from_promise(*this);
+    handle.destroy();
 }
 
 } // namespace QCoro::detail

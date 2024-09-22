@@ -30,9 +30,7 @@ inline void TaskFinalSuspend::await_suspend(std::coroutine_handle<Promise> finis
     mAwaitingCoroutines.clear();
 
     // The handle will be destroyed here only if the associated Task has already been destroyed
-    if (promise.setDestroyHandle()) {
-        finishedCoroutine.destroy();
-    }
+    promise.derefCoroutine();
 }
 
 constexpr void TaskFinalSuspend::await_resume() const noexcept {}
