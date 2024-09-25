@@ -1,7 +1,7 @@
 def define_env(env):
 
     @env.macro
-    def doctable(module, include, inherits=None, inheritedBy=[]):
+    def doctable(module, include, inherits=None, inheritedBy=[], since=None):
         def row(th, td):
             return f"<tr><th>{ th }</th><td>{ td }</td></tr>"
 
@@ -30,6 +30,9 @@ QT += QCoro{module}
 
         if inheritedBy:
             out += row("Inherited&nbsp;By", ', '.join(sorted(map(inheritsLink, inheritedBy))))
+
+        if since:
+            out += row("Since", since)
 
         out += "</table></div>"
         return out

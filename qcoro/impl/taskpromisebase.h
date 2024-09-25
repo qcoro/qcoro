@@ -60,7 +60,6 @@ inline void TaskPromiseBase::refCoroutine() {
     ++mRefCount;
 }
 
-
 inline void TaskPromiseBase::destroyCoroutine() {
     mRefCount = 0;
     auto handle = std::coroutine_handle<TaskPromiseBase>::from_promise(*this);

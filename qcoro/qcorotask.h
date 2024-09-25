@@ -190,7 +190,7 @@ private:
  * See \ref TaskPromiseBase documentation for explanation about promise_type.
  */
 template<typename T>
-class TaskPromise final : public TaskPromiseBase {
+class TaskPromise: public TaskPromiseBase {
 public:
     explicit TaskPromise() = default;
     ~TaskPromise() = default;
@@ -239,7 +239,7 @@ private:
 
 //! Specialization of TaskPromise for coroutines returning \c void.
 template<>
-class TaskPromise<void> final : public TaskPromiseBase {
+class TaskPromise<void>: public TaskPromiseBase {
 public:
     // Constructor.
     explicit TaskPromise() = default;
@@ -335,57 +335,26 @@ template<typename T>
 constexpr bool isTask_v = isTask<T>::value;
 
 
-} // namespace detail
-
-/*! \endcond */
-
-//! An asynchronously executed task.
-/*!
- * When a coroutine is called which has  return type Task<T>, the coroutine will
- * construct a new instance of Task<T> which will be returned to the caller when
- * the coroutine is suspended - that is either when it co_awaits another coroutine
- * of finishes executing user code.
- *
- * In the sense of the interface that the task implements, it is an Awaitable.
- *
- * Task<T> is constructed by a code generated at the beginning of the coroutine by
- * the compiler (i.e. before the user code). The code first creates a new frame
- * pointer, which internally holds the promise. The promise is of type \c R::promise_type,
- * where \c R is the return type of the function (so \c Task<T>, in our case.
- *
- * One can think about it as Task being the caller-facing interface and promise being
- * the callee-facing interface.
- */
-template<typename T>
-class Task {
+template<typename T, template<typename> class TaskImpl, typename PromiseType>
+class TaskBase {
 public:
-    //! Promise type of the coroutine. This is required by the C++ standard.
-    using promise_type = detail::TaskPromise<T>;
-    //! The type of the coroutine return value.
-    using value_type = T;
+    explicit TaskBase() noexcept = default;
 
-    //! Constructs a new empty task.
-    explicit Task() noexcept = default;
-
-    //! Constructs a task bound to a coroutine.
-    /*!
-     * \param[in] coroutine handle of the coroutine that has constructed the task.
-     */
-    explicit Task(std::coroutine_handle<promise_type> coroutine);
+    explicit TaskBase(std::coroutine_handle<PromiseType> coroutine);
 
     //! Task cannot be copy-constructed.
-    Task(const Task &) = delete;
+    TaskBase(const TaskBase &) = delete;
     //! Task cannot be copy-assigned.
-    Task &operator=(const Task &) = delete;
+    TaskBase &operator=(const TaskBase &) = delete;
 
     //! The task can be move-constructed.
-    Task(Task &&other) noexcept;
+    TaskBase(TaskBase &&otbher) noexcept;
 
     //! The task can be move-assigned.
-    Task &operator=(Task &&other) noexcept;
+    TaskBase &operator=(TaskBase &&other) noexcept;
 
     //! Destructor.
-    ~Task();
+    virtual ~TaskBase();
 
     //! Returns whether the task has finished.
     /*!
@@ -421,16 +390,24 @@ public:
      */
     template<typename ThenCallback>
     requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
-    auto then(ThenCallback &&callback);
+    auto then(ThenCallback &&callback) &;
+    template<typename ThenCallback>
+    requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
+    auto then(ThenCallback &&callback) &&;
+
 
     template<typename ThenCallback, typename ErrorCallback>
     requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
                std::is_invocable_v<ErrorCallback, const std::exception &>)
-    auto then(ThenCallback &&callback, ErrorCallback &&errorCallback);
+    auto then(ThenCallback &&callback, ErrorCallback &&errorCallback) &;
+    template<typename ThenCallback, typename ErrorCallback>
+    requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
+               std::is_invocable_v<ErrorCallback, const std::exception &>)
+    auto then(ThenCallback &&callback, ErrorCallback &&errorCallback) &&;
 
 private:
     template<typename ThenCallback, typename ... Args>
-    auto invokeCb(ThenCallback &&callback, [[maybe_unused]] Args && ... args);
+    static auto invokeCb(ThenCallback &&callback, [[maybe_unused]] Args && ... args);
 
     template<typename ThenCallback, typename Arg>
     struct cb_invoke_result: std::conditional_t<
@@ -447,18 +424,49 @@ private:
 
     template<typename R, typename ErrorCallback,
              typename U = typename detail::isTask<R>::return_type>
-    auto handleException(ErrorCallback &errCb, const std::exception &exception) -> U;
+    static auto handleException(ErrorCallback &errCb, const std::exception &exception) -> U;
 
-    template<typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
-    auto thenImpl(ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, Task<R>>;
+    template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
+    static auto thenImpl(TaskT task, ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, TaskImpl<R>>;
+    template<typename TaskT, typename ThenCallback, typename ErrorCallback, typename R = cb_invoke_result_t<ThenCallback, T>>
+    static auto thenImplRef(TaskT &task, ThenCallback &&thenCallback, ErrorCallback &&errorCallback) -> std::conditional_t<detail::isTask_v<R>, R, TaskImpl<R>>;
 
-private:
-    //! The coroutine represented by this task
-    /*!
-     * In other words, this is a handle to the coroutine that has constructed and
-     * returned this Task<T>.
-     * */
-    std::coroutine_handle<promise_type> mCoroutine = {};
+protected:
+    std::coroutine_handle<PromiseType> mCoroutine = {};
+};
+
+
+
+} // namespace detail
+
+/*! \endcond */
+
+//! An asynchronously executed task.
+/*!
+ * When a coroutine is called which has  return type Task<T>, the coroutine will
+ * construct a new instance of Task<T> which will be returned to the caller when
+ * the coroutine is suspended - that is either when it co_awaits another coroutine
+ * of finishes executing user code.
+ *
+ * In the sense of the interface that the task implements, it is an Awaitable.
+ *
+ * Task<T> is constructed by a code generated at the beginning of the coroutine by
+ * the compiler (i.e. before the user code). The code first creates a new frame
+ * pointer, which internally holds the promise. The promise is of type \c R::promise_type,
+ * where \c R is the return type of the function (so \c Task<T>, in our case.
+ *
+ * One can think about it as Task being the caller-facing interface and promise being
+ * the callee-facing interface.
+ */
+template<typename T>
+class Task final : public detail::TaskBase<T, Task, detail::TaskPromise<T>> {
+public:
+    //! Promise type of the coroutine. This is required by the C++ standard.
+    using promise_type = detail::TaskPromise<T>;
+    //! The type of the coroutine return value.
+    using value_type = T;
+
+    using detail::TaskBase<T, Task, detail::TaskPromise<T>>::TaskBase;
 };
 
 namespace detail
@@ -542,6 +550,7 @@ void connect(T &&future, QObjectSubclass *context, Callback func);
 #include "impl/taskpromisebase.h"
 #include "impl/taskpromise.h"
 #include "impl/taskawaiterbase.h"
+#include "impl/taskbase.h"
 #include "impl/task.h"
 #include "impl/waitfor.h"
 #include "impl/connect.h"
