@@ -72,6 +72,7 @@ This library requires a compiler that supports the Coroutine TS (obviously). Cur
 GCC, Clang and MSVC are supported.
 
 Officially supported compilers are:
+
 * GCC >= 11 (April 2021)
 * Clang >= 15 (September 2022)
 * MSVC >= 19.40 (Visual Studio 17 2022)
