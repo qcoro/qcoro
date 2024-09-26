@@ -56,13 +56,26 @@ and understand.
 That's not all that coroutines can do, you can read more about it in the 'Coroutines' section
 of this documentation.
 
+## Supported Qt Versions
+
+QCoro supports compiling for both Qt5 and Qt6. Minimum supported versions are:
+
+* Qt5 >= 5.15.2
+* Qt6 >= 6.2.0
+
+Pass `-DUSE_QT_VERSION=5` or `-DUSE_QT_VERSION=6` to CMake to force building QCoro with respective
+major version of Qt. QCoro will default to Qt6 when available and fallback to Qt5 otherwise.
+
 ## Supported Compilers
 
 This library requires a compiler that supports the Coroutine TS (obviously). Currently
 GCC, Clang and MSVC are supported.
 
-All examples were tested with GCC 10 and Clang 11, although even slightly older versions
-should work.
+Officially supported compilers are:
+* GCC >= 11 (April 2021)
+* Clang >= 15 (September 2022)
+* MSVC >= 19.40 (Visual Studio 17 2022)
+* AppleClang >= 15.0.0 (Xcode 15.2)
 
 In both GCC and Clang, coroutine support must be explicitly enabled.
 

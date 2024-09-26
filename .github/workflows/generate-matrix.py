@@ -44,11 +44,11 @@ platforms = [
         "compilers": [
             {
                 "name": "gcc",
-                "versions": [ "10", "11", "12", "13" ]
+                "versions": [ "11", "12", "13" ]
             },
             {
                 "name": "clang",
-                "versions": [ "11", "14", "16", "17", "dev" ]
+                "versions": [ "15", "16", "17", "dev" ]
             }
         ]
     }
