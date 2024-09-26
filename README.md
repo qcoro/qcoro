@@ -21,7 +21,7 @@ const QNetworkReply *reply = co_await networkAccessManager.get(url);
 const auto data = reply->readAll();
 ```
 
-It requires a compiler with support for the couroutines TS.
+It requires a compiler with support for the couroutines TS, see [documentation](https://qcoro.dvratil.cz/#supported-compilers) for a list of supported compilers and versions.
 
 ## Documentation
 
@@ -29,12 +29,17 @@ It requires a compiler with support for the couroutines TS.
 
 ## Supported Qt Types
 
-QCoro provides `QCoro::Task<T>` which can be used as a coroutine return type and allows the coroutine
-to be awaited by its caller. Additionally, it provides `qCoro()` wrapper function, which wraps an
-object of a supported Qt type to a thin, coroutine-friendly wrapper that allows `co_await`ing asynchronous
-operations on this type. Finally, it allows to directly `co_await` default asynchronous operations on
-certain Qt types. Below is a list of a few supported types, you can find the full list in the
-[documentation](https://qcoro.dvratil.cz/reference).
+QCoro provides the tools necessary to make easy use of C++20 coroutines with Qt. The cornerstone of
+the library is `QCoro::Task<T>`, which represents an executed coroutine and allows the result of
+the coroutine to be asynchronously awaited by its caller. Additionally, QCoro provides a set of
+wrappers for common Qt types, such as `QTimer`, `QNetworkReply`, `QDBusPendingCall`, `QFuture`
+and others, that allow to `co_await` their asynchronous operations directly.
+
+Additionally, there's a magical `qCoro()` function that can wrap many native Qt functions and types
+to make them coroutine-friendly.
+
+Go check the [documentation](https://qcoro.dvratil.cz/reference) for a full list of all supported
+features and Qt types.
 
 ### `QDBusPendingCall`
 
