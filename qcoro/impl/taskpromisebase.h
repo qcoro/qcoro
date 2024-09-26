@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../qcorotask.h"
+#include <coroutine>
 
 namespace QCoro::detail
 {
@@ -29,16 +30,6 @@ inline auto TaskPromiseBase::final_suspend() const noexcept {
 template<typename T, typename Awaiter>
 inline auto TaskPromiseBase::await_transform(T &&value) {
     return Awaiter{std::forward<T>(value)};
-}
-
-template<typename T>
-inline auto TaskPromiseBase::await_transform(QCoro::Task<T> &&task) {
-    return std::forward<QCoro::Task<T>>(task);
-}
-
-template<typename T>
-inline auto &TaskPromiseBase::await_transform(QCoro::Task<T> &task) {
-    return task;
 }
 
 template<Awaitable T>
@@ -68,7 +59,6 @@ inline void TaskPromiseBase::derefCoroutine() {
 inline void TaskPromiseBase::refCoroutine() {
     ++mRefCount;
 }
-
 
 inline void TaskPromiseBase::destroyCoroutine() {
     mRefCount = 0;

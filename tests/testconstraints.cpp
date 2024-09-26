@@ -3,6 +3,7 @@
 
 #include "qcoro/coroutine.h"
 #include "qcoro/qcorotask.h"
+#include "qcoro/qcorolazytask.h"
 
 namespace helper {
 
@@ -56,7 +57,13 @@ private Q_SLOTS:
     void testAwaitableConcept() {
 
         static_assert(helper::is_awaitable_v<QCoro::Task<void>>,
+                      "Awaitable concept doesn't accept Task<void>, although it should.");
+        static_assert(helper::is_awaitable_v<QCoro::Task<int>>,
                       "Awaitable concept doesn't accept Task<T>, although it should.");
+        static_assert(helper::is_awaitable_v<QCoro::LazyTask<void>>,
+                      "Awaitable concept doesn't accept LazyTask<void>, although it should.");
+        static_assert(helper::is_awaitable_v<QCoro::LazyTask<void>>,
+                      "Awaitable concept doesn't accept LazyTask<T>, although it should.");
         static_assert(helper::is_awaitable_v<TestAwaitable>,
                       "Awaitable concept doesn't accept an awaitable with await member functions.");
         static_assert(helper::is_awaitable_v<TestAwaitableWithOperatorCoAwait>,

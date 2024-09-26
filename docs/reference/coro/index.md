@@ -7,7 +7,8 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 # Coro module
 
 The Coro module contains the fundamental coroutine types - the
-[QCoro::Task&lt;T>][qcoro-task] for asynchronous coroutines,
+[QCoro::Task&lt;T>][qcoro-task] for eager coroutines,
+[QCoro::LazyTask&lt;T>][qcoro-lazytask] for lazy coroutines,
 [QCoro::Generator&lt;T>][qcoro-generator] for synchronous generators and
 [QCoro::AsyncGenerator&lt;T>][qcoro-asyncgenerator] for asynchronous generators.
 Another useful bit of the Coro module is the [qCoro()][qcoro-coro] wrapper
@@ -23,6 +24,7 @@ give you all you need to start implementing custom coroutine-native types
 with Qt and QCoro.
 
 [qcoro-task]: task.md
+[qcoro-lazytask]: lazytask.md
 [qcoro-coro]: coro.md
 [qcoro-generator]: generator.md
 [qcoro-asyncgenerator]: asyncgenerator.md

@@ -70,6 +70,7 @@ nav:
       - Coro:
         - reference/coro/index.md
         - QCoro::Task&lt;T>: reference/coro/task.md
+        - QCoro::LazyTask&lt;T>: reference/coro/lazytask.md
         - QCoro::coro(): reference/coro/coro.md
         - QCoro::Generator&lt;T>: reference/coro/generator.md
         - QCoro::AsyncGenerator&lt;T>: reference/coro/asyncgenerator.md
