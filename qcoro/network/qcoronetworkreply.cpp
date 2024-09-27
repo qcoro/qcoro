@@ -15,55 +15,69 @@ class ReplyWaitSignalHelper : public WaitSignalHelper {
 public:
     ReplyWaitSignalHelper(const QNetworkReply *reply, void(QIODevice::*signal)())
         : WaitSignalHelper(reply, signal)
-        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-        , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(false); }))
-        #endif
-        , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(true); }))
+        , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(false); }, Qt::QueuedConnection))
+        , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(true); }, Qt::QueuedConnection))
     {}
     ReplyWaitSignalHelper(const QNetworkReply *reply, void(QIODevice::*signal)(qint64))
         : WaitSignalHelper(reply, signal)
-        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
-        , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(0LL); }))
-        #endif
-        , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(0LL); }))
+        , mError(connect(reply, &QNetworkReply::errorOccurred, this, [this]() { emitReady(0LL); }, Qt::QueuedConnection))
+        , mFinished(connect(reply, &QNetworkReply::finished, this, [this]() { emitReady(0LL); }, Qt::QueuedConnection))
     {}
 
 private:
     void cleanup() override {
-        #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
         disconnect(mError);
-        #endif
         disconnect(mFinished);
         WaitSignalHelper::cleanup();
     }
 
-    #if QT_VERSION >= QT_VERSION_CHECK(5, 15, 0)
     QMetaObject::Connection mError;
-    #endif
     QMetaObject::Connection mFinished;
 };
 
 } // namespace
 
+struct QCoroNetworkReply::WaitForFinishedOperation::Private {
+    static_assert(sizeof(std::unique_ptr<Private>)  + sizeof(void*) == sizeof(QPointer<QNetworkReply>),
+                  "QCoroNetworkReply::WaitForFinishedOperation is not BC with previous version, see comment in header");
+
+    Private(QPointer<QNetworkReply> reply)
+        : reply(reply)
+    {
+        // Ensure the signal is emitted in the same thread as the reply, not on the thread
+        // where the coroutine is resumed...
+        if (reply) {
+            dummy.moveToThread(reply->thread());
+        }
+    }
+
+    QPointer<QNetworkReply> reply;
+    QObject dummy;
+};
+
 QCoroNetworkReply::WaitForFinishedOperation::WaitForFinishedOperation(QPointer<QNetworkReply> reply)
-    : mReply(reply)
-{}
+    : d(std::make_unique<Private>(reply))
+{
+}
+
+QCoroNetworkReply::WaitForFinishedOperation::~WaitForFinishedOperation() = default;
 
 bool QCoroNetworkReply::WaitForFinishedOperation::await_ready() const noexcept {
-    return !mReply || mReply->isFinished();
+    return !d->reply || d->reply->isFinished();
 }
 
 void QCoroNetworkReply::WaitForFinishedOperation::await_suspend(std::coroutine_handle<> awaitingCoroutine) {
-    if (mReply) {
-        QObject::connect(mReply, &QNetworkReply::finished,
-                         [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); });
+    if (d->reply) {
+        QObject::connect(d->reply, &QNetworkReply::finished, &d->dummy,
+                         [awaitingCoroutine]() mutable { awaitingCoroutine.resume(); },
+                         Qt::QueuedConnection);
     } else {
         awaitingCoroutine.resume();
     }
 }
 
 QNetworkReply *QCoroNetworkReply::WaitForFinishedOperation::await_resume() const noexcept {
-    return mReply;
+    return d->reply;
 }
 
 QCoro::Task<std::optional<bool>> QCoroNetworkReply::waitForReadyReadImpl(std::chrono::milliseconds timeout) {
