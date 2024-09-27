@@ -16,13 +16,24 @@ private:
     class WaitForFinishedOperation final {
     public:
         explicit WaitForFinishedOperation(QPointer<QNetworkReply> reply);
+        ~WaitForFinishedOperation();
 
         bool await_ready() const noexcept;
         void await_suspend(std::coroutine_handle<> awaitingCoroutine);
         QNetworkReply *await_resume() const noexcept;
 
     private:
-        QPointer<QNetworkReply> mReply;
+        struct Private;
+        std::unique_ptr<Private> d;
+        // BC: This class used to have a QPointer<QNetworkReply>, which is 2*sizeof(void*),
+        // while std::unique_ptr is only sizeof(void*), so this dummy one is to ensure binary
+        // compatibility of this class.
+        // FIXME: Remove in 1.0
+        // Silly gcc 11, cannot detect the dummy is unused and warns about unused attribute
+        #if __GNUC__ > 11 || defined(__clang__) || defined(_MSC_VER)
+        [[maybe_unused]]
+        #endif
+        void *dummy = nullptr;
     };
 
     friend struct awaiter_type<QNetworkReply *>;

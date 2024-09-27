@@ -167,6 +167,19 @@ private:
         QVERIFY(called);
     }
 
+    // See https://github.com/danvratil/qcoro/issues/231
+    QCoro::Task<> testAbortOnTimeout_coro(QCoro::TestContext) {
+        auto request = buildRequest(QStringLiteral("block"));
+        request.setTransferTimeout(300);
+        QNetworkAccessManager nam;
+        auto reply = co_await nam.get(request);
+        QCORO_VERIFY(reply != nullptr);
+        QCORO_VERIFY(reply->isFinished());
+        QCORO_COMPARE(reply->error(), QNetworkReply::OperationCanceledError);
+        // QNAM is destroyed here and so is all its associated state, which could
+        // crash (or cause invalid memory access)
+    }
+
 private Q_SLOTS:
     void init() {
         mServer.start(QHostAddress::LocalHost);
@@ -184,6 +197,7 @@ private Q_SLOTS:
     addCoroAndThenTests(ReadAllTriggers)
     addCoroAndThenTests(ReadTriggers)
     addCoroAndThenTests(ReadLineTriggers)
+    addTest(AbortOnTimeout)
 
 private:
     QNetworkRequest buildRequest(const QString &path = QString()) {
