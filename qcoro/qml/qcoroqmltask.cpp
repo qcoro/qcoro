@@ -67,7 +67,7 @@ void QmlTask::then(QJSValue func) {
         return;
     }
 
-    d->task->then([func = std::move(func)](const QVariant &result) mutable -> void {
+    std::move(*d->task).then([func = std::move(func)](const QVariant &result) mutable -> void {
         auto jsval = getEngineForValue(func)->toScriptValue(result);
         func.call({jsval});
     });
@@ -79,7 +79,7 @@ QmlTaskListener *QmlTask::await(const QVariant &intermediateValue)
     if (!intermediateValue.isNull()) {
         listener->setValue(QVariant(intermediateValue));
     }
-    d->task->then([listener](auto &&value) {
+    std::move(*d->task).then([listener](auto &&value) {
         if (listener) {
             listener->setValue(std::move(value));
         }

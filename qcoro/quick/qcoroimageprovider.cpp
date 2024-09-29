@@ -25,7 +25,7 @@ QQuickImageResponse *ImageProvider::requestImageResponse(const QString &id, cons
 
     auto *response = new QCoroImageResponse();
 
-    task.then([response](QImage &&image) {
+    std::move(task).then([response](QImage &&image) {
         response->reportFinished(std::move(image));
     });
 

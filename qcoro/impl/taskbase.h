@@ -76,7 +76,7 @@ inline auto TaskBase<T, TaskImpl, PromiseType>::operator co_await() const noexce
 
     return TaskAwaiter{this->mCoroutine};
 }
-
+/*
 template<typename T, template<typename> class TaskImpl, typename PromiseType>
 template<typename ThenCallback>
 requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
@@ -84,6 +84,7 @@ inline auto TaskBase<T, TaskImpl, PromiseType>::then(ThenCallback &&callback) & 
     // Provide a custom error handler that simply re-throws the current exception
     return thenImplRef(*this, std::forward<ThenCallback>(callback), [](const auto &) { throw; });
 }
+*/
 
 template<typename T, template<typename> class TaskImpl, typename PromiseType>
 template<typename ThenCallback>
@@ -94,7 +95,7 @@ inline auto TaskBase<T, TaskImpl, PromiseType>::then(ThenCallback &&callback) &&
     // would be destroyed before the thenImpl() is resumed and has a chance to consume/co_await the temporary LazyTask.
     return thenImpl<TaskBase>(std::move(*this), std::forward<ThenCallback>(callback), [](const auto &) { throw; });
 }
-
+/*
 template<typename T, template<typename> class TaskImpl, typename PromiseType>
 template<typename ThenCallback, typename ErrorCallback>
 requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
@@ -102,7 +103,7 @@ requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_i
 inline auto TaskBase<T, TaskImpl, PromiseType>::then(ThenCallback &&callback, ErrorCallback &&errorCallback) & {
     return thenImplRef(*this, std::forward<ThenCallback>(callback), std::forward<ErrorCallback>(errorCallback));
 }
-
+*/
 template<typename T, template<typename> class TaskImpl, typename PromiseType>
 template<typename ThenCallback, typename ErrorCallback>
 requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&

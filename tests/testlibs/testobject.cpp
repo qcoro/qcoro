@@ -3,12 +3,14 @@
 // SPDX-License-Identifier: MIT
 
 #include "testobject.h"
+#include <chrono>
 
 using namespace QCoro;
 
 TestContext::TestContext(QEventLoop &el) : mEventLoop(&el) {
     mEventLoop->setProperty("testFinished", false);
     mEventLoop->setProperty("shouldNotSuspend", false);
+    mEventLoop->setProperty("expectTimeout", false);
 }
 
 TestContext::TestContext(TestContext &&other) noexcept {
@@ -29,4 +31,13 @@ TestContext &TestContext::operator=(TestContext &&other) noexcept {
 
 void TestContext::setShouldNotSuspend() {
     mEventLoop->setProperty("shouldNotSuspend", true);
+}
+
+void TestContext::setTimeout(std::chrono::milliseconds timeout) {
+    auto *timer = qobject_cast<QTimer *>(mEventLoop->property("timeout").value<QObject *>());
+    timer->start(timeout);
+}
+
+void TestContext::expectTimeout() {
+    mEventLoop->setProperty("expectTimeout", true);
 }

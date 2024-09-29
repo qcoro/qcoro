@@ -42,7 +42,7 @@ public:
      */
     template <typename T>
     QmlTask(QCoro::Task<T> &&task) : QmlTask(
-        task.then([](T &&result) -> QCoro::Task<QVariant> {
+        std::move(task).then([](T &&result) -> QCoro::Task<QVariant> {
             co_return QVariant::fromValue(std::forward<T>(result));
         }))
     {
@@ -66,7 +66,7 @@ public:
      */
     template <typename T = void>
     QmlTask(QCoro::Task<> &&task) : QmlTask(
-        task.then([]() -> QCoro::Task<QVariant> {
+        std::move(task).then([]() -> QCoro::Task<QVariant> {
             co_return QVariant();
         }))
     {

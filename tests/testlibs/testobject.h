@@ -33,6 +33,8 @@ public:
     TestContext &operator=(const TestContext &) = delete;
 
     void setShouldNotSuspend();
+    void setTimeout(std::chrono::milliseconds timeout);
+    void expectTimeout();
 
 private:
     QEventLoop *mEventLoop = {};
@@ -69,22 +71,42 @@ protected:
 
     void coroWrapper(QCoro::Task<> (TestClass::*testFunction)(TestContext)) {
         QEventLoop el;
-        QTimer::singleShot(5s, &el, [&el]() mutable { el.exit(1); });
+        QTimer timeout;
+        timeout.setSingleShot(true);
+        timeout.setInterval(5s);
+        timeout.callOnTimeout([&el]() mutable { el.exit(1); });
+        el.setProperty("timeout", QVariant::fromValue(&timeout));
+        timeout.start();
 
         (static_cast<TestClass *>(this)->*testFunction)(el);
 
         bool testFinished = el.property("testFinished").toBool();
         const bool shouldNotSuspend = el.property("shouldNotSuspend").toBool();
+        const bool expectTimeout = el.property("expectTimeout").toBool();
         if (testFinished) {
             QVERIFY(shouldNotSuspend);
         } else {
             QVERIFY(!shouldNotSuspend);
 
-            const auto result = el.exec();
-            QVERIFY2(result == 0, "Test function has timed out");
+            const auto success = el.exec() == 0;
+            if (success) {
+                if (expectTimeout) {
+                    QFAIL("Test function has not timed out as expected");
+                } else {
+                    testFinished = el.property("testFinished").toBool();
+                    QVERIFY(testFinished);
+                    return;
+                }
+            } else {
+                if (expectTimeout) {
+                    // Passed
+                    return;
+                } else {
+                    QFAIL("Test function has timed out");
+                }
+            }
 
-            testFinished = el.property("testFinished").toBool();
-            QVERIFY(testFinished);
+            Q_UNREACHABLE();
         }
     }
 };
