@@ -54,6 +54,14 @@ QCoro::Task<void> getUserDetails(UserID userId) {
     When coroutines throws an unhandled exception, the exception is stored in the `Task` object and
     is re-thrown from the `co_await` call in the awaiting coroutine.
 
+Note that a default-constructed `Task<T>` object is not associated with any coroutine and awaiting
+on it will suspend the awaiter indefinitely. Moving into a default constructed `Task<T>` associates
+it with the coroutine previously associated with the moved-from `Task<T>`, and so awaiting on the
+moved-to `Task<T>` will work as expcted. On the other hand, the moved-from `Task<T>` will no longer
+be associated with any coroutine and awaiting on it will behave the same as awaiting a default-
+constructed task - it will suspend the awaiter indefinitely.
+
+
 ## `then()` continuation
 
 !!! note "This feature is available since QCoro 0.5.0"

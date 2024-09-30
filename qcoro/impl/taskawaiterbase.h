@@ -9,17 +9,23 @@
 #pragma once
 
 #include "../qcorotask.h"
+#include <QDebug>
 
 namespace QCoro::detail
 {
 
 template<typename Promise>
 inline bool TaskAwaiterBase<Promise>::await_ready() const noexcept {
-    return !mAwaitedCoroutine || mAwaitedCoroutine.done();
+    return mAwaitedCoroutine && mAwaitedCoroutine.done();
 }
 
 template<typename Promise>
 inline void TaskAwaiterBase<Promise>::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
+    if (!mAwaitedCoroutine) {
+        qWarning() << "QCoro::Task: Awaiting a default-constructed or a moved-from QCoro::Task<> - this will hang forever!";
+        return;
+    }
+
     mAwaitedCoroutine.promise().addAwaitingCoroutine(awaitingCoroutine);
 }
 
