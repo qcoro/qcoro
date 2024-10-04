@@ -10,6 +10,11 @@ SPDX-License-Identifier: GFDL-1.3-or-later
 
 # Changelog
 
+## 0.11.0 (2024-10-04)
+
+* [Release announcement](news/2024/2024-10-04-qcoro-0.11.0-announcement.md)
+* [Github release changelog](https://github.com/danvratil/qcoro/releases/tag/v0.11.0)
+
 ## 0.10.0 (2023-12-05)
 
 * [Release announcement](news/2023/2023-12-05-qcoro-0.10.0-announcement.md)
