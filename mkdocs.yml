@@ -83,6 +83,8 @@ extra:
   social:
     - icon: fontawesome/brands/twitter
       link: https://twitter.com/danvratil
+    - icon: fontawesome/brands/mastodon
+      link: https://fosstodon.org/@danvratil
     - icon: fontawesome/brands/github
       link: https://github.com/danvratil
 
