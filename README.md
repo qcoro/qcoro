@@ -1,8 +1,8 @@
-[![Linux CI](https://github.com/danvratil/qcoro/actions/workflows/build-linux.yml/badge.svg)](https://github.com/danvratil/qcoro/actions/workflows/build-linux.yml)
-[![Windows CI](https://github.com/danvratil/qcoro/actions/workflows/build-windows.yml/badge.svg)](https://github.com/danvratil/qcoro/actions/workflows/build-windows.yml)
-[![MacOS CI](https://github.com/danvratil/qcoro/actions/workflows/build-macos.yml/badge.svg)](https://github.com/danvratil/qcoro/actions/workflows/build-macos.yml)
-[![Docs build](https://github.com/danvratil/qcoro/actions/workflows/update-docs.yml/badge.svg?branch=main)](https://github.com/danvratil/qcoro/actions/workflows/update-docs.yml)
-[![Latest release](https://img.shields.io/github/v/release/danvratil/qcoro?label=%F0%9F%93%A6%20Release)](https://github.com/danvratil/qcoro/releases)
+[![Linux CI](https://github.com/qcoro/qcoro/actions/workflows/build-linux.yml/badge.svg)](https://github.com/qcoro/qcoro/actions/workflows/build-linux.yml)
+[![Windows CI](https://github.com/qcoro/qcoro/actions/workflows/build-windows.yml/badge.svg)](https://github.com/qcoro/qcoro/actions/workflows/build-windows.yml)
+[![MacOS CI](https://github.com/qcoro/qcoro/actions/workflows/build-macos.yml/badge.svg)](https://github.com/qcoro/qcoro/actions/workflows/build-macos.yml)
+[![Docs build](https://github.com/qcoro/qcoro/actions/workflows/update-docs.yml/badge.svg?branch=main)](https://github.com/qcoro/qcoro/actions/workflows/update-docs.yml)
+[![Latest release](https://img.shields.io/github/v/release/qcoro/qcoro?label=%F0%9F%93%A6%20Release)](https://github.com/qcoro/qcoro/releases)
 ![License: MIT](https://img.shields.io/badge/%E2%9A%96%EF%B8%8F%20License-MIT-brightgreen)
 ![C++20](https://img.shields.io/badge/C%2B%2B-20-%2300599C?logo=cplusplus)
 ![Supported Compilers](https://img.shields.io/badge/%E2%9A%99%EF%B8%8F%20Compilers-GCC%2C%20clang%2C%20MSVC-informational)
@@ -79,7 +79,7 @@ broken into numerous functions. But not with QCoro, where you can simply `co_awa
 
 ```cpp
 QNetworkReply qnam;
-QNetworkReply *reply = qnam.get(QStringLiteral("https://github.com/danvratil/qcoro"));
+QNetworkReply *reply = qnam.get(QStringLiteral("https://github.com/qcoro/qcoro"));
 const auto contents = co_await reply;
 reply->deleteLater();
 if (reply->error() != QNetworkReply::NoError) {
