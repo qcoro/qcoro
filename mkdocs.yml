@@ -10,6 +10,7 @@ edit_uri: 'https://github.com/danvratil/qcoro/edit/main/docs/'
 theme:
   name: material
   custom_dir: docs/overrides
+  logo: assets/qcoro.svg
   icon:
     repo:
       fontawesome/brands/github
@@ -19,6 +20,33 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.indexes
+
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme: normal)"
+      primary: teal
+      accent: green
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
 
 markdown_extensions:
   - pymdownx.highlight
