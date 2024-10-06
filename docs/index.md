@@ -85,7 +85,7 @@ In both GCC and Clang, coroutine support must be explicitly enabled.
 To enable coroutines support in GCC, add `-fcoroutines` to `CXX_FLAGS`.
 
 CMake:
-```
+```cmake
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
 ```
@@ -99,7 +99,7 @@ In Clang coroutines are still considered experimental (unlike in GCC).
 Coroutines are enabled by adding `-fcoroutines-ts` to `CMAKE_CXX_FLAGS`.
 
 CMake:
-```
+```cmake
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines-ts")
 ```
@@ -112,7 +112,7 @@ flags automatically.
 Coroutine support in MSVC is enabled automatically by CMake when C++20 standard is specified
 in `CMAKE_CXX_STANDARD`:
 
-```
+```cmake
 set(CMAKE_CXX_STANDARD 20)
 ```
 
