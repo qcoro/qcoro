@@ -72,9 +72,17 @@ plugins:
         name: button
         options:
           plain_button: true
+  - rss:
+      match_path: news/.*
+      date_from_meta:
+        as_creation: date
+      categories:
+        - categories
+        - tags
 
   - macros:
       module_name: docs/macros
+  - privacy
 
 extra_css:
   - stylesheets/doctable.css
