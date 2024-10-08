@@ -19,6 +19,7 @@
 #include <deque>
 #include <tuple>
 #include <type_traits>
+#include <functional>
 
 #include "impl/isqprivatesignal.h"
 

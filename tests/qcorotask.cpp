@@ -14,6 +14,8 @@
 #include <QTimer>
 
 #include <chrono>
+#include <qtestcase.h>
+#include <variant>
 
 using namespace std::chrono_literals;
 
@@ -116,6 +118,16 @@ struct TestAwaitableWithCoAwait<void> {
     TestAwaitable<void> operator co_await() {
         return TestAwaitable<void>();
     }
+};
+
+
+struct NonDefaultConstructible {
+public:
+    NonDefaultConstructible(qint64 value)
+        : mValue(value)
+    {}
+
+    qint64 mValue;
 };
 
 } // namespace
@@ -462,6 +474,69 @@ private:
         co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
     }
 
+    struct Fuse {
+    public:
+        ~Fuse() {
+            if (mSet) {
+                QFAIL("Fuse wasn't defused");
+            }
+        }
+
+        void defuse() {
+            mSet = false;
+        }
+    private:
+        bool mSet = true;
+    };
+
+    QCoro::Task<> testGuardedThisDestroyed_coro(QCoro::TestContext) {
+        Fuse fuse;
+
+        auto coro = []() -> QCoro::Task<> {
+            auto obj = new QObject();
+
+            auto &features = co_await QCoro::thisCoro();
+            features.guardThis(obj);
+
+            QTimer::singleShot(0, [obj]() {
+                delete obj;
+            });
+            co_await timer(50ms);
+            QCORO_FAIL("This code should not be reached (1)");
+        };
+
+        co_await coro();
+        fuse.defuse();
+    }
+
+    QCoro::Task<> testGuardedThisWithReturnValueDestroyed_coro(QCoro::TestContext) {
+        Fuse fuse;
+
+        auto coro = []() -> QCoro::Task<NonDefaultConstructible> {
+            auto obj = new QObject();
+
+            auto &features = co_await QCoro::thisCoro();
+            features.guardThis(obj);
+
+            QTimer::singleShot(0, [obj]() {
+                delete obj;
+            });
+            co_await timer(50ms);
+
+            []() {
+                QFAIL("This code should not be reached (1)");
+            }();
+            co_return NonDefaultConstructible(42);
+        };
+
+        try {
+            co_await coro();
+        } catch (std::bad_variant_access &e) {
+        }
+        //QCORO_VERIFY_EXCEPTION_THROWN(co_await coro(), std::bad_variant_access);
+        fuse.defuse();
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -486,6 +561,8 @@ private Q_SLOTS:
     addThenTest(ImplicitArgumentConversion)
     addTest(MultipleAwaiters)
     addTest(MultipleAwaitersSync)
+    addTest(GuardedThisDestroyed)
+    addTest(GuardedThisWithReturnValueDestroyed)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()
