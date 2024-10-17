@@ -395,35 +395,6 @@ private:
         QCOMPARE(result, QStringLiteral("42"));
     }
 
-    QCoro::Task<> testMultipleAwaiters_coro(QCoro::TestContext) {
-        auto task = timer(100ms);
-
-        bool called = false;
-        // Internally co_awaits task
-        task.then([&called]() {
-            called = true;
-        });
-
-        co_await task;
-
-        QCORO_VERIFY(called);
-    }
-
-    QCoro::Task<> testMultipleAwaitersSync_coro(QCoro::TestContext ctx) {
-        ctx.setShouldNotSuspend();
-
-        auto task = []() -> QCoro::Task<> { co_return; }();
-
-        bool called = false;
-        task.then([&called]() {
-            called = true;
-        });
-
-        co_await task;
-
-        QCORO_VERIFY(called);
-    }
-
     Q_SIGNAL void callbackCalled();
 
     template <typename QObjectDerived, typename Signal>
@@ -462,6 +433,26 @@ private:
         co_await verifySignalEmitted(this, &QCoroTaskTest::callbackCalled);
     }
 
+    QCoro::Task<> testMovedFromTask_coro(QCoro::TestContext context) {
+        context.setTimeout(200ms);
+        context.expectTimeout();
+
+        const auto coro = []() -> QCoro::Task<int> {
+            co_await timer(1ms);
+            co_return 42;
+        };
+
+        auto task = coro();
+        auto task2 = std::move(task);
+
+        const int result = co_await task2;
+        QCORO_COMPARE(result, 42);
+
+        QTest::ignoreMessage(QtWarningMsg, "QCoro::Task: Awaiting a default-constructed or a moved-from QCoro::Task<> - this will hang forever!");
+        [[maybe_unused]] const int result2 = co_await task;
+        QCORO_FAIL("Awaiting a moved-from task should never resume the awaiter");
+    }
+
 private Q_SLOTS:
     addTest(SimpleCoroutine)
     addTest(CoroutineValue)
@@ -484,8 +475,7 @@ private Q_SLOTS:
     addTest(ThenErrorWithValue)
     addTest(TaskConnect)
     addThenTest(ImplicitArgumentConversion)
-    addTest(MultipleAwaiters)
-    addTest(MultipleAwaitersSync)
+    addTest(MovedFromTask)
 
     // See https://github.com/danvratil/qcoro/issues/24
     void testEarlyReturn()

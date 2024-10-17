@@ -20,7 +20,7 @@ requires std::is_invocable_v<Callback> || std::is_invocable_v<Callback, T> || st
 inline void connect(QCoro::Task<T> &&task, QObjectSubclass *context, Callback func) {
     QPointer ctxWatcher = context;
     if constexpr (std::is_same_v<T, void>) {
-        task.then([ctxWatcher, func = std::move(func)]() {
+        std::move(task).then([ctxWatcher, func = std::move(func)]() {
             if (ctxWatcher) {
                 if constexpr (std::is_member_function_pointer_v<Callback>) {
                     (ctxWatcher->*func)();
@@ -30,7 +30,7 @@ inline void connect(QCoro::Task<T> &&task, QObjectSubclass *context, Callback fu
             }
         });
     } else {
-        task.then([ctxWatcher, func = std::move(func)](auto &&value) {
+        std::move(task).then([ctxWatcher, func = std::move(func)](auto &&value) {
             if (ctxWatcher) {
                 if constexpr (std::is_invocable_v<Callback, QObjectSubclass, T>) {
                     (ctxWatcher->*func)(std::forward<decltype(value)>(value));

@@ -388,18 +388,21 @@ public:
      * result of the then() action can be co_awaited, if desired. If the callback
      * returns an awaitable (Task<R>) then the result of then is the awaitable.
      */
+    /*
     template<typename ThenCallback>
     requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
     auto then(ThenCallback &&callback) &;
+    */
     template<typename ThenCallback>
     requires (std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>))
     auto then(ThenCallback &&callback) &&;
 
-
+    /*
     template<typename ThenCallback, typename ErrorCallback>
     requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
                std::is_invocable_v<ErrorCallback, const std::exception &>)
     auto then(ThenCallback &&callback, ErrorCallback &&errorCallback) &;
+    */
     template<typename ThenCallback, typename ErrorCallback>
     requires ((std::is_invocable_v<ThenCallback> || (!std::is_void_v<T> && std::is_invocable_v<ThenCallback, T>)) &&
                std::is_invocable_v<ErrorCallback, const std::exception &>)
