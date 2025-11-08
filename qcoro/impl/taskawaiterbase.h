@@ -20,6 +20,13 @@ inline bool TaskAwaiterBase<Promise>::await_ready() const noexcept {
 }
 
 template<typename Promise>
+template<typename T>
+inline void TaskAwaiterBase<Promise>::await_suspend(std::coroutine_handle<TaskPromise<T>> awaitingCoroutine) noexcept {
+    auto handle = std::coroutine_handle<TaskPromiseBase>::from_address(awaitingCoroutine.address());
+    mAwaitedCoroutine.promise().addAwaitingCoroutine(handle);
+}
+
+template<typename Promise>
 inline void TaskAwaiterBase<Promise>::await_suspend(std::coroutine_handle<> awaitingCoroutine) noexcept {
     if (!mAwaitedCoroutine) {
         qWarning() << "QCoro::Task: Awaiting a default-constructed or a moved-from QCoro::Task<> - this will hang forever!";

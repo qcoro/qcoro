@@ -10,6 +10,8 @@
 #include "waitoperationbase_p.h"
 #include "qcorocore_export.h"
 
+#include <functional>
+
 #include <QPointer>
 
 class QIODevice;

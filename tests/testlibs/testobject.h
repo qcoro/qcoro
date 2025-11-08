@@ -9,6 +9,7 @@
 #include <QTest>
 #include <QTimer>
 #include <QVariant>
+#include <QDebug>
 
 #include "qcorotask.h"
 #include "qcorotest.h"

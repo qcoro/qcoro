@@ -10,6 +10,7 @@
 #include "qcoro/coroutine.h"
 
 #include <chrono>
+#include <memory>
 
 class QThread;
 
