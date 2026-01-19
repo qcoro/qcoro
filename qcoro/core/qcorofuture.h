@@ -33,10 +33,24 @@ private:
 
         void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
             auto *watcher = new QFutureWatcher<T_>();
-            QObject::connect(watcher, &QFutureWatcherBase::finished, [watcher, awaitingCoroutine]() mutable {
+            auto done = std::make_shared<std::atomic<bool>>(false);
+            auto finished = std::make_shared<QMetaObject::Connection>();
+            auto canceled = std::make_shared<QMetaObject::Connection>();
+
+            auto resume = [watcher, awaitingCoroutine, done, finished, canceled]() mutable {
+                bool expected = false;
+                if (!done->compare_exchange_strong(expected, true)) {
+                    return;
+                }
+                QObject::disconnect(*finished);
+                QObject::disconnect(*canceled);
                 watcher->deleteLater();
                 awaitingCoroutine.resume();
-            });
+            };
+
+            *finished = QObject::connect(watcher, &QFutureWatcherBase::finished, watcher, resume);
+            *canceled = QObject::connect(watcher, &QFutureWatcherBase::canceled, watcher, resume);
+
             watcher->setFuture(mFuture);
         }
 
@@ -48,8 +62,25 @@ private:
     public:
         using WaitForFinishedOperationBase<T>::WaitForFinishedOperationBase;
 
-        T await_resume() const {
-            return this->mFuture.result();
+        T await_resume() {
+            if (this->mFuture.isFinished()) {
+                this->mFuture.waitForFinished();
+
+                if (!this->mFuture.isResultReadyAt(0)) {
+                    throw std::runtime_error("QFuture finished without a result");
+                }
+
+                return this->mFuture.result();
+            }
+
+            if constexpr (std::is_default_constructible_v<T>) {
+                return {};
+            }
+            else {
+                // Future was invalid or canceled without finishing. For types without
+                // default constructors, we can't return {}, so we throw an exception.
+                throw std::runtime_error("QFuture was invalid or canceled");
+            }
         }
     };
 
@@ -61,7 +92,9 @@ private:
             // This won't block, since we know for sure that the QFuture is already finished.
             // The weird side-effect of this function is that it will re-throw the stored
             // exception.
-            this->mFuture.waitForFinished();
+            if (this->mFuture.isFinished()) {
+                this->mFuture.waitForFinished();
+            }
         }
     };
 
@@ -75,7 +108,24 @@ private:
         using WaitForFinishedOperationBase<T>::WaitForFinishedOperationBase;
 
         T_ await_resume() {
-            return this->mFuture.takeResult();
+            if (this->mFuture.isFinished()) {
+                this->mFuture.waitForFinished();
+
+                if (!this->mFuture.isResultReadyAt(0)) {
+                    throw std::runtime_error("QFuture finished without a result");
+                }
+
+                return this->mFuture.takeResult();
+            }
+
+            if constexpr (std::is_default_constructible_v<T>) {
+                return {};
+            }
+            else {
+                // Future was invalid or canceled without finishing. For types without
+                // default constructors, we can't return {}, so we throw an exception.
+                throw std::runtime_error("QFuture was invalid or canceled");
+            }
         }
     };
 

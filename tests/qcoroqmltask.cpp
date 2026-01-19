@@ -39,6 +39,7 @@ public:
 
     Q_INVOKABLE QCoro::QmlTask qmlTaskFromFuture() {
         QFutureInterface<QString> interface;
+        interface.reportStarted();
         interface.reportResult(QStringLiteral("Success"));
         interface.reportFinished();
         return interface.future();

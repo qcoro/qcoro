@@ -153,6 +153,73 @@ private:
         QVERIFY(called);
     }
 
+#if QT_VERSION_MAJOR >= 6
+    QCoro::Task<> testAwaitCanceledButNotFinishedFuture_coro(QCoro::TestContext test) {
+        test.setShouldNotSuspend();
+
+        QPromise<int> promise;
+        promise.start();
+        promise.future().cancel();
+
+        co_await promise.future();
+        
+        QCORO_VERIFY(promise.future().isCanceled());
+        QCORO_VERIFY(!promise.future().isFinished());
+    }
+
+    void testThenAwaitCanceledButNotFinishedFuture_coro(TestLoop &el) {
+        QPromise<int> promise;
+        promise.start();
+        auto future = promise.future();
+        future.cancel();
+        
+        bool called = false;
+        qCoro(future).waitForFinished().then([&]() {
+            called = true;
+            el.quit();
+        });
+        el.exec();
+        QVERIFY(called);
+        QVERIFY(future.isCanceled());
+        QVERIFY(!future.isFinished());
+    }
+
+    QCoro::Task<> testAwaitDelayCanceledButNotFinishedFuture_coro(QCoro::TestContext) {
+        auto promise = std::make_shared<QPromise<int>>();
+        promise->start();
+        auto future = promise->future();
+
+        QTimer::singleShot(100ms, this, [promise, future]() mutable {
+            future.cancel();
+        });
+
+        co_await future;
+        
+        QCORO_VERIFY(future.isCanceled());
+        QCORO_VERIFY(!future.isFinished());
+    }
+
+    void testThenAwaitDelayCanceledButNotFinishedFuture_coro(TestLoop &el) {
+        auto promise = std::make_shared<QPromise<int>>();
+        promise->start();
+        auto future = promise->future();
+
+        QTimer::singleShot(100ms, this, [promise, future]() mutable {
+            future.cancel();
+        });
+        
+        bool called = false;
+        qCoro(future).waitForFinished().then([&, future]() {
+            called = true;
+            QVERIFY(future.isCanceled());
+            QVERIFY(!future.isFinished());
+            el.quit();
+        });
+        el.exec();
+        QVERIFY(called);
+    }
+#endif
+
     QCoro::Task<> testPropagateQExceptionFromVoidConcurrent_coro(QCoro::TestContext) {
         auto future = QtConcurrent::run([]() {
             std::this_thread::sleep_for(100ms);
@@ -253,6 +320,35 @@ private:
         QVERIFY(called);
     }
 
+    QCoro::Task<> testTakeResultCanceled_coro(QCoro::TestContext test) {
+        test.setShouldNotSuspend();
+
+        QPromise<MoveOnly> promise;
+        promise.start();
+        auto future = promise.future();
+        future.cancel();
+
+        QCORO_VERIFY_EXCEPTION_THROWN(co_await qCoro(future).takeResult(), std::runtime_error);
+    }
+
+    void testThenTakeResultCanceled_coro(TestLoop &el) {
+        QPromise<MoveOnly> promise;
+        promise.start();
+        auto future = promise.future();
+        future.cancel();
+
+        bool called = false;
+        qCoro(future).takeResult().then([&](MoveOnly) {
+            QFAIL("Should not be called");
+        }, [&](const std::exception &e) {
+            called = true;
+            QVERIFY(dynamic_cast<const std::runtime_error*>(&e) != nullptr);
+            el.quit();
+        });
+        el.exec();
+        QVERIFY(called);
+    }
+
 #endif
 
 // QPromise cancelling running future on destruction has been introduced in
@@ -282,11 +378,14 @@ private Q_SLOTS:
     addTest(PropagateQExceptionFromVoidConcurrent)
     addTest(PropagateQExceptionFromNonvoidConcurrent)
 #if QT_VERSION_MAJOR >= 6
+    addCoroAndThenTests(AwaitCanceledButNotFinishedFuture)
+    addCoroAndThenTests(AwaitDelayCanceledButNotFinishedFuture)
     addTest(PropagateQExceptionFromVoidPromise)
     addTest(PropagateQExceptionFromNonvoidPromise)
     addTest(PropagateStdExceptionFromVoidPromise)
     addTest(PropagateStdExceptionFromNonvoidPromise)
     addCoroAndThenTests(TakeResult)
+    addCoroAndThenTests(TakeResultCanceled)
 #endif
 #if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
     addTest(UnfinishedPromiseDestroyed)
