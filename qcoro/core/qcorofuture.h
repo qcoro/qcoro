@@ -23,7 +23,12 @@ private:
     class WaitForFinishedOperationBase {
     public:
         explicit WaitForFinishedOperationBase(const QFuture<T_> &future)
-                : mFuture(future) {}
+                : mFuture(future) {
+        {
+            // Ensure the slots is invoked
+            dummy.moveToThread(future.thread());
+        }
+
         Q_DISABLE_COPY(WaitForFinishedOperationBase)
         QCORO_DEFAULT_MOVE(WaitForFinishedOperationBase)
 
@@ -32,15 +37,18 @@ private:
         }
 
         void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
-            auto *watcher = new QFutureWatcher<T_>();
-            QObject::connect(watcher, &QFutureWatcherBase::finished, [watcher, awaitingCoroutine]() mutable {
-                watcher->deleteLater();
-                awaitingCoroutine.resume();
-            });
+            auto *watcher = new QFutureWatcher<T_>(&dummy);
+            QObject::connect(
+                watcher, &QFutureWatcherBase::finished,
+                &dummy, [watcher, awaitingCoroutine]() mutable {
+                    watcher->deleteLater();
+                    awaitingCoroutine.resume();
+                }, Qt::QueuedConnection);
             watcher->setFuture(mFuture);
         }
 
     protected:
+        QObject dummy;
         QFuture<T_> mFuture;
     };
 
