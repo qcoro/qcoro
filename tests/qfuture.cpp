@@ -5,7 +5,6 @@
 #include "testobject.h"
 
 #include "qcorofuture.h"
-#include "qcorotimer.h"
 
 #include <QString>
 #include <QException>
@@ -285,14 +284,15 @@ private:
         
         // Create and start a task that will co_await the future
         // The task returned by .then() will own the coroutine frame
+        bool callbackCalled = false;
         {
             auto continuation = [](QFuture<int> f) -> QCoro::Task<int> {
                 // When this co_awaits, it creates the WaitForFinishedOperationBase awaiter
                 co_return co_await f;
-            }(future).then([](int result) {
-                // This callback should never be called
+            }(future).then([&callbackCalled](int result) {
+                // This callback should never be called because we destroy the task
                 Q_UNUSED(result);
-                qWarning() << "Callback unexpectedly called!";
+                callbackCalled = true;
             });
             
             // Process events to allow the coroutine to start and suspend on the future
@@ -312,7 +312,8 @@ private:
         // Process events to trigger any pending signals from the QFutureWatcher
         QCoreApplication::processEvents();
         
-        // Test passes if execution reaches here without crash
+        // Verify the callback was never called (coroutine was destroyed before completion)
+        QVERIFY(!callbackCalled);
     }
 #endif
 
