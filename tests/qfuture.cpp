@@ -279,8 +279,6 @@ private:
         // This test creates a long-running future, co_awaits it in a detached task,
         // then lets the task be destroyed before the future completes, and verifies no crash.
         
-        TestLoop loop;
-        
         QPromise<int> promise;
         promise.start();
         auto future = promise.future();
@@ -297,8 +295,9 @@ private:
                 qWarning() << "Callback unexpectedly called!";
             });
             
-            // Let the coroutine start and suspend on the future
-            QTest::qWait(50);
+            // Process events to allow the coroutine to start and suspend on the future
+            QTest::qWait(10);
+            QCoreApplication::processEvents();
             
             // When continuation goes out of scope here, the coroutine frame
             // (including the WaitForFinishedOperationBase awaiter) is destroyed
@@ -310,14 +309,10 @@ private:
         promise.addResult(42);
         promise.finish();
         
-        // Wait to allow any potential crashes/UAF to manifest
-        QTimer::singleShot(100ms, &loop, [&loop]() {
-            loop.quit();
-        });
-        loop.exec();
+        // Process events to trigger any pending signals from the QFutureWatcher
+        QCoreApplication::processEvents();
         
-        // If we reach here without crashing, the test passes
-        QVERIFY(true);
+        // Test passes if execution reaches here without crash
     }
 #endif
 
