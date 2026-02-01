@@ -15,8 +15,6 @@
 #endif
 
 #include <thread>
-#include <optional>
-#include <utility>
 
 class TestException : public QException {
 public:
@@ -278,8 +276,8 @@ private:
 #if QT_VERSION_MAJOR >= 6
     void testAwaiterDestroyedBeforeFutureFinishes() {
         // Regression test for #312 - memory leak when awaiter is destroyed before future finishes
-        // This test creates a long-running future, starts a coroutine that awaits it,
-        // then destroys the coroutine before the future completes, and verifies no crash.
+        // This test creates a long-running future, co_awaits it in a detached task,
+        // then lets the task be destroyed before the future completes, and verifies no crash.
         
         TestLoop loop;
         
@@ -287,31 +285,32 @@ private:
         promise.start();
         auto future = promise.future();
         
-        // Create a task that will await the future, and start it using .then()
-        // When the task object goes out of scope, the coroutine frame (and the awaiter) is destroyed
+        // Create and start a task that will co_await the future
+        // The task returned by .then() will own the coroutine frame
         {
-            auto task = [](QFuture<int> f) -> QCoro::Task<int> {
+            auto continuation = [](QFuture<int> f) -> QCoro::Task<int> {
+                // When this co_awaits, it creates the WaitForFinishedOperationBase awaiter
                 co_return co_await f;
-            }(future);
-            
-            // Start the task by chaining a .then() continuation
-            // The task will suspend when awaiting the future
-            std::ignore = std::move(task).then([](int) {
-                // This should never be called since we destroy the task
+            }(future).then([](int result) {
+                // This callback should never be called
+                Q_UNUSED(result);
+                qWarning() << "Callback unexpectedly called!";
             });
             
-            // Let the task start and suspend
+            // Let the coroutine start and suspend on the future
             QTest::qWait(50);
             
-            // The task and its awaiter are destroyed here when they go out of scope
+            // When continuation goes out of scope here, the coroutine frame
+            // (including the WaitForFinishedOperationBase awaiter) is destroyed
         }
         
-        // Now complete the future - this tests that the watcher doesn't try to resume
-        // a destroyed coroutine
+        // Now complete the future
+        // With the bug, the QFutureWatcher would try to resume the destroyed coroutine
+        // With the fix, the watcher is properly cleaned up when the awaiter's dummy is destroyed
         promise.addResult(42);
         promise.finish();
         
-        // Wait a bit to allow any potential crashes/UAF to manifest
+        // Wait to allow any potential crashes/UAF to manifest
         QTimer::singleShot(100ms, &loop, [&loop]() {
             loop.quit();
         });
