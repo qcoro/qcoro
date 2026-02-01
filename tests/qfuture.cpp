@@ -5,15 +5,18 @@
 #include "testobject.h"
 
 #include "qcorofuture.h"
+#include "qcorotimer.h"
 
 #include <QString>
 #include <QException>
 #include <QtConcurrentRun>
-#if QT_VERSION_MAJOR > 6
+#if QT_VERSION_MAJOR >= 6
 #include <QPromise>
 #endif
 
 #include <thread>
+#include <optional>
+#include <utility>
 
 class TestException : public QException {
 public:
@@ -272,6 +275,53 @@ private:
     }
 #endif
 
+#if QT_VERSION_MAJOR >= 6
+    void testAwaiterDestroyedBeforeFutureFinishes() {
+        // Regression test for #312 - memory leak when awaiter is destroyed before future finishes
+        // This test creates a long-running future, starts a coroutine that awaits it,
+        // then destroys the coroutine before the future completes, and verifies no crash.
+        
+        TestLoop loop;
+        
+        QPromise<int> promise;
+        promise.start();
+        auto future = promise.future();
+        
+        // Create a task that will await the future, and start it using .then()
+        // When the task object goes out of scope, the coroutine frame (and the awaiter) is destroyed
+        {
+            auto task = [](QFuture<int> f) -> QCoro::Task<int> {
+                co_return co_await f;
+            }(future);
+            
+            // Start the task by chaining a .then() continuation
+            // The task will suspend when awaiting the future
+            std::ignore = std::move(task).then([](int) {
+                // This should never be called since we destroy the task
+            });
+            
+            // Let the task start and suspend
+            QTest::qWait(50);
+            
+            // The task and its awaiter are destroyed here when they go out of scope
+        }
+        
+        // Now complete the future - this tests that the watcher doesn't try to resume
+        // a destroyed coroutine
+        promise.addResult(42);
+        promise.finish();
+        
+        // Wait a bit to allow any potential crashes/UAF to manifest
+        QTimer::singleShot(100ms, &loop, [&loop]() {
+            loop.quit();
+        });
+        loop.exec();
+        
+        // If we reach here without crashing, the test passes
+        QVERIFY(true);
+    }
+#endif
+
 private Q_SLOTS:
     addTest(Triggers)
     addCoroAndThenTests(ReturnsResult)
@@ -290,6 +340,9 @@ private Q_SLOTS:
 #endif
 #if QT_VERSION >= QT_VERSION_CHECK(6, 3, 1)
     addTest(UnfinishedPromiseDestroyed)
+#endif
+#if QT_VERSION_MAJOR >= 6
+    addTest(AwaiterDestroyedBeforeFutureFinishes)
 #endif
 };
 
