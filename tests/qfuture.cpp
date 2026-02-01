@@ -274,9 +274,10 @@ private:
 
 #if QT_VERSION_MAJOR >= 6
     void testAwaiterDestroyedBeforeFutureFinishes() {
-        // Regression test for #312 - memory leak when awaiter is destroyed before future finishes
-        // This test creates a long-running future, co_awaits it in a detached task,
-        // then lets the task be destroyed before the future completes, and verifies no crash.
+        // Regression test for issue #312 (fixed in PR #316) - memory leak when awaiter
+        // is destroyed before future finishes. This test creates a long-running future,
+        // co_awaits it in a detached task, then lets the task be destroyed before the
+        // future completes, and verifies no crash.
         
         QPromise<int> promise;
         promise.start();
