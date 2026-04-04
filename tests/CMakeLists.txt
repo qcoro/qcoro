@@ -62,9 +62,10 @@ function(qcoro_add_dbus_test _name)
         qcoro_test_dbus
     )
     target_compile_definitions(test-${_name} PRIVATE TESTDBUSSERVER_EXECUTABLE=\"$<TARGET_FILE:testdbusserver>\")
-    if (APPLE)
-        # On MacOS dbus-launch doesn't work, so we rely on the session dbus running
-        # TODO: check whether dbus-run-session works
+    if (APPLE OR WIN32)
+        # On MacOS dbus-launch doesn't work, so we rely on the session dbus running.
+        # On Windows, dbus-run-session is not available, so we rely on an externally
+        # started session bus (DBUS_SESSION_BUS_ADDRESS must be set in the environment).
         add_test(NAME test-${_name} COMMAND test-${_name})
     else()
         add_test(NAME test-${_name} COMMAND dbus-run-session $<TARGET_FILE:test-${_name}>)

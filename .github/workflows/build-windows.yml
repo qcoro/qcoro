@@ -132,6 +132,18 @@ jobs:
       run: |
         cmake --build . --config $BUILD_TYPE --parallel $(nproc) --verbose
 
+    - name: Start DBus Session
+      if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
+      shell: pwsh
+      run: |
+        $proc = Start-Process -FilePath "dbus-daemon.exe" `
+          -ArgumentList "--session","--address=tcp:host=localhost,port=0","--print-address" `
+          -PassThru -RedirectStandardOutput "$env:TEMP\dbus-address.txt" -NoNewWindow
+        Start-Sleep -Seconds 2
+        $address = Get-Content "$env:TEMP\dbus-address.txt" -First 1
+        echo "DBUS_SESSION_BUS_ADDRESS=$address" >> $env:GITHUB_ENV
+        echo "DBus session started at: $address (PID: $($proc.Id))"
+
     - name: Test
       if: ${{ needs.detect_run.outputs.source_code_changed == 'true' }}
       shell: bash
