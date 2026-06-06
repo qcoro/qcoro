@@ -219,9 +219,24 @@ function(add_qcoro_library)
         DEPS "${qmake_qt_deps} ${qmake_qcoro_deps}"
     )
 
+    # When QCoro is built as a static library, qt_add_qml_module() creates
+    # additional OBJECT libraries (returned in _qml_module_targets) that hold the
+    # compiled .qrc resources and the plugin initializer. The backing QML module
+    # target references their objects via $<TARGET_OBJECTS:...> in its INTERFACE
+    # properties so that they get embedded into the final consumer executable.
+    # For this to work from an *installed* package, the object files must actually
+    # be installed and the object libraries exported as OBJECT IMPORTED targets.
+    # Without an OBJECTS DESTINATION, install(EXPORT) downgrades them to
+    # INTERFACE IMPORTED targets, which makes $<TARGET_OBJECTS:...> fail to
+    # evaluate in downstream projects with:
+    #   "Objects of target ... referenced but is not one of the allowed target
+    #    types (EXECUTABLE, STATIC, SHARED, MODULE, OBJECT)."
+    # For shared builds _qml_module_targets is empty, so OBJECTS DESTINATION is a
+    # harmless no-op.
     install(
         TARGETS ${target_name} ${_qml_module_targets}
         EXPORT ${target_name}Targets
+        OBJECTS DESTINATION "${CMAKE_INSTALL_LIBDIR}"
     )
     if (LIB_QML_MODULE AND TARGET "${target_name}plugin")
         install(
