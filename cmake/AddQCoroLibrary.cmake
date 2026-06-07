@@ -105,7 +105,17 @@ function(add_qcoro_library)
         OUTPUT qt_LIBS
     )
 
-    add_library(${target_name} ${target_interface})
+    set(target_library_type ${target_interface})
+    if (LIB_QML_MODULE AND NOT LIB_INTERFACE AND QT6_IS_SHARED_LIBS_BUILD)
+        # A QML module's plugin must be dynamically loadable by the QML engine.
+        # qt_add_qml_module() derives the plugin's library type from the backing
+        # target, so when Qt itself is a shared build, force the backing library
+        # (and therefore the plugin) to be SHARED even if the rest of QCoro is
+        # built statically. Otherwise a static plugin (.a) is produced which the
+        # QML engine cannot load at runtime ("plugin not found").
+        set(target_library_type SHARED)
+    endif()
+    add_library(${target_name} ${target_library_type})
     add_library(${QCORO_TARGET_PREFIX}::${LIB_NAME} ALIAS ${target_name})
 
     if (LIB_SOURCES)
