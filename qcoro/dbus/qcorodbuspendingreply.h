@@ -31,7 +31,7 @@ private:
 
         void await_suspend(std::coroutine_handle<> awaitingCoroutine) {
             auto *watcher = new QDBusPendingCallWatcher{mReply};
-            QObject::connect(watcher, &QDBusPendingCallWatcher::finished,
+            QObject::connect(watcher, &QDBusPendingCallWatcher::finished, watcher,
                              [awaitingCoroutine](auto *watcher) mutable {
                                  awaitingCoroutine.resume();
                                  watcher->deleteLater();
